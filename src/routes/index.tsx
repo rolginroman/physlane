@@ -445,6 +445,10 @@ const FEATURE_ROWS = [
     body: 'Pick a goal and a weekly rate. Your target line sits on the weight chart, so drift is easy to see.',
   },
   {
+    title: 'More than weight',
+    body: 'Ten body sites, in centimeters or inches. Waist, arms, thighs. Charts and deltas for each, and one download takes all your data out.',
+  },
+  {
     title: 'On track, or not',
     body: 'Too fast, too slow, or on pace, checked against your goal. Plus where you will be in four weeks if you keep eating like this. Pro.',
   },
