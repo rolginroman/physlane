@@ -11,6 +11,8 @@ declare namespace Cloudflare {
 		TELEGRAM_BOT_USERNAME?: string;
 		/** Shared secret required by the /api/telegram/remind cron endpoint. */
 		CRON_SECRET?: string;
+		/** Secret token Telegram sends on every webhook update (setWebhook). */
+		TELEGRAM_WEBHOOK_SECRET?: string;
 		AUTH_SECRET?: string;
 		STRIPE_SECRET_KEY?: string;
 		STRIPE_WEBHOOK_SECRET?: string;

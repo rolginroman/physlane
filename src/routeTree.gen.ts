@@ -22,6 +22,7 @@ import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api.stripe.webhook'
 import { Route as ApiTelegramRemindRouteImport } from './routes/api.telegram.remind'
+import { Route as ApiTelegramWebhookRouteImport } from './routes/api.telegram.webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -87,6 +88,11 @@ const ApiTelegramRemindRoute = ApiTelegramRemindRouteImport.update({
   path: '/api/telegram/remind',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
+  id: '/api/telegram/webhook',
+  path: '/api/telegram/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
+  '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/api/telegram/remind'
+    | '/api/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/api/telegram/remind'
+    | '/api/telegram/webhook'
   id:
     | '__root__'
     | '/'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/api/telegram/remind'
+    | '/api/telegram/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -187,6 +199,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiTelegramRemindRoute: typeof ApiTelegramRemindRoute
+  ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -282,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTelegramRemindRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/telegram/webhook': {
+      id: '/api/telegram/webhook'
+      path: '/api/telegram/webhook'
+      fullPath: '/api/telegram/webhook'
+      preLoaderRoute: typeof ApiTelegramWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -312,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   ApiTelegramRemindRoute: ApiTelegramRemindRoute,
+  ApiTelegramWebhookRoute: ApiTelegramWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
