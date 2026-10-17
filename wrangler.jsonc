@@ -1,0 +1,19 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "physlane",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "@tanstack/react-start/server-entry",
+	"observability": { "enabled": true },
+	"upload_source_maps": true,
+	"assets": { "directory": "./.output/public" },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "physlane",
+			"database_id": "4b3c552a-59b1-40eb-b97f-d339302b57b2",
+			"migrations_dir": "migrations"
+		}
+	],
+	"vars": { "APP_URL": "https://physlane.unpackit.top" }
+}

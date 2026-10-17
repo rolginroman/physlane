@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /intake
+Disallow: /cycles
+Disallow: /billing
+Disallow: /onboarding
+Disallow: /api/
+
+Sitemap: https://physlane.workers.dev/sitemap.xml

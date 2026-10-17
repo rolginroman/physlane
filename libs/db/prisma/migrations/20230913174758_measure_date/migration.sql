@@ -1,6 +1,0 @@
--- AlterTable
-ALTER TABLE "WeightEntry"
-ADD COLUMN "measureDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-UPDATE "WeightEntry"
-SET "measureDate" = "createdAt"
