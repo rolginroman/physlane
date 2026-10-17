@@ -25,7 +25,7 @@ export default function Footer() {
   }
 
   const shareUrl = 'https://physlane.unpackit.top/'
-  const shareText = 'physlane: adaptive TDEE from your own weight and intake series'
+  const shareText = 'How many calories do you really burn? physlane measures it from your own data'
 
   return (
     <footer className="border-t border-line px-4 py-10 sm:px-6">
@@ -33,7 +33,7 @@ export default function Footer() {
         <div>
           <p className="m-0 text-sm font-semibold text-text">physlane</p>
           <p className="m-0 mt-2 max-w-56 text-xs leading-relaxed text-dim">
-            Adaptive TDEE and recomp tracker for lifters. Manual numbers only.
+            Find your real daily calorie burn, from your own numbers. Manual entry only.
           </p>
         </div>
         <nav aria-label="Product">
