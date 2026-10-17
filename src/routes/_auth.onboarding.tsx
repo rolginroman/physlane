@@ -1,9 +1,10 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useState, useEffect, type FormEvent, type KeyboardEvent } from 'react'
 import { hasAnyCycle, saveCycle } from '#/server/cycles.fns'
 import { saveMeasurement } from '#/server/measurements.fns'
 import { saveSettings } from '#/lib/auth-guard.fns'
 import type { Sex } from '#/lib/navy-bf'
+import { estimateStartingKcal, kcalPerKg, rateToDailyKcal } from '#/lib/kcal-start'
 import { kgToLb, weightFromInput, lengthFromInput, type UnitSystem } from '#/lib/units'
 
 export const Route = createFileRoute('/_auth/onboarding')({
@@ -192,6 +193,37 @@ function OnboardingPage() {
   }
 
   const activePhase = PHASES.find((p) => p.id === phase) ?? PHASES[0]
+
+  // Day-one target suggestion from steps 1-2 (population heuristic, see /guide).
+  const parsedRate = Number.parseFloat(rate)
+  const startKcal = estimateStartingKcal({
+    weightKg: weightFromInput(weight, units),
+    sex: sex === '' ? null : sex,
+    phase,
+    targetRateKgPerWeek: Number.isFinite(parsedRate) ? parsedRate : null,
+  })
+  const whyKcal = (() => {
+    const kgNow = weightFromInput(weight, units)
+    if (kgNow == null) return null
+    const perKg = kcalPerKg(sex === '' ? null : sex)
+    const parts = [
+      `${kgNow} kg × ${perKg} kcal/kg ≈ ${Math.round(kgNow * perKg)} to hold weight (population average).`,
+    ]
+    if (phase !== 'maintain' && Number.isFinite(parsedRate)) {
+      const delta = Math.round(rateToDailyKcal(parsedRate))
+      const dir = phase === 'cut' ? 'below' : 'above'
+      parts.push(`Your ${Math.abs(parsedRate)} kg/wk goal is ${delta} kcal/day ${dir} that.`)
+    }
+    parts.push('physlane replaces this guess with your measured burn after ~14 days of logs.')
+    return parts.join(' ')
+  })()
+
+  useEffect(() => {
+    if (step === 3 && !kcal.trim() && startKcal != null) setKcal(String(startKcal))
+    // Prefill once when entering step 3; later edits are the user's.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
   const weightDisplay =
     weight.trim() && !liveWeight ? `${weight.trim()} ${units === 'metric' ? 'kg' : 'lb'}` : ''
 
@@ -443,10 +475,31 @@ function OnboardingPage() {
                   </p>
                 ) : (
                   <p id="onb-kcal-hint" className="hint">
-                    A starting point. The adaptive engine refines it after 14 days of logged
-                    weight and intake.
+                    Prefilled with a population guess from your step 1-2 answers. Edit freely,
+                    or leave it: a target is optional until the engine suggests one from your
+                    real data.
                   </p>
                 )}
+                {whyKcal && (
+                  <details className="mt-2 rounded-lg border border-line bg-surface2 px-3 py-2 text-sm text-dim">
+                    <summary className="cursor-pointer select-none font-medium text-text">
+                      Why this number?
+                    </summary>
+                    <p className="mt-2">{whyKcal}</p>
+                  </details>
+                )}
+                <p className="mt-2 text-xs text-faint">
+                  New to tracking, or want the research behind these numbers?{' '}
+                  <a
+                    href="/guide"
+                    target="_blank"
+                    rel="noopener"
+                    className="underline underline-offset-4 hover:text-dim"
+                  >
+                    Read the short guide
+                  </a>
+                  .
+                </p>
               </div>
             </>
           )}

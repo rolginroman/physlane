@@ -304,6 +304,12 @@ function Hero() {
             >
               Sign in
             </Link>
+            <Link
+              to="/guide"
+              className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-faint no-underline hover:text-text"
+            >
+              Guide
+            </Link>
           </>
         )}
       </div>
