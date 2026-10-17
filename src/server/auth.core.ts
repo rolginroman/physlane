@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { useDb } from "#/db";
 import { useAuth } from "#/lib/auth";
+import { isValidTimeZone, normalizeReminderTime } from "#/lib/remind";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 
 /**
@@ -21,6 +22,10 @@ export type SessionUser = {
 	onGlp1: boolean;
 	heightCm: number | null;
 	sex: "male" | "female" | null;
+	telegramId: string | null;
+	reminderTime: string | null;
+	reminderTz: string | null;
+	shareToken: string | null;
 };
 
 export async function loadSessionUser(): Promise<SessionUser | null> {
@@ -41,6 +46,10 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
 			onGlp1: schema.user.onGlp1,
 			heightCm: schema.user.heightCm,
 			sex: schema.user.sex,
+			telegramId: schema.user.telegramId,
+			reminderTime: schema.user.reminderTime,
+			reminderTz: schema.user.reminderTz,
+			shareToken: schema.user.shareToken,
 		})
 		.from(schema.user)
 		.where(eq(schema.user.id, session.user.id))
@@ -62,6 +71,10 @@ export type SettingsPatch = {
 	heightCm?: number | null;
 	/** null clears the stored sex */
 	sex?: "male" | "female" | null;
+	/** local 'hh:mm'; invalid strings and null clear it */
+	reminderTime?: string | null;
+	/** IANA zone the hh:mm is local to; invalid strings and null clear it */
+	reminderTz?: string | null;
 };
 
 export async function applySettings(
@@ -81,6 +94,16 @@ export async function applySettings(
 	}
 	if (data.sex !== undefined) {
 		patch.sex = data.sex === "male" || data.sex === "female" ? data.sex : null;
+	}
+	if (data.reminderTime !== undefined) {
+		patch.reminderTime = normalizeReminderTime(data.reminderTime);
+	}
+	if (data.reminderTz !== undefined) {
+		const tz =
+			typeof data.reminderTz === "string" && data.reminderTz.trim()
+				? data.reminderTz.trim()
+				: null;
+		patch.reminderTz = tz !== null && isValidTimeZone(tz) ? tz : null;
 	}
 	await db.update(schema.user).set(patch).where(eq(schema.user.id, me.id));
 	return { ok: true };

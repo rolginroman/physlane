@@ -18,8 +18,10 @@ import { Route as AuthCyclesRouteImport } from './routes/_auth.cycles'
 import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
 import { Route as AuthIntakeRouteImport } from './routes/_auth.intake'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth.onboarding'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api.stripe.webhook'
+import { Route as ApiTelegramRemindRouteImport } from './routes/api.telegram.remind'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -65,6 +67,11 @@ const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthRoute,
 } as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -73,6 +80,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTelegramRemindRoute = ApiTelegramRemindRouteImport.update({
+  id: '/api/telegram/remind',
+  path: '/api/telegram/remind',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -85,8 +97,10 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthDashboardRoute
   '/intake': typeof AuthIntakeRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/share/$token': typeof ShareTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/telegram/remind': typeof ApiTelegramRemindRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -97,8 +111,10 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthDashboardRoute
   '/intake': typeof AuthIntakeRoute
   '/onboarding': typeof AuthOnboardingRoute
+  '/share/$token': typeof ShareTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/telegram/remind': typeof ApiTelegramRemindRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,8 +127,10 @@ export interface FileRoutesById {
   '/_auth/dashboard': typeof AuthDashboardRoute
   '/_auth/intake': typeof AuthIntakeRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
+  '/share/$token': typeof ShareTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/telegram/remind': typeof ApiTelegramRemindRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,8 +143,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/intake'
     | '/onboarding'
+    | '/share/$token'
     | '/api/auth/$'
     | '/api/stripe/webhook'
+    | '/api/telegram/remind'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -137,8 +157,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/intake'
     | '/onboarding'
+    | '/share/$token'
     | '/api/auth/$'
     | '/api/stripe/webhook'
+    | '/api/telegram/remind'
   id:
     | '__root__'
     | '/'
@@ -150,8 +172,10 @@ export interface FileRouteTypes {
     | '/_auth/dashboard'
     | '/_auth/intake'
     | '/_auth/onboarding'
+    | '/share/$token'
     | '/api/auth/$'
     | '/api/stripe/webhook'
+    | '/api/telegram/remind'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -159,8 +183,10 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  ShareTokenRoute: typeof ShareTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  ApiTelegramRemindRoute: typeof ApiTelegramRemindRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -228,6 +254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOnboardingRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -240,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/api/stripe/webhook'
       fullPath: '/api/stripe/webhook'
       preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/telegram/remind': {
+      id: '/api/telegram/remind'
+      path: '/api/telegram/remind'
+      fullPath: '/api/telegram/remind'
+      preLoaderRoute: typeof ApiTelegramRemindRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -268,8 +308,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  ShareTokenRoute: ShareTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  ApiTelegramRemindRoute: ApiTelegramRemindRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
