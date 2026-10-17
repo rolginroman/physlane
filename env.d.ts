@@ -9,6 +9,8 @@ declare namespace Cloudflare {
 		/** Secrets for the Telegram Mini App auth flow (tele-better-auth). */
 		TELEGRAM_BOT_TOKEN?: string;
 		TELEGRAM_BOT_USERNAME?: string;
+		/** Shared secret required by the /api/telegram/remind cron endpoint. */
+		CRON_SECRET?: string;
 		AUTH_SECRET?: string;
 		STRIPE_SECRET_KEY?: string;
 		STRIPE_WEBHOOK_SECRET?: string;

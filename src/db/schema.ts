@@ -28,11 +28,21 @@ export const user = sqliteTable(
 		telegramId: text("telegram_id"),
 		telegramUsername: text("telegram_username"),
 		telegramPhoneNumber: text("telegram_phone_number"),
+		/* daily Telegram reminder (migration 0005): local 'hh:mm' + its IANA zone */
+		reminderTime: text("reminder_time"),
+		reminderTz: text("reminder_tz"),
+		/* last day a reminder was sent (timestamp; compared per local day) */
+		telegramNotifiedAt: integer("telegram_notified_at", { mode: "timestamp" }),
+		/* public read-only progress card (migration 0005); rotating revokes links */
+		shareToken: text("share_token"),
 		stripeCustomerId: text("stripe_customer_id"),
 		stripeSubscriptionId: text("stripe_subscription_id"),
 		planCurrentPeriodEnd: integer("plan_current_period_end", { mode: "timestamp" }),
 	},
-	(t) => [uniqueIndex("user_email_idx").on(t.email)],
+	(t) => [
+		uniqueIndex("user_email_idx").on(t.email),
+		uniqueIndex("user_share_token_idx").on(t.shareToken), // SQLite: multiple NULLs allowed
+	],
 );
 
 export const session = sqliteTable("session", {

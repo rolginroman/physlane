@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import {
   endActiveCycle,
   getActiveCycle,
@@ -10,6 +10,8 @@ import {
 import { listMeasurements, type MeasurementDTO } from '#/server/measurements.fns'
 import { exportIntakeCsv, exportMeasurementsCsv } from '#/server/export.fns'
 import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
+import { rotateShareLink } from '#/server/share.fns'
+import { shareUrl } from '#/lib/share'
 import type { Sex } from '#/lib/navy-bf'
 import {
   fmtWeight,
@@ -36,6 +38,10 @@ export const Route = createFileRoute('/_auth/cycles')({
       units: (viewer?.unitSystem ?? 'metric') as UnitSystem,
       heightCm: viewer?.heightCm ?? null,
       sex: viewer?.sex ?? null,
+      telegramId: viewer?.telegramId ?? null,
+      reminderTime: viewer?.reminderTime ?? null,
+      reminderTz: viewer?.reminderTz ?? null,
+      shareToken: viewer?.shareToken ?? null,
     }
   },
   component: CyclesPage,
@@ -94,7 +100,8 @@ function PhaseChip({ phase }: { phase: Phase }) {
 }
 
 function CyclesPage() {
-  const { active, cycles, entries, units, heightCm, sex } = Route.useLoaderData()
+  const { active, cycles, entries, units, heightCm, sex, telegramId, reminderTime, reminderTz, shareToken } =
+    Route.useLoaderData()
 
   const history = cycles.filter((c) => c.endDate != null)
   let latestWeightKg: number | null = null
@@ -106,7 +113,15 @@ function CyclesPage() {
     <section className="pt-8">
       <h1 className="m-0 text-xl font-semibold tracking-tight">Cycles</h1>
 
-      <ProfileCard heightCm={heightCm} sex={sex} units={units} />
+      <ProfileCard
+        heightCm={heightCm}
+        sex={sex}
+        units={units}
+        telegramId={telegramId}
+        reminderTime={reminderTime}
+        reminderTz={reminderTz}
+        shareToken={shareToken}
+      />
 
       <ExportCard />
 
@@ -148,10 +163,18 @@ function ProfileCard({
   heightCm,
   sex,
   units,
+  telegramId,
+  reminderTime,
+  reminderTz,
+  shareToken: initialShareToken,
 }: {
   heightCm: number | null
   sex: Sex | null
   units: UnitSystem
+  telegramId: string | null
+  reminderTime: string | null
+  reminderTz: string | null
+  shareToken: string | null
 }) {
   const router = useRouter()
   const [height, setHeight] = useState(() => lengthToInput(heightCm, units))
@@ -161,6 +184,26 @@ function ProfileCard({
   const [error, setError] = useState<string | null>(null)
 
   const liveHeight = optionalHeightError(height, units)
+
+  // Daily reminder state: the toggle is derived from the time being set.
+  const [time, setTime] = useState(reminderTime ?? '')
+  const [tz, setTz] = useState(reminderTz ?? '')
+  // Auto-fill the zone once on mount (window-only API; keeps SSR deterministic).
+  useEffect(() => {
+    if (!reminderTz) setTz(Intl.DateTimeFormat().resolvedOptions().timeZone)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const reminderEnabled = time !== ''
+
+  // Share link state (rotation is instant, not part of form save).
+  const [shareToken, setShareToken] = useState(initialShareToken)
+  const [origin, setOrigin] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [sharePending, setSharePending] = useState(false)
+  const [shareError, setShareError] = useState<string | null>(null)
+  useEffect(() => setShareToken(initialShareToken), [initialShareToken])
+  useEffect(() => setOrigin(window.location.origin), [])
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -173,6 +216,10 @@ function ProfileCard({
         data: {
           heightCm: lengthFromInput(height, units),
           sex: sexChoice,
+          // Reminder fields ride the same save; a cleared time also drops the zone.
+          ...(telegramId
+            ? { reminderTime: time || null, reminderTz: time ? tz || null : null }
+            : {}),
         },
       })
       await router.invalidate()
@@ -181,6 +228,33 @@ function ProfileCard({
       setError('Could not save your profile. Try again.')
     } finally {
       setPending(false)
+    }
+  }
+
+  async function handleRotate() {
+    if (sharePending) return
+    setSharePending(true)
+    setShareError(null)
+    setCopied(false)
+    try {
+      const { token } = await rotateShareLink()
+      setShareToken(token)
+      await router.invalidate()
+    } catch {
+      setShareError('Could not update the share link. Try again.')
+    } finally {
+      setSharePending(false)
+    }
+  }
+
+  async function handleCopy() {
+    if (!shareToken || !origin) return
+    setCopied(false)
+    try {
+      await navigator.clipboard.writeText(shareUrl(origin, shareToken))
+      setCopied(true)
+    } catch {
+      setShareError('Could not copy. Select the link text and copy it manually.')
     }
   }
 
@@ -249,6 +323,117 @@ function ProfileCard({
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Daily reminder (G2.5): slim row, only meaningful with Telegram linked. */}
+      <div className="mt-4 border-t border-line pt-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="m-0 text-sm font-semibold">Daily reminder</h3>
+          <p className="m-0 text-xs text-dim">
+            One Telegram nudge at your time, only on days you have not logged yet.
+          </p>
+        </div>
+        {telegramId ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div>
+              <label htmlFor="cyc-remind-time" className="label">
+                Time
+              </label>
+              <input
+                id="cyc-remind-time"
+                type="time"
+                className="input num"
+                value={time}
+                onChange={(e) => {
+                  setTime(e.target.value)
+                  setSaved(false)
+                }}
+              />
+            </div>
+            <div className="min-w-44 flex-1">
+              <label htmlFor="cyc-remind-tz" className="label">
+                Time zone
+              </label>
+              <input
+                id="cyc-remind-tz"
+                type="text"
+                className="input"
+                placeholder="Europe/Berlin"
+                value={tz}
+                onChange={(e) => {
+                  setTz(e.target.value)
+                  setSaved(false)
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={reminderEnabled}
+              onClick={() => {
+                setTime(reminderEnabled ? '' : time || '09:00')
+                setSaved(false)
+              }}
+              className={`inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-medium ${
+                reminderEnabled
+                  ? 'border-accent/60 bg-accent/10 text-accent'
+                  : 'border-line text-dim hover:text-text'
+              }`}
+            >
+              {reminderEnabled ? 'On' : 'Off'}
+            </button>
+          </div>
+        ) : (
+          <p className="m-0 mt-2 text-xs text-dim">Connect Telegram in the app to get reminders.</p>
+        )}
+      </div>
+
+      {/* Share progress (G2.6): read-only public card, revocable by rotation. */}
+      <div className="mt-3 border-t border-line pt-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="m-0 text-sm font-semibold">Share progress</h3>
+          <p className="m-0 text-xs text-dim">
+            A read-only page with your numbers. No email or Telegram details.
+          </p>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            readOnly
+            aria-label="Share link"
+            className="input num min-w-52 flex-1"
+            placeholder="No link yet"
+            value={shareToken && origin ? shareUrl(origin, shareToken) : ''}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          {shareToken && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text"
+            >
+              Copy
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleRotate}
+            disabled={sharePending}
+            className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
+          >
+            {sharePending ? 'Updating…' : shareToken ? 'Revoke / new link' : 'Create link'}
+          </button>
+          {copied && !sharePending && (
+            <p role="status" className="m-0 text-xs text-dim">
+              Copied.
+            </p>
+          )}
+        </div>
+        {shareError && (
+          <p role="alert" className="m-0 mt-2 text-xs text-rose">
+            {shareError}
+          </p>
+        )}
       </div>
 
       {error && (
