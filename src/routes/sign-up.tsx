@@ -4,7 +4,13 @@ import { signUp } from '#/lib/auth-client'
 import { authErrorMessage } from '#/lib/auth-error'
 
 export const Route = createFileRoute('/sign-up')({
-  head: () => ({ meta: [{ title: 'Create account · physlane' }] }),
+  head: () => ({
+    meta: [
+      { title: 'Create account · physlane' },
+      { name: 'robots', content: 'noindex, follow' },
+    ],
+    links: [{ rel: 'canonical', href: 'https://physlane.unpackit.top/sign-up' }],
+  }),
   component: SignUpPage,
 })
 

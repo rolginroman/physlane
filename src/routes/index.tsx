@@ -4,9 +4,9 @@ import WaitlistForm from '../components/WaitlistForm'
 
 const SITE_URL = 'https://physlane.unpackit.top'
 const SITE_NAME = 'physlane'
-const TITLE = 'physlane · adaptive TDEE and recomp tracker for lifters'
+const TITLE = 'Adaptive TDEE Tracker for Lifters — physlane'
 const DESCRIPTION =
-  'physlane learns how many calories you actually burn each day (your TDEE) from your own weigh-ins and food logs. Two numbers a day, under a minute; there is no food database and nothing to scan. Free tier included; Pro is $10/mo or $100/yr.'
+  'physlane learns your real daily calorie burn (TDEE) from your own weigh-ins and food logs. Two numbers a day, under a minute. Free tier included; Pro $10/mo.'
 
 const FAQS = [
   {
