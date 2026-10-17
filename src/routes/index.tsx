@@ -6,20 +6,20 @@ const SITE_URL = 'https://physlane.unpackit.top'
 const SITE_NAME = 'physlane'
 const TITLE = 'physlane · adaptive TDEE and recomp tracker for lifters'
 const DESCRIPTION =
-  'physlane computes your true burn rate from your own weight and intake series. Two numbers a day, under 60 seconds. No food database, no barcode scanner, no photo AI. Free tier included; Pro is $10/mo or $100/yr.'
+  'physlane measures how many calories you actually burn each day (your TDEE) from your own weight and calorie logs. Two numbers a day, under 60 seconds. No food database, no barcode scanner, no photo AI. Free tier included; Pro is $10/mo or $100/yr.'
 
 const FAQS = [
   {
-    q: 'How does the adaptive TDEE estimate work?',
-    a: 'From your own data, not a population formula. After 14 days of same-day weight and kcal pairs, physlane computes your weekly energy balance: average intake minus the calories implied by your weight change. The result is smoothed week over week and shown with a spread. It keeps updating as you log.',
+    q: 'How does it learn how many calories I burn?',
+    a: 'From your own data, not a population formula. After 14 days of daily weigh-ins and calorie totals, physlane computes your weekly energy balance: what you ate minus what your weight change implies you burned. The result is smoothed week over week and shown with a range. In technical terms, it estimates your TDEE, and it keeps updating as you log.',
   },
   {
     q: 'Do I have to track meals or scan barcodes?',
-    a: 'No. You log one number: total kcal for the day, plus optional protein. Estimate it however you like. physlane stores the number, never the meal. There is no food database and there never will be.',
+    a: 'No. You log one number: total calories for the day, plus optional protein. Estimate it however you like. physlane stores the number, never the meal. There is no food database and there never will be.',
   },
   {
     q: 'What does the free plan include?',
-    a: 'Everything you need to run the daily loop: weight and girth logging, daily intake, trend charts with your cycle target overlay, streaks, and 90 days of history. The TDEE reveal, projection and verdicts, unlimited history, and GLP-1 mode are Pro.',
+    a: 'Everything you need for the daily habit: weight and body-measurement logging, daily calories, trend charts with your goal line, streaks, and 90 days of history. The daily-burn estimate, projections and on-track verdicts, unlimited history, and GLP-1 mode are Pro.',
   },
   {
     q: 'How much does Pro cost?',
@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: 'What happens to my data?',
-    a: 'Only the numbers you type: weights, girths, daily kcal and protein, cycle settings. No bank or social integrations, no photo analysis, no data selling. Delete any entry anytime.',
+    a: 'Only the numbers you type: weights, tape measurements, daily calories and protein, goal settings. No bank or social integrations, no photo analysis, no data selling. Delete any entry anytime.',
   },
 ]
 
@@ -230,7 +230,7 @@ function TrendHeroChart() {
           fontSize="10"
           fill="var(--color-dim)"
         >
-          adaptive TDEE
+          your daily burn
         </text>
       </svg>
       <figcaption className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-dim">
@@ -248,7 +248,7 @@ function TrendHeroChart() {
           />
           cycle target
         </span>
-        <span>Cut, 12 weeks, target −0.55 kg/wk. Chart from the app.</span>
+        <span>12 weeks of weight loss, target −0.55 kg/week. A real chart from the app.</span>
       </figcaption>
     </figure>
   )
@@ -260,20 +260,22 @@ function Hero() {
   return (
     <section className="pt-14 pb-14 sm:pt-24 sm:pb-20">
       <p className="m-0 text-sm font-medium text-dim">
-        For lifters who run cut and bulk cycles
+        For anyone losing fat or building muscle
       </p>
       <h1 className="display-1 mt-3 max-w-3xl text-text">
-        Know your true burn rate.
+        Know how many calories you really burn.
       </h1>
       <p className="mt-5 mb-0 max-w-2xl text-base text-dim sm:text-lg">
-        physlane computes your TDEE from your own weight and intake series. Two
-        numbers a day, under 60 seconds. No food database, no barcode scanner, no
-        photo AI.
+        Online calculators guess from your age and height. physlane measures
+        yours from your own body: your morning weigh-in and what you ate. Two
+        entries a day, under a minute, and the number keeps sharpening as you
+        go. No food database, no barcode scanner, no photo AI.
       </p>
       <p className="mt-3 mb-0 max-w-2xl text-sm text-faint">
-        The hook: recomposition is a feedback loop, not a formula. Set a cycle
-        target, keep the two numbers honest, and the math tells you what your
-        body actually burns. Cut, bulk, or maintain, the loop is the same.
+        The idea is simple: eat below your burn and you lose weight, eat above
+        it and you gain. The hard part is knowing where that line sits for your
+        body. physlane finds your line from your own data and keeps it current
+        as your weight changes.
       </p>
       <div className="mt-7 flex flex-wrap items-center gap-3">
         <Link to="/sign-up" className="btn-primary no-underline">
@@ -303,27 +305,27 @@ const STEPS = [
   {
     n: '01',
     title: 'Weigh in',
-    body: 'Weight and waist in 30 seconds. Any subset of girths if you want them.',
+    body: 'Step on the scale in the morning and type the number. Ten seconds.',
   },
   {
     n: '02',
-    title: 'Log one number',
-    body: 'Total kcal for the day, plus protein if you track it. 10 seconds.',
+    title: 'Log the day\u2019s calories',
+    body: 'One number: roughly what you ate today. Protein is optional.',
   },
   {
     n: '03',
-    title: 'Watch the trend',
-    body: 'The chart carries your cycle target line. Day 14: your TDEE appears, built from your own series.',
+    title: 'Read your trend',
+    body: 'Your weight chart updates, and on day 14 the app tells you how many calories you actually burn.',
   },
 ]
 
 function HowItWorks() {
   return (
     <section id="the-loop" className="scroll-mt-16 border-t border-line py-14 sm:py-20">
-      <h2 className="display-2 m-0 text-text">The daily loop</h2>
+      <h2 className="display-2 m-0 text-text">How it works</h2>
       <p className="mt-3 mb-0 max-w-2xl text-base text-dim">
-        Under 60 seconds on your phone. That is the entire habit the product
-        asks for.
+        Three steps, every day, under a minute on your phone. The app does the
+        math and gets smarter about your body each week.
       </p>
       <ol className="m-0 mt-8 grid list-none gap-0 p-0 sm:grid-cols-3 sm:gap-6">
         {STEPS.map((step) => (
@@ -379,8 +381,8 @@ function Reviews() {
               physlane is new and does not pretend otherwise. No staged
               testimonials, no invented star ratings. When the first cohort
               reports back, their words land here, attributed and unedited, and
-              they will have run the same math you would: 14 days of pairs,
-              then the burn estimate.
+              they will have run the same math you would: two weeks of daily
+              logging, then a personal calorie estimate.
             </p>
             <p className="mt-3 mb-0 text-sm text-dim">
               What founding users get: a direct line to the builder and feature
@@ -391,7 +393,7 @@ function Reviews() {
             {[
               {
                 title: 'Open math, no black box',
-                body: 'The estimate is weekly energy balance from your logged days. Every number traces to a row you typed.',
+                body: 'The estimate is weekly energy balance from your logged days. Every number traces to an entry you typed.',
               },
               {
                 title: 'Data stance, in writing',
@@ -416,22 +418,22 @@ function Reviews() {
 
 const COMPUTATION = [
   { label: 'weight trend', value: '−0.60 kg/wk' },
-  { label: 'avg intake', value: '2,300 kcal/d' },
-  { label: 'burn estimate', value: '2,960 kcal/d ± 140', accent: true },
+  { label: 'avg calories', value: '2,300 kcal/d' },
+  { label: 'your daily burn', value: '2,960 kcal/d ± 140', accent: true },
 ]
 
 const FEATURE_ROWS = [
   {
-    title: 'Cycles with target overlay',
-    body: 'One active cut, bulk, or maintain phase with a target rate. The target line rides your weight chart.',
+    title: 'Goal phases with a target line',
+    body: 'Pick a direction and a weekly rate, lose or gain. Your goal rides the weight chart so drift is visible at a glance.',
   },
   {
-    title: 'Pace verdicts and projection',
-    body: 'On pace, too fast, or too slow, stated against your cycle target, with a 4-week projection at current intake. Pro.',
+    title: 'On track, or not',
+    body: 'Too fast, too slow, or on pace, stated against your goal, with a four-week projection at your current eating. Pro.',
   },
   {
-    title: 'GLP-1 mode',
-    body: 'Swaps deficit targets for protein-first guidance and a lean-mass watch on rapid loss with a flat waist. Pro.',
+    title: 'GLP-1 friendly',
+    body: 'A dedicated mode swaps deficit targets for protein-first guidance and watches for muscle loss on rapid weight loss. Pro.',
   },
   {
     title: 'Private by design',
@@ -442,16 +444,18 @@ const FEATURE_ROWS = [
 function Features() {
   return (
     <section className="border-t border-line py-14 sm:py-20">
-      <h2 className="display-2 m-0 text-text">Built for recomposition</h2>
+      <h2 className="display-2 m-0 text-text">Built for changing your body</h2>
       <div className="mt-8 grid gap-10 lg:grid-cols-12 lg:gap-8">
         <div className="lg:col-span-7">
           <h3 className="m-0 text-lg font-semibold text-text">
-            Adaptive TDEE, the honest way
+            Measured, not guessed
           </h3>
           <p className="mt-2 mb-0 text-sm text-dim sm:text-base">
-            Formulas guess from your age, height, and an activity multiplier.
-            physlane waits until it can measure you: 14 days of same-day weight
-            and intake pairs, then the balance math, smoothed weekly.
+            Online calculators guess from your age, height, and an activity
+            multiplier. physlane waits until it can measure you: two weeks of
+            daily weigh-ins and calorie totals, then simple weekly math. The
+            technical term is TDEE, total daily energy expenditure. Yours is
+            unique, and it moves as your weight moves.
           </p>
           <dl className="mt-5 divide-y divide-line rounded-xl border border-line bg-surface">
             {COMPUTATION.map((row) => (
@@ -489,15 +493,15 @@ function Features() {
 }
 
 const FREE_LIST = [
-  'Weight, girth, and daily kcal logging',
-  'Trend charts with cycle target overlay',
-  'Cut / bulk cycles and streaks',
+  'Weight and body-measurement logging',
+  'Trend charts with your goal line',
+  'Goal phases and streaks',
   '90 days of history',
 ]
 
 const PRO_LIST = [
-  'Adaptive TDEE estimate with spread',
-  'Pace verdicts and 4-week projection',
+  'Your personal daily-burn estimate',
+  'On-track verdicts and 4-week projection',
   'Unlimited history',
   'GLP-1 mode',
 ]
@@ -632,15 +636,15 @@ function ClosingCta() {
         <div className="lg:col-span-7">
           <h2 className="display-2 m-0 text-text">Two numbers a day.</h2>
           <p className="mt-3 mb-0 max-w-xl text-base text-dim">
-            That is the whole habit. The burn rate shows up on day 14, from your
-            own data.
+            That is the whole habit. Your personal calorie number appears on
+            day 14, from your own data.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link to="/sign-up" className="btn-primary no-underline">
               Start free, no card
             </Link>
             <a
-              href="https://x.com/intent/tweet?url=https%3A%2F%2Fphyslane.unpackit.top%2F&text=physlane%3A%20adaptive%20TDEE%20from%20your%20own%20weight%20and%20intake%20series"
+              href="https://x.com/intent/tweet?url=https%3A%2F%2Fphyslane.unpackit.top%2F&text=How%20many%20calories%20do%20you%20really%20burn%3F%20physlane%20measures%20it%20from%20your%20own%20data"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
@@ -648,7 +652,7 @@ function ClosingCta() {
               Share on X
             </a>
             <a
-              href="https://www.reddit.com/submit?url=https%3A%2F%2Fphyslane.unpackit.top%2F&title=physlane%3A%20adaptive%20TDEE%20from%20your%20own%20weight%20and%20intake%20series"
+              href="https://www.reddit.com/submit?url=https%3A%2F%2Fphyslane.unpackit.top%2F&title=How%20many%20calories%20do%20you%20really%20burn%3F%20physlane%20measures%20it%20from%20your%20own%20data"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
