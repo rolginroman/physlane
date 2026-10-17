@@ -22,8 +22,22 @@ export const Route = createRootRoute({
       {
         title: 'physlane · adaptive TDEE for lifters',
       },
+      {
+        name: 'description',
+        content:
+          'Body-recomposition tracker for lifters. Two numbers a day, adaptive TDEE from your own data.',
+      },
+      {
+        name: 'theme-color',
+        content: '#0b0d10',
+      },
     ],
     links: [
+      {
+        rel: 'icon',
+        type: 'image/svg+xml',
+        href: '/favicon.svg',
+      },
       {
         rel: 'preconnect',
         href: 'https://fonts.googleapis.com',

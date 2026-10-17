@@ -7,10 +7,16 @@ import { useStripe, stripeConfigured } from "#/lib/stripe";
 
 export const billingStatus = createServerFn({ method: "GET" }).handler(async () => {
 	const me = await requireUser();
+	const [row] = await useDb()
+		.select({ planCurrentPeriodEnd: schema.user.planCurrentPeriodEnd })
+		.from(schema.user)
+		.where(eq(schema.user.id, me.id))
+		.limit(1);
 	return {
 		plan: me.plan,
 		onGlp1: me.onGlp1,
 		configured: stripeConfigured(),
+		planCurrentPeriodEndIso: row?.planCurrentPeriodEnd instanceof Date ? row.planCurrentPeriodEnd.toISOString() : null,
 	};
 });
 
