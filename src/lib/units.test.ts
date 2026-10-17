@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
 	cmToIn,
+	formatGirth,
+	formatGirthDelta,
+	formatWeightDelta,
 	inToCm,
 	kgToLb,
 	lbToKg,
@@ -50,6 +53,41 @@ describe("weightFromInput / lengthFromInput", () => {
 		expect(weightFromInput("176.37", "imperial")).toBeCloseTo(80.0002, 3);
 		expect(lengthFromInput("180", "metric")).toBeCloseTo(180, 9);
 		expect(lengthFromInput("70.9", "imperial")).toBeCloseTo(180.086, 3);
+	});
+});
+
+describe("formatGirth / formatGirthDelta / formatWeightDelta", () => {
+	it("formatGirth renders one decimal with the right unit", () => {
+		expect(formatGirth(85, "metric")).toBe("85.0 cm");
+		expect(formatGirth(85.09, "metric")).toBe("85.1 cm");
+		expect(formatGirth(85.09, "imperial")).toBe("33.5 in"); // 85.09 / 2.54 = 33.5
+		expect(formatGirth(101.6, "imperial")).toBe("40.0 in");
+	});
+
+	it("formatGirth null/undefined renders a dash", () => {
+		expect(formatGirth(null, "metric")).toBe("—");
+		expect(formatGirth(undefined, "imperial")).toBe("—");
+	});
+
+	it("cm ↔ in parity: same girth formats to equivalent values", () => {
+		const cm = 85.09;
+		const inch = inToCm(cmToIn(cm)); // round-trip
+		expect(formatGirth(cm, "metric")).toBe(`${cm.toFixed(1)} cm`);
+		expect(formatGirth(inch, "imperial")).toBe(`${cmToIn(inch).toFixed(1)} in`);
+	});
+
+	it("girth deltas are signed with units, imperial converts", () => {
+		expect(formatGirthDelta(0.4, "metric")).toBe("+0.4 cm");
+		expect(formatGirthDelta(-1.27, "metric")).toBe("−1.3 cm");
+		expect(formatGirthDelta(1.27, "imperial")).toBe("+0.5 in"); // 1.27 cm = 0.5 in
+		expect(formatGirthDelta(0, "metric")).toBe("0.0 cm");
+		expect(formatGirthDelta(null, "metric")).toBe("");
+	});
+
+	it("weight deltas are signed with units, imperial converts", () => {
+		expect(formatWeightDelta(-0.45, "metric")).toBe("−0.5 kg");
+		expect(formatWeightDelta(0.453592, "imperial")).toBe("+1.0 lb");
+		expect(formatWeightDelta(null, "imperial")).toBe("");
 	});
 });
 
