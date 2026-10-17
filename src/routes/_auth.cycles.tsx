@@ -8,6 +8,7 @@ import {
   type CycleDTO,
 } from '#/server/cycles.fns'
 import { listMeasurements, type MeasurementDTO } from '#/server/measurements.fns'
+import { exportIntakeCsv, exportMeasurementsCsv } from '#/server/export.fns'
 import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
 import type { Sex } from '#/lib/navy-bf'
 import {
@@ -106,6 +107,8 @@ function CyclesPage() {
       <h1 className="m-0 text-xl font-semibold tracking-tight">Cycles</h1>
 
       <ProfileCard heightCm={heightCm} sex={sex} units={units} />
+
+      <ExportCard />
 
       {active ? (
         <ActiveCycleCard cycle={active} units={units} />
@@ -272,6 +275,74 @@ function ProfileCard({
         )}
       </div>
     </form>
+  )
+}
+
+/** Client-side CSV download via Blob — no page change, no Pro gate. */
+function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+/** Two compact export buttons in the Profile block area (G1.5). */
+function ExportCard() {
+  const [pending, setPending] = useState<'measurements' | 'intake' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleExport(kind: 'measurements' | 'intake') {
+    if (pending) return
+    setPending(kind)
+    setError(null)
+    try {
+      const csv = kind === 'measurements' ? await exportMeasurementsCsv() : await exportIntakeCsv()
+      downloadCsv(`${kind}.csv`, csv)
+    } catch {
+      setError('Could not build the export. Try again.')
+    } finally {
+      setPending(null)
+    }
+  }
+
+  return (
+    <div className="card mt-4 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h2 className="m-0 text-sm font-semibold">Export</h2>
+        <p className="m-0 text-xs text-dim">Download your logged data as CSV.</p>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleExport('measurements')}
+            disabled={pending != null}
+            className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
+          >
+            {pending === 'measurements' ? 'Exporting…' : 'Measurements CSV'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleExport('intake')}
+            disabled={pending != null}
+            className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
+          >
+            {pending === 'intake' ? 'Exporting…' : 'Intake CSV'}
+          </button>
+        </div>
+      </div>
+      {error && (
+        <p
+          role="alert"
+          className="mt-2 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose"
+        >
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 

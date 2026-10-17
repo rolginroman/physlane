@@ -20,6 +20,25 @@ export function fmtLength(cm: number | null | undefined, units: UnitSystem): str
 	return units === "metric" ? `${cm.toFixed(1)} cm` : `${cmToIn(cm).toFixed(1)} in`;
 }
 
+/** Girth display, e.g. '85.0 cm' / '33.5 in'. Same contract as fmtLength. */
+export const formatGirth = fmtLength;
+
+/** Signed girth delta for history rows, e.g. '+0.4 cm' / '−1.2 in'. */
+export function formatGirthDelta(cm: number | null | undefined, units: UnitSystem): string {
+	if (cm == null) return "";
+	const v = units === "metric" ? cm : cmToIn(cm);
+	const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+	return `${sign}${Math.abs(v).toFixed(1)} ${units === "metric" ? "cm" : "in"}`;
+}
+
+/** Signed weight delta for history rows, e.g. '+0.4 kg' / '−1.2 lb'. */
+export function formatWeightDelta(kg: number | null | undefined, units: UnitSystem): string {
+	if (kg == null) return "";
+	const v = units === "metric" ? kg : kgToLb(kg);
+	const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+	return `${sign}${Math.abs(v).toFixed(1)} ${units === "metric" ? "kg" : "lb"}`;
+}
+
 export function weightToInput(kg: number | null | undefined, units: UnitSystem): string {
 	if (kg == null) return "";
 	return units === "metric" ? kg.toFixed(1) : kgToLb(kg).toFixed(1);

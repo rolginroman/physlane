@@ -13,12 +13,14 @@ import {
 } from 'recharts'
 import type { MeasurementDTO } from '#/server/measurements.fns'
 import type { CycleDTO } from '#/server/cycles.fns'
-import { fmtWeight, kgToLb, type UnitSystem } from '#/lib/units'
+import { FIELD_LABELS, cmToIn, formatGirth, fmtWeight, kgToLb, type MeasurementField, type UnitSystem } from '#/lib/units'
 
 const DAY_MS = 86_400_000
 const WEEK_MS = 7 * DAY_MS
 
 const WEIGHT_COLOR = '#60a5fa'
+const WAIST_COLOR = '#fbbf24'
+const GIRTH_COLOR = '#a78bfa'
 const TARGET_COLOR = '#5b6475'
 const GRID_COLOR = '#232936'
 const AXIS_TICK_COLOR = '#8b94a7'
@@ -32,6 +34,32 @@ const RANGES: { id: RangeId; label: string; days: number | null; aria: string }[
   { id: 'all', label: 'All', days: null, aria: 'all time' },
 ]
 
+/** Chartable sites. Weight keeps its special target projection; girths have none. */
+type SiteId =
+  | 'weight'
+  | 'waist'
+  | 'neck'
+  | 'chest'
+  | 'hips'
+  | 'armL'
+  | 'armR'
+  | 'thighL'
+  | 'thighR'
+  | 'calf'
+
+const SITES: { id: SiteId; field: MeasurementField; color: string }[] = [
+  { id: 'weight', field: 'weightKg', color: WEIGHT_COLOR },
+  { id: 'waist', field: 'waistCm', color: WAIST_COLOR },
+  { id: 'neck', field: 'neckCm', color: GIRTH_COLOR },
+  { id: 'chest', field: 'chestCm', color: GIRTH_COLOR },
+  { id: 'hips', field: 'hipsCm', color: GIRTH_COLOR },
+  { id: 'armL', field: 'armLeftCm', color: GIRTH_COLOR },
+  { id: 'armR', field: 'armRightCm', color: GIRTH_COLOR },
+  { id: 'thighL', field: 'thighLeftCm', color: GIRTH_COLOR },
+  { id: 'thighR', field: 'thighRightCm', color: GIRTH_COLOR },
+  { id: 'calf', field: 'calfCm', color: GIRTH_COLOR },
+]
+
 /** Deterministic (UTC, fixed locale) so SSR and client render the same string. */
 const dayMonth = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
@@ -40,17 +68,42 @@ const dayMonth = new Intl.DateTimeFormat('en-GB', {
 })
 const fmtDay = (ms: number) => dayMonth.format(new Date(ms))
 
-type Row = { t: number; kg: number | null; target: number | null }
+type Row = {
+  t: number
+  weight: number | null // weight series (kg)
+  waist: number | null // waist series when shown alongside weight (cm)
+  girth: number | null // selected girth series (cm)
+  target: number | null // weight target projection (kg)
+}
+
+type SeriesKey = 'weight' | 'waist' | 'girth'
+type Series = { key: SeriesKey; label: string; color: string; kind: 'weight' | 'girth' }
 
 type Props = {
   entries: MeasurementDTO[] // oldest first
   cycle: CycleDTO | null
   units: UnitSystem
   plan: 'free' | 'pro'
+  /** Navy body-fat estimate for the latest measurement, precomputed by the page. Null → no chip. */
+  bodyFatPercent?: number | null
 }
 
-export default function TrendChart({ entries, cycle, units, plan }: Props) {
+function domainOf(vals: number[]): [number, number] {
+  if (vals.length === 0) return [0, 1]
+  let min = Math.min(...vals)
+  let max = Math.max(...vals)
+  if (max - min < 0.5) {
+    const mid = (min + max) / 2
+    min = mid - 1
+    max = mid + 1
+  }
+  const pad = (max - min) * 0.12
+  return [min - pad, max + pad]
+}
+
+export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent }: Props) {
   const [rangeId, setRangeId] = useState<RangeId>('30d')
+  const [siteId, setSiteId] = useState<SiteId>('weight')
   const [mounted, setMounted] = useState(false)
   const [animate, setAnimate] = useState(true)
 
@@ -61,47 +114,112 @@ export default function TrendChart({ entries, cycle, units, plan }: Props) {
 
   const range = RANGES.find((r) => r.id === rangeId) ?? RANGES[1]
 
-  const { rows, showTarget, targetAt, weightPts } = useMemo(() => {
-    const weights = entries
-      .filter((e) => e.weightKg != null)
-      .map((e) => ({ t: new Date(e.takenAt).getTime(), kg: e.weightKg as number }))
+  // Logged-point counts per site (all time) — a site needs ≥2 points to chart.
+  const siteCounts = useMemo(() => {
+    const counts = new Map<MeasurementField, number>()
+    for (const site of SITES) {
+      counts.set(site.field, entries.filter((e) => e[site.field] != null).length)
+    }
+    return counts
+  }, [entries])
 
+  const enabled = useMemo(() => {
+    const map = new Map<SiteId, boolean>()
+    for (const site of SITES) map.set(site.id, (siteCounts.get(site.field) ?? 0) >= 2)
+    return map
+  }, [siteCounts])
+
+  // Selection can only move to enabled pills; fall back off a disabled default.
+  const site = useMemo(() => {
+    if (enabled.get(siteId)) return siteId
+    return SITES.find((s) => enabled.get(s.id))?.id ?? 'weight'
+  }, [siteId, enabled])
+
+  const siteDef = SITES.find((s) => s.id === site) ?? SITES[0]
+  const isWeight = site === 'weight'
+  // Weight view keeps the dual render: weight plus waist once waist is chartable.
+  const dualWaist = isWeight && (enabled.get('waist') ?? false)
+
+  const { rows, showTarget, targetAt, series } = useMemo(() => {
     const now = Date.now()
     const cutoff = range.days != null ? now - range.days * DAY_MS : -Infinity
-    const inRange = weights.filter((p) => p.t >= cutoff)
+    const inRange = entries.filter((e) => new Date(e.takenAt).getTime() >= cutoff)
 
-    // Target projection: y(t) = start + rate * (t - cycleStart) / week.
-    const startKg = cycle?.startWeightKg
-    const rate = cycle?.targetRateKgPerWeek
-    const cycleStart =
-      cycle?.startDate != null ? new Date(cycle.startDate).getTime() : null
-    const canProject =
-      startKg != null && rate != null && cycleStart != null && cycleStart <= now
-    const targetAt = canProject
-      ? (t: number) => (startKg as number) + ((rate as number) * (t - (cycleStart as number))) / WEEK_MS
-      : null
+    const series: Series[] = isWeight
+      ? [{ key: 'weight', label: 'Weight', color: WEIGHT_COLOR, kind: 'weight' }]
+      : [{ key: 'girth', label: FIELD_LABELS[siteDef.field], color: siteDef.color, kind: 'girth' }]
 
-    const dataEnd = Math.max(now, ...inRange.map((p) => p.t))
-    const dataStart = Math.min(now, ...inRange.map((p) => p.t))
-    const t0 = canProject ? Math.max(cycleStart as number, cutoff, dataStart) : null
-    const t1 = canProject ? dataEnd : null
-    const showTarget = canProject && t0 != null && t1 != null && t0 < t1
+    let rows: Row[] = []
+    let showTarget = false
+    let targetAt: ((t: number) => number) | null = null
 
-    const rows: Row[] = inRange.map((p) => ({ t: p.t, kg: p.kg, target: null }))
-    if (showTarget && t0 != null && t1 != null && targetAt) {
-      rows.push({ t: t0, kg: null, target: targetAt(t0) })
-      rows.push({ t: t1, kg: null, target: targetAt(t1) })
-      rows.sort((a, b) => a.t - b.t)
+    if (isWeight) {
+      // Target projection: y(t) = start + rate * (t - cycleStart) / week.
+      const startKg = cycle?.startWeightKg
+      const rate = cycle?.targetRateKgPerWeek
+      const cycleStart =
+        cycle?.startDate != null ? new Date(cycle.startDate).getTime() : null
+      const canProject =
+        startKg != null && rate != null && cycleStart != null && cycleStart <= now
+      targetAt = canProject
+        ? (t: number) => (startKg as number) + ((rate as number) * (t - (cycleStart as number))) / WEEK_MS
+        : null
+
+      rows = inRange
+        .filter((e) => e.weightKg != null || e.waistCm != null)
+        .map((e) => ({
+          t: new Date(e.takenAt).getTime(),
+          weight: e.weightKg,
+          waist: dualWaist ? e.waistCm : null,
+          girth: null,
+          target: null,
+        }))
+
+      if (dualWaist) {
+        series.push({ key: 'waist', label: 'Waist', color: WAIST_COLOR, kind: 'girth' })
+      }
+
+      if (targetAt) {
+        const dataEnd = Math.max(now, ...rows.map((r) => r.t))
+        const dataStart = Math.min(now, ...rows.map((r) => r.t))
+        const t0 = Math.max(cycleStart as number, cutoff, dataStart)
+        if (t0 < dataEnd) {
+          showTarget = true
+          rows.push({ t: t0, weight: null, waist: null, girth: null, target: targetAt(t0) })
+          rows.push({ t: dataEnd, weight: null, waist: null, girth: null, target: targetAt(dataEnd) })
+          rows.sort((a, b) => a.t - b.t)
+        }
+      }
+    } else {
+      rows = inRange
+        .filter((e) => e[siteDef.field] != null)
+        .map((e) => ({
+          t: new Date(e.takenAt).getTime(),
+          weight: null,
+          waist: null,
+          girth: e[siteDef.field] as number,
+          target: null,
+        }))
     }
 
-    return { rows, showTarget, targetAt, weightPts: inRange }
-  }, [entries, cycle, range.days])
+    return { rows, showTarget, targetAt, series }
+  }, [entries, cycle, range.days, isWeight, dualWaist, siteDef])
 
-  const kgValues = rows.filter((r) => r.kg != null).map((r) => r.kg as number)
+  const primaryVals = isWeight
+    ? rows.filter((r) => r.weight != null).map((r) => r.weight as number)
+    : rows.filter((r) => r.girth != null).map((r) => r.girth as number)
+  const waistVals = rows.filter((r) => r.waist != null).map((r) => r.waist as number)
+  const targetVals = rows.filter((r) => r.target != null).map((r) => r.target as number)
 
   // Chart geometry (stable across renders; explicit domains keep dots unclipped).
-  const { xDomain, yDomain } = useMemo(() => {
-    if (rows.length === 0) return { xDomain: [0, 1] as [number, number], yDomain: [0, 1] as [number, number] }
+  const { xDomain, yDomain, waistDomain } = useMemo(() => {
+    if (rows.length === 0) {
+      return {
+        xDomain: [0, 1] as [number, number],
+        yDomain: [0, 1] as [number, number],
+        waistDomain: [0, 1] as [number, number],
+      }
+    }
     const ts = rows.map((r) => r.t)
     let tMin = Math.min(...ts)
     let tMax = Math.max(...ts)
@@ -111,38 +229,71 @@ export default function TrendChart({ entries, cycle, units, plan }: Props) {
       tMax = mid + DAY_MS / 2
     }
     const xPad = (tMax - tMin) * 0.03
-
-    const vals = rows.filter((r) => r.target != null).map((r) => r.target as number).concat(kgValues)
-    let yMin = Math.min(...vals)
-    let yMax = Math.max(...vals)
-    if (yMax - yMin < 0.5) {
-      const mid = (yMin + yMax) / 2
-      yMin = mid - 1
-      yMax = mid + 1
-    }
-    const yPad = (yMax - yMin) * 0.12
     return {
       xDomain: [tMin - xPad, tMax + xPad] as [number, number],
-      yDomain: [yMin - yPad, yMax + yPad] as [number, number],
+      yDomain: domainOf(primaryVals.concat(isWeight ? targetVals : [])),
+      waistDomain: dualWaist ? domainOf(waistVals) : ([0, 1] as [number, number]),
     }
-  }, [rows, kgValues])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, isWeight, dualWaist])
+
+  const enough = primaryVals.length >= 2
 
   const summary = useMemo(() => {
-    if (kgValues.length < 2) return `Weight trend, ${range.aria}`
-    return `Weight trend, ${range.aria}, ${fmtWeight(Math.min(...kgValues), units)} to ${fmtWeight(Math.max(...kgValues), units)}`
-  }, [kgValues, range.aria, units])
+    const label = FIELD_LABELS[siteDef.field]
+    if (!enough) return `${label} trend, ${range.aria}`
+    const fmt = isWeight ? fmtWeight : formatGirth
+    return `${label} trend, ${range.aria}, ${fmt(Math.min(...primaryVals), units)} to ${fmt(
+      Math.max(...primaryVals),
+      units,
+    )}${dualWaist && waistVals.length >= 2 ? `, waist ${formatGirth(Math.min(...waistVals), units)} to ${formatGirth(Math.max(...waistVals), units)}` : ''}`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enough, primaryVals, waistVals, range.aria, units, isWeight, dualWaist, siteDef])
 
-  const yTick = (v: number) => (units === 'metric' ? v : kgToLb(v)).toFixed(1)
+  const weightTick = (v: number) => (units === 'metric' ? v : kgToLb(v)).toFixed(1)
+  const girthTick = (v: number) => (units === 'metric' ? v : cmToIn(v)).toFixed(1)
+  const tickStyle = { fill: AXIS_TICK_COLOR, fontSize: 11, className: 'num' }
 
   return (
     <div className="card mt-4 p-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h2 className="m-0 text-sm font-semibold">Trend</h2>
+        {bodyFatPercent != null && (
+          <>
+            <span className="num inline-flex items-center rounded-full border border-line bg-surface2 px-2 py-0.5 text-xs text-dim">
+              Body fat ~{bodyFatPercent.toFixed(1)}% (estimate)
+            </span>
+            <details className="text-xs text-dim">
+              <summary className="inline-flex min-h-9 cursor-pointer select-none items-center hover:text-text">
+                How is this estimated?
+              </summary>
+              <div className="mt-1 max-w-2xl rounded-lg border border-line bg-surface2 px-3 py-2">
+                <p className="m-0">
+                  Estimated with the US Navy circumference method. It turns your height and the
+                  latest neck, waist and hips measurements into body density, then body fat percent
+                  with the Siri equation: 495 / density − 450. All measurements in centimetres.
+                </p>
+                <p className="m-0 mt-1.5">
+                  Density for men: 1.0324 − 0.19077 × log10(waist − neck) + 0.15456 × log10(height).
+                </p>
+                <p className="m-0 mt-1">
+                  Density for women: 1.29579 − 0.35004 × log10(waist + hips − neck) + 0.221 ×
+                  log10(height).
+                </p>
+                <p className="m-0 mt-1.5 text-faint">
+                  A rough estimate from tape measurements, not a body-composition scan.
+                </p>
+              </div>
+            </details>
+          </>
+        )}
         <p className="m-0 flex items-center gap-3 text-xs text-dim">
-          <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" className="inline-block h-0.5 w-4 rounded-full" style={{ background: WEIGHT_COLOR }} />
-            Weight
-          </span>
+          {series.map((s) => (
+            <span key={s.key} className="inline-flex items-center gap-1.5">
+              <span aria-hidden="true" className="inline-block h-0.5 w-4 rounded-full" style={{ background: s.color }} />
+              {s.label}
+            </span>
+          ))}
           {showTarget && (
             <span className="inline-flex items-center gap-1.5">
               <span
@@ -154,27 +305,60 @@ export default function TrendChart({ entries, cycle, units, plan }: Props) {
             </span>
           )}
         </p>
-        <div
-          role="group"
-          aria-label="Trend range"
-          className="ml-auto inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1"
-        >
-          {RANGES.map((r) => {
-            const active = r.id === rangeId
-            return (
-              <button
-                key={r.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setRangeId(r.id)}
-                className={`relative inline-flex h-9 items-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
-                  active ? 'bg-surface2 text-text' : 'text-dim hover:text-text'
-                }`}
-              >
-                {r.label}
-              </button>
-            )
-          })}
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <div
+            role="group"
+            aria-label="Chart site"
+            className="inline-flex flex-wrap items-center gap-1 rounded-full border border-line bg-surface p-1"
+          >
+            {SITES.map((s) => {
+              const active = s.id === site
+              const isEnabled = enabled.get(s.id) ?? false
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-pressed={active}
+                  disabled={!isEnabled}
+                  title={
+                    isEnabled ? undefined : `Needs at least two logged ${FIELD_LABELS[s.field].toLowerCase()} entries`
+                  }
+                  onClick={() => setSiteId(s.id)}
+                  className={`relative inline-flex h-7 items-center rounded-full px-2 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
+                    active
+                      ? 'bg-surface2 text-text'
+                      : isEnabled
+                        ? 'text-dim hover:text-text'
+                        : 'cursor-not-allowed text-faint opacity-50'
+                  }`}
+                >
+                  {FIELD_LABELS[s.field]}
+                </button>
+              )
+            })}
+          </div>
+          <div
+            role="group"
+            aria-label="Trend range"
+            className="inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1"
+          >
+            {RANGES.map((r) => {
+              const active = r.id === rangeId
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setRangeId(r.id)}
+                  className={`relative inline-flex h-9 items-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
+                    active ? 'bg-surface2 text-text' : 'text-dim hover:text-text'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -198,9 +382,13 @@ export default function TrendChart({ entries, cycle, units, plan }: Props) {
       )}
 
       <div className="mt-3" role="img" aria-label={summary} style={{ height: 260 }}>
-        {!mounted ? null : kgValues.length < 2 ? (
+        {!mounted || !enough ? (
           <div className="flex h-full items-center justify-center px-4 text-center">
-            <p className="m-0 text-sm text-dim">Not enough data yet. Log weigh-ins to build your trend.</p>
+            <p className="m-0 text-sm text-dim">
+              {isWeight
+                ? 'Not enough data in this range. Log weigh-ins to build your trend.'
+                : `Not enough ${FIELD_LABELS[siteDef.field].toLowerCase()} entries in this range yet.`}
+            </p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
@@ -211,60 +399,135 @@ export default function TrendChart({ entries, cycle, units, plan }: Props) {
                 type="number"
                 domain={xDomain}
                 tickFormatter={fmtDay}
-                tick={{ fill: AXIS_TICK_COLOR, fontSize: 11 }}
+                tick={tickStyle}
                 axisLine={{ stroke: GRID_COLOR }}
                 tickLine={false}
                 minTickGap={28}
               />
-              <YAxis
-                domain={yDomain}
-                tickFormatter={yTick}
-                tick={{ fill: AXIS_TICK_COLOR, fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                width={44}
-              />
+              {isWeight ? (
+                <>
+                  <YAxis
+                    yAxisId="w"
+                    domain={yDomain}
+                    tickFormatter={weightTick}
+                    tick={tickStyle}
+                    axisLine={false}
+                    tickLine={false}
+                    width={44}
+                  />
+                  {dualWaist && (
+                    <YAxis
+                      yAxisId="g"
+                      orientation="right"
+                      domain={waistDomain}
+                      tickFormatter={girthTick}
+                      tick={tickStyle}
+                      axisLine={false}
+                      tickLine={false}
+                      width={40}
+                    />
+                  )}
+                </>
+              ) : (
+                <YAxis
+                  yAxisId="g"
+                  domain={yDomain}
+                  tickFormatter={girthTick}
+                  tick={tickStyle}
+                  axisLine={false}
+                  tickLine={false}
+                  width={44}
+                />
+              )}
               <Tooltip
                 cursor={{ stroke: '#2e3646', strokeDasharray: '3 3' }}
                 isAnimationActive={false}
                 content={(tip) => (
-                  <TrendTip tip={tip} units={units} targetAt={targetAt} weightPts={weightPts} />
+                  <TrendTip tip={tip} units={units} series={series} targetAt={targetAt} rows={rows} />
                 )}
               />
-              <Area
-                dataKey="kg"
-                stroke="none"
-                fill={WEIGHT_COLOR}
-                fillOpacity={0.08}
-                isAnimationActive={false}
-                dot={false}
-                activeDot={false}
-                connectNulls
-                legendType="none"
-              />
-              <Line
-                dataKey="kg"
-                stroke={WEIGHT_COLOR}
-                strokeWidth={2}
-                dot={{ r: 2, fill: WEIGHT_COLOR, strokeWidth: 0 }}
-                activeDot={{ r: 4, fill: WEIGHT_COLOR, strokeWidth: 0 }}
-                connectNulls
-                isAnimationActive={animate}
-                animationDuration={200}
-                legendType="none"
-              />
-              {showTarget && (
-                <Line
-                  dataKey="target"
-                  stroke={TARGET_COLOR}
-                  strokeWidth={1.5}
-                  strokeDasharray="6 4"
-                  dot={false}
-                  activeDot={false}
-                  connectNulls
-                  isAnimationActive={false}
-                  legendType="none"
-                />
+              {isWeight ? (
+                <>
+                  <Area
+                    yAxisId="w"
+                    dataKey="weight"
+                    stroke="none"
+                    fill={WEIGHT_COLOR}
+                    fillOpacity={0.08}
+                    isAnimationActive={false}
+                    dot={false}
+                    activeDot={false}
+                    connectNulls
+                    legendType="none"
+                  />
+                  <Line
+                    yAxisId="w"
+                    dataKey="weight"
+                    stroke={WEIGHT_COLOR}
+                    strokeWidth={2}
+                    dot={{ r: 2, fill: WEIGHT_COLOR, strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: WEIGHT_COLOR, strokeWidth: 0 }}
+                    connectNulls
+                    isAnimationActive={animate}
+                    animationDuration={200}
+                    legendType="none"
+                  />
+                  {dualWaist && (
+                    <Line
+                      yAxisId="g"
+                      dataKey="waist"
+                      stroke={WAIST_COLOR}
+                      strokeWidth={1.5}
+                      dot={{ r: 2, fill: WAIST_COLOR, strokeWidth: 0 }}
+                      activeDot={{ r: 4, fill: WAIST_COLOR, strokeWidth: 0 }}
+                      connectNulls
+                      isAnimationActive={animate}
+                      animationDuration={200}
+                      legendType="none"
+                    />
+                  )}
+                  {showTarget && (
+                    <Line
+                      yAxisId="w"
+                      dataKey="target"
+                      stroke={TARGET_COLOR}
+                      strokeWidth={1.5}
+                      strokeDasharray="6 4"
+                      dot={false}
+                      activeDot={false}
+                      connectNulls
+                      isAnimationActive={false}
+                      legendType="none"
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <Area
+                    yAxisId="g"
+                    dataKey="girth"
+                    stroke="none"
+                    fill={siteDef.color}
+                    fillOpacity={0.08}
+                    isAnimationActive={false}
+                    dot={false}
+                    activeDot={false}
+                    connectNulls
+                    legendType="none"
+                  />
+                  <Line
+                    yAxisId="g"
+                    dataKey="girth"
+                    stroke={siteDef.color}
+                    strokeWidth={2}
+                    dot={{ r: 2, fill: siteDef.color, strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: siteDef.color, strokeWidth: 0 }}
+                    connectNulls
+                    isAnimationActive={animate}
+                    animationDuration={200}
+                    legendType="none"
+                  />
+                </>
               )}
             </ComposedChart>
           </ResponsiveContainer>
@@ -277,36 +540,51 @@ export default function TrendChart({ entries, cycle, units, plan }: Props) {
 function TrendTip({
   tip,
   units,
+  series,
   targetAt,
-  weightPts,
+  rows,
 }: {
   tip: TooltipContentProps
   units: UnitSystem
+  series: Series[]
   targetAt: ((t: number) => number) | null
-  weightPts: { t: number; kg: number }[]
+  rows: Row[]
 }) {
-  if (!tip.active || weightPts.length === 0) return null
-  const activeRow = tip.payload?.find((p) => p.payload?.kg != null)?.payload as
-    | { t: number; kg: number }
-    | undefined
+  if (!tip.active) return null
+  const label = tip.label as number
+  let row = tip.payload?.[0]?.payload as Row | undefined
   // Hover can land on a target-only row (e.g. beyond the last weigh-in);
-  // show the nearest weigh-in instead of nothing.
-  const point =
-    activeRow ??
-    (weightPts.length === 1
-      ? weightPts[0]
-      : weightPts.reduce((best, p) =>
-          Math.abs(p.t - (tip.label as number)) < Math.abs(best.t - (tip.label as number)) ? p : best,
-        ))
-  if (!point) return null
-  const target = targetAt?.(point.t)
+  // show the nearest row with real values instead of nothing.
+  if (!row || (row.weight == null && row.waist == null && row.girth == null)) {
+    const candidates = rows.filter((r) => r.weight != null || r.waist != null || r.girth != null)
+    if (candidates.length === 0) return null
+    row = candidates.reduce((best, r) => (Math.abs(r.t - label) < Math.abs(best.t - label) ? r : best))
+  }
+  const shown = series.filter((s) => row[s.key] != null)
+  if (shown.length === 0) return null
+  const target = targetAt?.(row.t)
   return (
     <div className="rounded-lg border border-line bg-surface2 px-3 py-2 text-xs">
-      <p className="m-0 text-dim">{fmtDay(point.t)}</p>
-      <p className="num m-0 mt-1">{fmtWeight(point.kg, units)}</p>
+      <p className="m-0 text-dim">{fmtDay(row.t)}</p>
+      {shown.map((s) => (
+        <p key={s.key} className="num m-0 mt-1 flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="inline-block h-0.5 w-3 rounded-full"
+            style={{ background: s.color }}
+          />
+          <span className="text-dim">{s.label}</span>
+          {s.kind === 'weight' ? fmtWeight(row[s.key] as number, units) : formatGirth(row[s.key] as number, units)}
+        </p>
+      ))}
       {targetAt && target != null && (
-        <p className="num m-0 mt-0.5 text-dim">
-          <span className="mr-1.5 inline-block w-3 border-t-2 border-dashed align-middle" style={{ borderColor: TARGET_COLOR }} aria-hidden="true" />
+        <p className="num m-0 mt-0.5 flex items-center gap-1.5 text-dim">
+          <span
+            className="inline-block w-3 border-t-2 border-dashed"
+            style={{ borderColor: TARGET_COLOR }}
+            aria-hidden="true"
+          />
+          <span>Target</span>
           {fmtWeight(target, units)}
         </p>
       )}

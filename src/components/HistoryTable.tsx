@@ -5,6 +5,8 @@ import {
   FIELD_LABELS,
   cmToIn,
   fmtLength,
+  formatGirthDelta,
+  formatWeightDelta,
   kgToLb,
   type MeasurementField,
   type UnitSystem,
@@ -44,6 +46,26 @@ type Props = {
   entries: MeasurementDTO[] // newest first
   units: UnitSystem
   onEdit: (entry: MeasurementDTO) => void
+}
+
+/** Dim signed delta vs the previous (older) row. Empty string when not computable. */
+function deltaVs(
+  entry: MeasurementDTO,
+  prev: MeasurementDTO | undefined,
+  field: MeasurementField,
+  units: UnitSystem,
+): string {
+  if (!prev) return ''
+  const cur = entry[field]
+  const old = prev[field]
+  if (cur == null || old == null) return ''
+  const d = (cur as number) - (old as number)
+  return field === 'weightKg' ? formatWeightDelta(d, units) : formatGirthDelta(d, units)
+}
+
+function Delta({ value }: { value: string }) {
+  if (!value) return null
+  return <span className="ml-1.5 whitespace-nowrap text-[0.6875rem] text-dim">{value}</span>
 }
 
 export default function HistoryTable({ entries, units, onEdit }: Props) {
@@ -96,7 +118,8 @@ export default function HistoryTable({ entries, units, onEdit }: Props) {
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) => {
+          {entries.map((entry, index) => {
+            const prev = entries[index + 1]
             if (confirming === entry.id) {
               return (
                 <tr key={entry.id} className="border-b border-line bg-rose/5">
@@ -143,6 +166,7 @@ export default function HistoryTable({ entries, units, onEdit }: Props) {
                         ? entry.weightKg.toFixed(1)
                         : kgToLb(entry.weightKg).toFixed(1)
                       : '—'}
+                    <Delta value={deltaVs(entry, prev, 'weightKg', units)} />
                   </td>
                   <td className="num h-10 whitespace-nowrap px-3">
                     {entry.waistCm != null
@@ -150,6 +174,7 @@ export default function HistoryTable({ entries, units, onEdit }: Props) {
                         ? entry.waistCm.toFixed(1)
                         : cmToIn(entry.waistCm).toFixed(1)
                       : '—'}
+                    <Delta value={deltaVs(entry, prev, 'waistCm', units)} />
                   </td>
                   <td className="h-10 whitespace-nowrap px-2 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -203,6 +228,7 @@ export default function HistoryTable({ entries, units, onEdit }: Props) {
                             <dt className="text-xs text-dim">{FIELD_LABELS[f]}</dt>
                             <dd className="num m-0 text-sm">
                               {fmtLength(entry[f] as number, units)}
+                              <Delta value={deltaVs(entry, prev, f, units)} />
                             </dd>
                           </div>
                         ))}

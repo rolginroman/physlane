@@ -8,6 +8,7 @@ import {
 } from '#/server/measurements.fns'
 import { getIntakeStreak, tdeeStatus } from '#/server/intake.fns'
 import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
+import { navyBodyFat } from '#/lib/navy-bf'
 import MeasurementForm from '#/components/MeasurementForm'
 import HistoryTable from '#/components/HistoryTable'
 import TrendChart from '#/components/TrendChart'
@@ -30,6 +31,8 @@ export const Route = createFileRoute('/_auth/dashboard')({
       getIntakeStreak(),
     ])
     const units: UnitSystem = viewer?.unitSystem ?? 'metric'
+    const heightCm = viewer?.heightCm ?? null
+    const sex = viewer?.sex ?? null
     return {
       entries,
       latest,
@@ -39,6 +42,8 @@ export const Route = createFileRoute('/_auth/dashboard')({
       streak: streak.streak,
       plan: viewer?.plan ?? 'free',
       onGlp1: viewer?.onGlp1 ?? false,
+      heightCm,
+      sex,
     }
   },
   component: DashboardPage,
@@ -139,7 +144,8 @@ function UnitToggle({ units }: { units: UnitSystem }) {
 }
 
 function DashboardPage() {
-  const { entries, latest, cycle, units, tdee, streak, plan, onGlp1 } = Route.useLoaderData()
+  const { entries, latest, cycle, units, tdee, streak, plan, onGlp1, heightCm, sex } =
+    Route.useLoaderData()
   const [editing, setEditing] = useState<MeasurementDTO | null>(null)
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -147,6 +153,22 @@ function DashboardPage() {
   const latestWeight = lastWhere(entries, (e) => e.weightKg != null)
   const latestWaist = lastWhere(entries, (e) => e.waistCm != null)
   const delta = delta7dKg(entries)
+
+  // Navy estimate from the LATEST entry only: no cherry-picking older sites.
+  // navyBodyFat returns null for missing sex/height/sites — chip never renders then.
+  const bodyFat = useMemo(
+    () =>
+      latest && heightCm != null
+        ? navyBodyFat({
+            sex,
+            heightCm,
+            neckCm: latest.neckCm,
+            waistCm: latest.waistCm,
+            hipsCm: latest.hipsCm,
+          })
+        : null,
+    [latest, heightCm, sex],
+  )
 
   const handleEdit = useCallback((entry: MeasurementDTO) => {
     setEditing(entry)
@@ -212,7 +234,13 @@ function DashboardPage() {
         units={units}
       />
 
-      <TrendChart entries={entries} cycle={cycle} units={units} plan={plan} />
+      <TrendChart
+        entries={entries}
+        cycle={cycle}
+        units={units}
+        plan={plan}
+        bodyFatPercent={bodyFat?.bfPercent ?? null}
+      />
 
       <div ref={formRef} className="mt-4 scroll-mt-20">
         <MeasurementForm
