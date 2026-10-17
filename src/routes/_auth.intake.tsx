@@ -243,7 +243,7 @@ function IntakePage() {
           <h2 className="m-0 text-base font-semibold">Last 7 days</h2>
           {stats.pct != null && <p className="num m-0 text-sm text-dim">{stats.pct}% adherence</p>}
         </div>
-        <div className="mt-2 grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-line bg-line">
+        <div className="mt-2 grid grid-cols-7 gap-px rounded-xl border border-line bg-line">
           {strip.map((d) => {
             const isSelected = d.date === selected
             const label = `${weekday(d.date, 'long')} ${Number(d.date.slice(8, 10))}: ${
@@ -256,7 +256,7 @@ function IntakePage() {
                 onClick={() => setSelected(d.date)}
                 aria-pressed={isSelected}
                 aria-label={label}
-                className={`flex min-h-[4.25rem] flex-col items-center justify-center gap-0.5 bg-surface px-0.5 py-2 text-center transition-colors duration-150 ease-out ${
+                className={`flex min-h-[4.25rem] flex-col items-center justify-center gap-0.5 bg-surface px-0.5 py-2 text-center transition-colors duration-150 ease-out first:rounded-l-[11px] last:rounded-r-[11px] ${
                   d.isToday ? 'bg-surface2' : ''
                 } ${isSelected ? 'ring-1 ring-inset ring-accent' : 'hover:bg-surface2'}`}
               >
