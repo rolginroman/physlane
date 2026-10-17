@@ -4,6 +4,7 @@ import { useDb, schema } from "#/db";
 import { requireUser } from "./auth.fns";
 import { computeTdee, type TdeeEntry, type WeeklyEstimate } from "#/lib/tdee";
 import { isValidIntakeDate, validateIntake } from "#/lib/intake-logic";
+import { intakeStreak } from "#/lib/adherence";
 
 const FREE_HISTORY_DAYS = 90;
 
@@ -141,4 +142,17 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(async () => 
 		pairs: result.pairs,
 		weeklyEstimates: null,
 	};
+});
+
+/**
+ * Consecutive-day intake logging streak (F17), ending today. An unlogged
+ * today does not break it: the grace lives in the pure fn, not here.
+ */
+export const getIntakeStreak = createServerFn({ method: "GET" }).handler(async () => {
+	const me = await requireUser();
+	const rows = await useDb()
+		.select({ date: schema.dailyIntake.date })
+		.from(schema.dailyIntake)
+		.where(eq(schema.dailyIntake.userId, me.id));
+	return { streak: intakeStreak(rows.map((r) => r.date), toDate(new Date())) };
 });

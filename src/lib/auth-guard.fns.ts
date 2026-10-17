@@ -14,7 +14,7 @@ export const getViewer = createServerFn({ method: 'GET' }).handler(async () => {
 })
 
 export const saveSettings = createServerFn({ method: 'POST' })
-  .validator((d: { unitSystem?: 'metric' | 'imperial' }) => d)
+  .validator((d: { unitSystem?: 'metric' | 'imperial'; onGlp1?: boolean }) => d)
   .handler(async ({ data }) => {
     return updateSettings({ data })
   })

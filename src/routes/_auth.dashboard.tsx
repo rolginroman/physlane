@@ -6,10 +6,12 @@ import {
   listMeasurements,
   type MeasurementDTO,
 } from '#/server/measurements.fns'
+import { getIntakeStreak, tdeeStatus } from '#/server/intake.fns'
 import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
 import MeasurementForm from '#/components/MeasurementForm'
 import HistoryTable from '#/components/HistoryTable'
 import TrendChart from '#/components/TrendChart'
+import TdeePanel from '#/components/TdeePanel'
 import { fmtLength, fmtWeight, kgToLb, type UnitSystem } from '#/lib/units'
 
 export const Route = createFileRoute('/_auth/dashboard')({
@@ -19,14 +21,25 @@ export const Route = createFileRoute('/_auth/dashboard')({
     if (!any) throw redirect({ to: '/onboarding' })
   },
   loader: async () => {
-    const [entries, latest, cycle, viewer] = await Promise.all([
+    const [entries, latest, cycle, viewer, tdee, streak] = await Promise.all([
       listMeasurements(),
       latestMeasurement(),
       getActiveCycle(),
       getViewer(),
+      tdeeStatus(),
+      getIntakeStreak(),
     ])
     const units: UnitSystem = viewer?.unitSystem ?? 'metric'
-    return { entries, latest, cycle, units }
+    return {
+      entries,
+      latest,
+      cycle,
+      units,
+      tdee,
+      streak: streak.streak,
+      plan: viewer?.plan ?? 'free',
+      onGlp1: viewer?.onGlp1 ?? false,
+    }
   },
   component: DashboardPage,
 })
@@ -126,7 +139,7 @@ function UnitToggle({ units }: { units: UnitSystem }) {
 }
 
 function DashboardPage() {
-  const { entries, latest, cycle, units } = Route.useLoaderData()
+  const { entries, latest, cycle, units, tdee, streak, plan, onGlp1 } = Route.useLoaderData()
   const [editing, setEditing] = useState<MeasurementDTO | null>(null)
   const formRef = useRef<HTMLDivElement>(null)
 
@@ -188,6 +201,15 @@ function DashboardPage() {
         <Stat label="Latest waist" value={fmtLength(latestWaist?.waistCm ?? null, units)} />
         <Stat label="Measurements" value={String(entries.length)} />
       </div>
+
+      <TdeePanel
+        status={tdee}
+        streak={streak}
+        plan={plan}
+        onGlp1={onGlp1}
+        targetKcalPerDay={cycle?.kcalTargetPerDay ?? null}
+        entries={entries}
+      />
 
       <TrendChart entries={entries} cycle={cycle} units={units} />
 
