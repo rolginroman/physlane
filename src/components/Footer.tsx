@@ -25,7 +25,7 @@ export default function Footer() {
   }
 
   const shareUrl = 'https://physlane.unpackit.top/'
-  const shareText = 'How many calories do you really burn? physlane measures it from your own data'
+  const shareText = 'physlane learns your real daily calorie burn from your own weigh-ins and food logs'
 
   return (
     <footer className="border-t border-line px-4 py-10 sm:px-6">
