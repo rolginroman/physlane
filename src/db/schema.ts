@@ -162,3 +162,22 @@ export type Photo = typeof photos.$inferSelect;
 export type DailyIntake = typeof dailyIntake.$inferSelect;
 export type NewDailyIntake = typeof dailyIntake.$inferInsert;
 export type UserRow = typeof user.$inferSelect;
+
+/**
+ * Landing-page email capture (waitlist / walkthrough list). No account, no PII
+ * beyond the address, no marketing automation: one row, one source.
+ */
+export const waitlist = sqliteTable(
+	"waitlist",
+	{
+		id: text("id").primaryKey(), // crypto.randomUUID()
+		email: text("email").notNull(),
+		source: text("source"), // which surface captured it ('landing-footer', ...)
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(t) => [uniqueIndex("waitlist_email_idx").on(t.email)],
+);
+
+export type WaitlistRow = typeof waitlist.$inferSelect;

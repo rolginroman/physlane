@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import WaitlistForm from '../components/WaitlistForm'
 
-const SITE_URL = 'https://physlane.workers.dev'
+const SITE_URL = 'https://physlane.unpackit.top'
 const SITE_NAME = 'physlane'
 const TITLE = 'physlane · adaptive TDEE and recomp tracker for lifters'
 const DESCRIPTION =
@@ -268,13 +270,24 @@ function Hero() {
         numbers a day, under 60 seconds. No food database, no barcode scanner, no
         photo AI.
       </p>
+      <p className="mt-3 mb-0 max-w-2xl text-sm text-faint">
+        The hook: recomposition is a feedback loop, not a formula. Set a cycle
+        target, keep the two numbers honest, and the math tells you what your
+        body actually burns. Cut, bulk, or maintain, the loop is the same.
+      </p>
       <div className="mt-7 flex flex-wrap items-center gap-3">
         <Link to="/sign-up" className="btn-primary no-underline">
-          Create account
+          Start free, no card
         </Link>
+        <a
+          href="#the-loop"
+          className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+        >
+          See the daily loop
+        </a>
         <Link
           to="/sign-in"
-          className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+          className="ml-1 inline-flex min-h-11 items-center px-2 text-sm font-medium text-faint no-underline hover:text-text"
         >
           Sign in
         </Link>
@@ -306,7 +319,7 @@ const STEPS = [
 
 function HowItWorks() {
   return (
-    <section className="border-t border-line py-14 sm:py-20">
+    <section id="the-loop" className="scroll-mt-16 border-t border-line py-14 sm:py-20">
       <h2 className="display-2 m-0 text-text">The daily loop</h2>
       <p className="mt-3 mb-0 max-w-2xl text-base text-dim">
         Under 60 seconds on your phone. That is the entire habit the product
@@ -326,6 +339,77 @@ function HowItWorks() {
           </li>
         ))}
       </ol>
+    </section>
+  )
+}
+
+/* ── reviews & testimonials ───────────────────────────────────────────── */
+
+/**
+ * Real quotes land here as they come in: { quote, name, role }.
+ * Until the founding cohort reports back, the section renders the honest
+ * founding-users panel below. Never ship invented quotes.
+ */
+const TESTIMONIALS: { quote: string; name: string; role: string }[] = []
+
+function Reviews() {
+  return (
+    <section className="border-t border-line py-14 sm:py-20">
+      <h2 className="display-2 m-0 text-text">What users say</h2>
+      {TESTIMONIALS.length > 0 ? (
+        <ul className="m-0 mt-8 list-none divide-y divide-line border-y border-line p-0">
+          {TESTIMONIALS.map((t) => (
+            <li key={t.name} className="py-6">
+              <blockquote className="m-0 max-w-3xl text-base leading-relaxed text-text">
+                {t.quote}
+              </blockquote>
+              <p className="m-0 mt-3 text-sm text-dim">
+                {t.name} · {t.role}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="mt-8 grid gap-10 lg:grid-cols-12 lg:gap-8">
+          <div className="lg:col-span-7">
+            <h3 className="m-0 text-lg font-semibold text-text">
+              Founding cohort, open now
+            </h3>
+            <p className="mt-2 mb-0 text-sm text-dim sm:text-base">
+              physlane is new and does not pretend otherwise. No staged
+              testimonials, no invented star ratings. When the first cohort
+              reports back, their words land here, attributed and unedited, and
+              they will have run the same math you would: 14 days of pairs,
+              then the burn estimate.
+            </p>
+            <p className="mt-3 mb-0 text-sm text-dim">
+              What founding users get: a direct line to the builder and feature
+              requests that actually ship.
+            </p>
+          </div>
+          <ul className="m-0 list-none p-0 lg:col-span-5">
+            {[
+              {
+                title: 'Open math, no black box',
+                body: 'The estimate is weekly energy balance from your logged days. Every number traces to a row you typed.',
+              },
+              {
+                title: 'Data stance, in writing',
+                body: 'Manual numbers only. No bank or social integrations, no selling, delete any entry anytime.',
+              },
+              {
+                title: 'You are the proof',
+                body: 'Run one cycle free. If the trend and the estimate do not match your eyes, that is the review.',
+              },
+            ].map((row) => (
+              <li key={row.title} className="border-t border-line py-4 last:border-b">
+                <h3 className="m-0 text-base font-semibold text-text">{row.title}</h3>
+                <p className="m-0 mt-1 text-sm text-dim">{row.body}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   )
 }
@@ -420,7 +504,7 @@ const PRO_LIST = [
 
 function Pricing() {
   return (
-    <section className="border-t border-line py-14 sm:py-20">
+    <section id="pricing" className="scroll-mt-16 border-t border-line py-14 sm:py-20">
       <h2 className="display-2 m-0 text-text">Pricing</h2>
       <p className="mt-3 mb-0 max-w-2xl text-base text-dim">
         Start free, no card. Upgrade when the estimate is ready and you want the
@@ -490,7 +574,7 @@ function Pricing() {
 
 function Faq() {
   return (
-    <section className="border-t border-line py-14 sm:py-20">
+    <section id="faq" className="scroll-mt-16 border-t border-line py-14 sm:py-20">
       <h2 className="display-2 m-0 text-text">Questions</h2>
       <div className="mt-6 max-w-3xl">
         {FAQS.map((faq, i) => (
@@ -518,22 +602,74 @@ function Faq() {
   )
 }
 
-function FinalCta() {
+/* ── closing: CTA + subscribe + share ─────────────────────────────────── */
+
+function CopyLinkButton() {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText('https://physlane.unpackit.top/')
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        } catch {
+          /* clipboard blocked: the address stays visible in the footer */
+        }
+      }}
+    >
+      {copied ? 'Link copied' : 'Copy link'}
+    </button>
+  )
+}
+
+function ClosingCta() {
   return (
     <section className="border-t border-line py-14 sm:py-20">
-      <div className="sm:flex sm:items-end sm:justify-between sm:gap-8">
-        <div>
-          <h2 className="display-2 m-0 text-text">
-            Two numbers a day.
-          </h2>
+      <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
+        <div className="lg:col-span-7">
+          <h2 className="display-2 m-0 text-text">Two numbers a day.</h2>
           <p className="mt-3 mb-0 max-w-xl text-base text-dim">
             That is the whole habit. The burn rate shows up on day 14, from your
             own data.
           </p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link to="/sign-up" className="btn-primary no-underline">
+              Start free, no card
+            </Link>
+            <a
+              href="https://x.com/intent/tweet?url=https%3A%2F%2Fphyslane.unpackit.top%2F&text=physlane%3A%20adaptive%20TDEE%20from%20your%20own%20weight%20and%20intake%20series"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+            >
+              Share on X
+            </a>
+            <a
+              href="https://www.reddit.com/submit?url=https%3A%2F%2Fphyslane.unpackit.top%2F&title=physlane%3A%20adaptive%20TDEE%20from%20your%20own%20weight%20and%20intake%20series"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+            >
+              Share on Reddit
+            </a>
+            <CopyLinkButton />
+          </div>
         </div>
-        <Link to="/sign-up" className="btn-primary mt-6 no-underline sm:mt-0">
-          Create account
-        </Link>
+        <div className="lg:col-span-5 lg:border-l lg:border-line lg:pl-8">
+          <h3 className="m-0 text-lg font-semibold text-text">
+            Not ready to start?
+          </h3>
+          <p className="mt-2 mb-0 text-sm text-dim">
+            One email when the founding cohort reports, with their charts and
+            what the math said. Then silence.
+          </p>
+          <div className="mt-4">
+            <WaitlistForm source="landing-closing" />
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -544,10 +680,11 @@ function LandingPage() {
     <main className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6">
       <Hero />
       <HowItWorks />
+      <Reviews />
       <Features />
       <Pricing />
       <Faq />
-      <FinalCta />
+      <ClosingCta />
     </main>
   )
 }
