@@ -449,15 +449,15 @@ export default function SettingsDrawer({
 									One Telegram nudge at your time, only on days you have not logged yet.
 								</p>
 								{telegramId ? (
-									<div className="mt-2 flex flex-wrap items-end gap-2">
-										<div>
+									<div className="mt-2 grid grid-cols-[1fr_auto] items-end gap-2">
+										<div className="min-w-0">
 											<label htmlFor="set-remind-time" className="label">
 												Time
 											</label>
 											<input
 												id="set-remind-time"
 												type="time"
-												className="input num"
+												className="input num w-full"
 												value={time}
 												onChange={(e) => {
 													setTime(e.target.value)
@@ -465,7 +465,23 @@ export default function SettingsDrawer({
 												}}
 											/>
 										</div>
-										<div className="min-w-36 flex-1">
+										<button
+											type="button"
+											role="switch"
+											aria-checked={reminderEnabled}
+											onClick={() => {
+												setTime(reminderEnabled ? '' : time || '09:00')
+												setSaved(false)
+											}}
+											className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-sm font-medium ${
+												reminderEnabled
+													? 'border-accent/60 bg-accent/10 text-accent'
+													: 'border-line text-dim hover:text-text'
+											}`}
+										>
+											{reminderEnabled ? 'On' : 'Off'}
+										</button>
+										<div className="col-span-2 min-w-0">
 											<label htmlFor="set-remind-tz" className="label">
 												Time zone
 											</label>
@@ -481,22 +497,6 @@ export default function SettingsDrawer({
 												}}
 											/>
 										</div>
-										<button
-											type="button"
-											role="switch"
-											aria-checked={reminderEnabled}
-											onClick={() => {
-												setTime(reminderEnabled ? '' : time || '09:00')
-												setSaved(false)
-											}}
-											className={`inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-medium ${
-												reminderEnabled
-													? 'border-accent/60 bg-accent/10 text-accent'
-													: 'border-line text-dim hover:text-text'
-											}`}
-										>
-											{reminderEnabled ? 'On' : 'Off'}
-										</button>
 									</div>
 								) : (
 									<p className="m-0 mt-2 text-xs text-dim">Link Telegram above to get reminders.</p>
