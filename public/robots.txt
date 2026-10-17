@@ -7,4 +7,4 @@ Disallow: /billing
 Disallow: /onboarding
 Disallow: /api/
 
-Sitemap: https://physlane.workers.dev/sitemap.xml
+Sitemap: https://physlane.unpackit.top/sitemap.xml
