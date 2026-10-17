@@ -24,6 +24,10 @@ export const user = sqliteTable(
 		/* optional profile fields for the Navy body-fat estimate (G1.4) */
 		heightCm: real("height_cm"),
 		sex: text("sex", { enum: ["male", "female"] }),
+		/* tele-better-auth: server-owned identity fields (migration 0004) */
+		telegramId: text("telegram_id"),
+		telegramUsername: text("telegram_username"),
+		telegramPhoneNumber: text("telegram_phone_number"),
 		stripeCustomerId: text("stripe_customer_id"),
 		stripeSubscriptionId: text("stripe_subscription_id"),
 		planCurrentPeriodEnd: integer("plan_current_period_end", { mode: "timestamp" }),
@@ -56,6 +60,9 @@ export const account = sqliteTable(
 		refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp" }),
 		scope: text("scope"),
 		password: text("password"),
+		/* tele-better-auth (migration 0004) */
+		telegramId: text("telegram_id"),
+		telegramUsername: text("telegram_username"),
 		createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 		updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 	},

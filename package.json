@@ -28,7 +28,8 @@
     "react-dom": "^19.2.0",
     "recharts": "^3.10.1",
     "stripe": "^23.0.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "tele-better-auth": "^1.7.1"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.26.0",
