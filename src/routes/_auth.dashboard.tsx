@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useRouter } from '@tanstack/react-router'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { getActiveCycle, hasAnyCycle } from '#/server/cycles.fns'
 import {
@@ -6,9 +6,10 @@ import {
   listMeasurements,
   type MeasurementDTO,
 } from '#/server/measurements.fns'
-import { getViewer } from '#/lib/auth-guard.fns'
+import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
 import MeasurementForm from '#/components/MeasurementForm'
 import HistoryTable from '#/components/HistoryTable'
+import TrendChart from '#/components/TrendChart'
 import { fmtLength, fmtWeight, kgToLb, type UnitSystem } from '#/lib/units'
 
 export const Route = createFileRoute('/_auth/dashboard')({
@@ -75,6 +76,55 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
+/** Metric/imperial segmented control. Persists via settings, then invalidates so every formatted number flips. */
+function UnitToggle({ units }: { units: UnitSystem }) {
+  const router = useRouter()
+  const [pending, setPending] = useState(false)
+
+  async function pick(next: UnitSystem) {
+    if (next === units || pending) return
+    setPending(true)
+    try {
+      await saveSettings({ data: { unitSystem: next } })
+      await router.invalidate()
+    } catch {
+      // Stays on the current units; tapping again retries.
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const options: { id: UnitSystem; label: string }[] = [
+    { id: 'metric', label: 'kg' },
+    { id: 'imperial', label: 'lb' },
+  ]
+  return (
+    <div
+      role="group"
+      aria-label="Units"
+      className="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-0.5"
+    >
+      {options.map((o) => {
+        const active = units === o.id
+        return (
+          <button
+            key={o.id}
+            type="button"
+            aria-pressed={active}
+            disabled={pending}
+            onClick={() => pick(o.id)}
+            className={`relative inline-flex h-9 items-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
+              active ? 'bg-surface2 text-text' : 'text-dim hover:text-text'
+            }`}
+          >
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function DashboardPage() {
   const { entries, latest, cycle, units } = Route.useLoaderData()
   const [editing, setEditing] = useState<MeasurementDTO | null>(null)
@@ -120,6 +170,7 @@ function DashboardPage() {
             No active cycle
           </span>
         )}
+        <UnitToggle units={units} />
         <Link
           to="/cycles"
           className="ml-auto inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium text-dim hover:text-text"
@@ -137,6 +188,8 @@ function DashboardPage() {
         <Stat label="Latest waist" value={fmtLength(latestWaist?.waistCm ?? null, units)} />
         <Stat label="Measurements" value={String(entries.length)} />
       </div>
+
+      <TrendChart entries={entries} cycle={cycle} units={units} />
 
       <div ref={formRef} className="mt-4 scroll-mt-20">
         <MeasurementForm

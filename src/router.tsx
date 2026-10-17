@@ -1,5 +1,19 @@
-import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { createRouter as createTanStackRouter, Link } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
+
+function NotFound() {
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-col items-start px-4 pt-16">
+      <h1 className="m-0 text-xl font-semibold tracking-tight">This page does not exist.</h1>
+      <Link
+        to="/"
+        className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-medium text-dim hover:text-text"
+      >
+        Home
+      </Link>
+    </main>
+  )
+}
 
 export function getRouter() {
   const router = createTanStackRouter({
@@ -7,6 +21,7 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    defaultNotFoundComponent: NotFound,
   })
 
   return router
