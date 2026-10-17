@@ -325,6 +325,26 @@ function ProfileCard({
         </div>
       </div>
 
+      {/*
+        Connect Telegram (G2.4). No button on purpose: every link method in
+        tele-better-auth needs credentials only available inside Telegram
+        (linkMiniApp needs initData, linkTelegram the login widget,
+        linkTelegramOIDC a server OIDC config we don't run). Honest
+        instructions instead of a button that cannot work from the web.
+      */}
+      {!telegramId && (
+        <div className="mt-4 border-t border-line pt-3">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h3 className="m-0 text-sm font-semibold">Connect Telegram</h3>
+            <p className="m-0 text-xs text-dim">Quick logging and daily reminders.</p>
+          </div>
+          <p className="m-0 mt-2 max-w-xl text-xs leading-relaxed text-dim">
+            Open physlane in Telegram and sign in; accounts merge via your
+            email in Settings.
+          </p>
+        </div>
+      )}
+
       {/* Daily reminder (G2.5): slim row, only meaningful with Telegram linked. */}
       <div className="mt-4 border-t border-line pt-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -384,7 +404,7 @@ function ProfileCard({
             </button>
           </div>
         ) : (
-          <p className="m-0 mt-2 text-xs text-dim">Connect Telegram in the app to get reminders.</p>
+          <p className="m-0 mt-2 text-xs text-dim">Connect Telegram above to get reminders.</p>
         )}
       </div>
 

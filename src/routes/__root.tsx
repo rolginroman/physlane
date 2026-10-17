@@ -64,6 +64,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/*
+          Telegram WebApp SDK: inert outside Telegram (initData stays '').
+          Rendered directly in the head JSX (not via head() scripts, which
+          HeadContent re-appends after hydration) so it reliably executes
+          before our bundle; `defer` keeps it non-blocking for the landing.
+        */}
+        <script src="https://telegram.org/js/telegram-web-app.js" defer />
         <HeadContent />
       </head>
       <body className="font-sans antialiased">

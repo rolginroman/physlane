@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import WaitlistForm from '../components/WaitlistForm'
+import { useTelegramMode } from '#/lib/telegram-mode'
 
 const SITE_URL = 'https://physlane.unpackit.top'
 const SITE_NAME = 'physlane'
@@ -257,6 +258,8 @@ function TrendHeroChart() {
 /* ── sections ─────────────────────────────────────────────────────────── */
 
 function Hero() {
+  // In Telegram the landing is just a door: one compact CTA into the app.
+  const tgMode = useTelegramMode()
   return (
     <section className="pt-14 pb-14 sm:pt-24 sm:pb-20">
       <p className="m-0 text-sm font-medium text-dim">
@@ -280,25 +283,35 @@ function Hero() {
         changes.
       </p>
       <div className="mt-7 flex flex-wrap items-center gap-3">
-        <Link to="/sign-up" className="btn-primary no-underline">
-          Start free, no card
-        </Link>
-        <a
-          href="#the-loop"
-          className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
-        >
-          See the daily loop
-        </a>
-        <Link
-          to="/sign-in"
-          className="ml-1 inline-flex min-h-11 items-center px-2 text-sm font-medium text-faint no-underline hover:text-text"
-        >
-          Sign in
-        </Link>
+        {tgMode ? (
+          <Link to="/dashboard" className="btn-primary no-underline">
+            Open the app
+          </Link>
+        ) : (
+          <>
+            <Link to="/sign-up" className="btn-primary no-underline">
+              Start free, no card
+            </Link>
+            <a
+              href="#the-loop"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+            >
+              See the daily loop
+            </a>
+            <Link
+              to="/sign-in"
+              className="ml-1 inline-flex min-h-11 items-center px-2 text-sm font-medium text-faint no-underline hover:text-text"
+            >
+              Sign in
+            </Link>
+          </>
+        )}
       </div>
-      <div className="card mt-12 p-4 sm:p-5">
-        <TrendHeroChart />
-      </div>
+      {!tgMode && (
+        <div className="card mt-12 p-4 sm:p-5">
+          <TrendHeroChart />
+        </div>
+      )}
     </section>
   )
 }
@@ -635,6 +648,7 @@ function CopyLinkButton() {
 }
 
 function ClosingCta() {
+  const tgMode = useTelegramMode()
   return (
     <section className="border-t border-line py-14 sm:py-20">
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
@@ -645,39 +659,60 @@ function ClosingCta() {
             built from your own entries.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link to="/sign-up" className="btn-primary no-underline">
-              Start free, no card
-            </Link>
-            <a
-              href="https://x.com/intent/tweet?url=https%3A%2F%2Fphyslane.unpackit.top%2F&text=physlane%20learns%20your%20real%20daily%20calorie%20burn%20from%20your%20own%20weigh-ins%20and%20food%20logs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
-            >
-              Share on X
-            </a>
-            <a
-              href="https://www.reddit.com/submit?url=https%3A%2F%2Fphyslane.unpackit.top%2F&title=physlane%20learns%20your%20real%20daily%20calorie%20burn%20from%20your%20own%20weigh-ins%20and%20food%20logs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
-            >
-              Share on Reddit
-            </a>
-            <CopyLinkButton />
+            {tgMode ? (
+              <Link to="/dashboard" className="btn-primary no-underline">
+                Open the app
+              </Link>
+            ) : (
+              <>
+                <Link to="/sign-up" className="btn-primary no-underline">
+                  Start free, no card
+                </Link>
+                <a
+                  href="https://x.com/intent/tweet?url=https%3A%2F%2Fphyslane.unpackit.top%2F&text=physlane%20learns%20your%20real%20daily%20calorie%20burn%20from%20your%20own%20weigh-ins%20and%20food%20logs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+                >
+                  Share on X
+                </a>
+                <a
+                  href="https://www.reddit.com/submit?url=https%3A%2F%2Fphyslane.unpackit.top%2F&title=physlane%20learns%20your%20real%20daily%20calorie%20burn%20from%20your%20own%20weigh-ins%20and%20food%20logs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-dim no-underline transition-colors duration-150 ease-out hover:border-line2 hover:text-text"
+                >
+                  Share on Reddit
+                </a>
+                <CopyLinkButton />
+              </>
+            )}
           </div>
         </div>
         <div className="lg:col-span-5 lg:border-l lg:border-line lg:pl-8">
-          <h3 className="m-0 text-lg font-semibold text-text">
-            Not ready to start?
-          </h3>
-          <p className="mt-2 mb-0 text-sm text-dim">
-            One email when the founding cohort reports, with their charts and
-            what the math said. Then silence.
-          </p>
-          <div className="mt-4">
-            <WaitlistForm source="landing-closing" />
-          </div>
+          {tgMode ? (
+            <>
+              <h3 className="m-0 text-lg font-semibold text-text">
+                Already inside Telegram
+              </h3>
+              <p className="mt-2 mb-0 text-sm text-dim">
+                Open the app to log today's two numbers. No waitlist, no card.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="m-0 text-lg font-semibold text-text">
+                Not ready to start?
+              </h3>
+              <p className="mt-2 mb-0 text-sm text-dim">
+                One email when the founding cohort reports, with their charts and
+                what the math said. Then silence.
+              </p>
+              <div className="mt-4">
+                <WaitlistForm source="landing-closing" />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </section>

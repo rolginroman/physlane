@@ -1,14 +1,16 @@
 import { createFileRoute, Link, redirect, useRouter } from '@tanstack/react-router'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getActiveCycle, hasAnyCycle } from '#/server/cycles.fns'
 import {
   latestMeasurement,
   listMeasurements,
   type MeasurementDTO,
 } from '#/server/measurements.fns'
-import { getIntakeStreak, tdeeStatus } from '#/server/intake.fns'
+import { getIntakeStreak, intakeRange, tdeeStatus } from '#/server/intake.fns'
 import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
 import { navyBodyFat } from '#/lib/navy-bf'
+import { haptic, hideMainButton, isTelegram, showMainButton } from '#/lib/telegram-web'
+import { useTelegramMode } from '#/lib/telegram-mode'
 import MeasurementForm from '#/components/MeasurementForm'
 import HistoryTable from '#/components/HistoryTable'
 import TrendChart from '#/components/TrendChart'
@@ -22,14 +24,17 @@ export const Route = createFileRoute('/_auth/dashboard')({
     if (!any) throw redirect({ to: '/onboarding' })
   },
   loader: async () => {
-    const [entries, latest, cycle, viewer, tdee, streak] = await Promise.all([
-      listMeasurements(),
-      latestMeasurement(),
-      getActiveCycle(),
-      getViewer(),
-      tdeeStatus(),
-      getIntakeStreak(),
-    ])
+    const today = new Date().toISOString().slice(0, 10)
+    const [entries, latest, cycle, viewer, tdee, streak, intakeToday] =
+      await Promise.all([
+        listMeasurements(),
+        latestMeasurement(),
+        getActiveCycle(),
+        getViewer(),
+        tdeeStatus(),
+        getIntakeStreak(),
+        intakeRange({ data: { from: today, to: today } }),
+      ])
     const units: UnitSystem = viewer?.unitSystem ?? 'metric'
     const heightCm = viewer?.heightCm ?? null
     const sex = viewer?.sex ?? null
@@ -44,6 +49,8 @@ export const Route = createFileRoute('/_auth/dashboard')({
       onGlp1: viewer?.onGlp1 ?? false,
       heightCm,
       sex,
+      today,
+      kcalToday: intakeToday.find((d) => d.date === today)?.kcal ?? null,
     }
   },
   component: DashboardPage,
@@ -144,15 +151,36 @@ function UnitToggle({ units }: { units: UnitSystem }) {
 }
 
 function DashboardPage() {
-  const { entries, latest, cycle, units, tdee, streak, plan, onGlp1, heightCm, sex } =
-    Route.useLoaderData()
+  const {
+    entries,
+    latest,
+    cycle,
+    units,
+    tdee,
+    streak,
+    plan,
+    onGlp1,
+    heightCm,
+    sex,
+    today,
+    kcalToday,
+  } = Route.useLoaderData()
   const [editing, setEditing] = useState<MeasurementDTO | null>(null)
   const formRef = useRef<HTMLDivElement>(null)
+  const tgMode = useTelegramMode()
+  // Set after a successful save inside Telegram: hides the MainButton for
+  // this visit so it does not nag while the day's second number is pending.
+  const [tgLogged, setTgLogged] = useState(false)
+  const [loggedFlash, setLoggedFlash] = useState(false)
 
   const newestFirst = useMemo(() => [...entries].reverse(), [entries])
   const latestWeight = lastWhere(entries, (e) => e.weightKg != null)
   const latestWaist = lastWhere(entries, (e) => e.waistCm != null)
   const delta = delta7dKg(entries)
+  const weightLoggedToday = entries.some(
+    (e) => e.takenAt.slice(0, 10) === today && e.weightKg != null,
+  )
+  const bothLoggedToday = weightLoggedToday && kcalToday != null
 
   // Navy estimate from the LATEST entry only: no cherry-picking older sites.
   // navyBodyFat returns null for missing sex/height/sites — chip never renders then.
@@ -179,6 +207,36 @@ function DashboardPage() {
       behavior: prefersReduced ? 'auto' : 'smooth',
       block: 'start',
     })
+  }, [])
+
+  /** Telegram MainButton tap: bring the quick-log form into view and focus weight. */
+  const focusQuickLog = useCallback(() => {
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    formRef.current?.scrollIntoView({
+      behavior: prefersReduced ? 'auto' : 'smooth',
+      block: 'start',
+    })
+    // MeasurementForm's weight input has a stable id; focusing also scrolls.
+    document.getElementById('m-weight')?.focus()
+  }, [])
+
+  // Telegram 'Log today' MainButton while today's weight or kcal is still
+  // missing. Subscribe/unsubscribe via the returned cleanup (hides + unregs).
+  useEffect(() => {
+    if (!tgMode || bothLoggedToday || tgLogged) return
+    return showMainButton('Log today', focusQuickLog)
+  }, [tgMode, bothLoggedToday, tgLogged, focusQuickLog])
+
+  /** Any successful save from the quick-log form, Telegram side effects only. */
+  const handleLogged = useCallback(() => {
+    if (!isTelegram()) return
+    haptic('success')
+    hideMainButton()
+    setTgLogged(true)
+    setLoggedFlash(true)
+    window.setTimeout(() => setLoggedFlash(false), 2000)
   }, [])
 
   return (
@@ -243,10 +301,16 @@ function DashboardPage() {
       />
 
       <div ref={formRef} className="mt-4 scroll-mt-20">
+        {loggedFlash && (
+          <p role="status" className="m-0 mb-2 text-xs text-dim">
+            Logged.
+          </p>
+        )}
         <MeasurementForm
           units={units}
           editing={editing}
           onEditDone={() => setEditing(null)}
+          onSaved={handleLogged}
           lastWeightKg={latest?.weightKg ?? null}
         />
       </div>

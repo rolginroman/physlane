@@ -1,14 +1,17 @@
 import { Link, useRouterState } from '@tanstack/react-router'
+import { useTelegramMode } from '#/lib/telegram-mode'
 
 /**
  * Route-aware footer: the landing gets the marketing footer (links, share,
- * stance), app surfaces keep the one-liner product register.
+ * stance), app surfaces keep the one-liner product register. Inside Telegram
+ * the marketing footer is dropped everywhere — dense shell, no nav duplication.
  */
 export default function Footer() {
   const path = useRouterState({ select: (s) => s.location.pathname })
+  const tgMode = useTelegramMode()
   const isLanding = path === '/'
 
-  if (!isLanding) {
+  if (!isLanding || tgMode) {
     return (
       <footer className="px-4 py-6">
         <p className="m-0 text-center text-xs text-faint">
