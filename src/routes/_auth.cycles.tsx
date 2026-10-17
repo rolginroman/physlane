@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import {
   endActiveCycle,
   getActiveCycle,
@@ -8,16 +8,10 @@ import {
   type CycleDTO,
 } from '#/server/cycles.fns'
 import { listMeasurements, type MeasurementDTO } from '#/server/measurements.fns'
-import { exportIntakeCsv, exportMeasurementsCsv } from '#/server/export.fns'
-import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
-import { rotateShareLink } from '#/server/share.fns'
-import { shareUrl } from '#/lib/share'
-import type { Sex } from '#/lib/navy-bf'
+import { getViewer } from '#/lib/auth-guard.fns'
 import {
   fmtWeight,
   kgToLb,
-  lengthFromInput,
-  lengthToInput,
   weightFromInput,
   type UnitSystem,
 } from '#/lib/units'
@@ -36,12 +30,6 @@ export const Route = createFileRoute('/_auth/cycles')({
       cycles,
       entries,
       units: (viewer?.unitSystem ?? 'metric') as UnitSystem,
-      heightCm: viewer?.heightCm ?? null,
-      sex: viewer?.sex ?? null,
-      telegramId: viewer?.telegramId ?? null,
-      reminderTime: viewer?.reminderTime ?? null,
-      reminderTz: viewer?.reminderTz ?? null,
-      shareToken: viewer?.shareToken ?? null,
     }
   },
   component: CyclesPage,
@@ -100,8 +88,7 @@ function PhaseChip({ phase }: { phase: Phase }) {
 }
 
 function CyclesPage() {
-  const { active, cycles, entries, units, heightCm, sex, telegramId, reminderTime, reminderTz, shareToken } =
-    Route.useLoaderData()
+  const { active, cycles, entries, units } = Route.useLoaderData()
 
   const history = cycles.filter((c) => c.endDate != null)
   let latestWeightKg: number | null = null
@@ -112,18 +99,9 @@ function CyclesPage() {
   return (
     <section className="pt-8">
       <h1 className="m-0 text-xl font-semibold tracking-tight">Cycles</h1>
-
-      <ProfileCard
-        heightCm={heightCm}
-        sex={sex}
-        units={units}
-        telegramId={telegramId}
-        reminderTime={reminderTime}
-        reminderTz={reminderTz}
-        shareToken={shareToken}
-      />
-
-      <ExportCard />
+      <p className="m-0 mt-1 text-xs text-faint">
+        Units, profile, reminders, sharing and exports live in Settings, top right.
+      </p>
 
       {active ? (
         <ActiveCycleCard cycle={active} units={units} />
@@ -137,417 +115,6 @@ function CyclesPage() {
 
       <HistoryCard history={history} entries={entries} units={units} />
     </section>
-  )
-}
-
-const SEX_OPTIONS: { value: Sex | null; label: string }[] = [
-  { value: null, label: 'Prefer not to say' },
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-]
-
-/** Height + sex are optional; stored in cm / as male|female|null for the Navy estimate. */
-function optionalHeightError(height: string, units: UnitSystem): string | undefined {
-  if (!height.trim()) return undefined
-  const cm = lengthFromInput(height, units)
-  if (cm == null) return units === 'metric' ? 'Enter a number in cm.' : 'Enter a number in inches.'
-  if (cm < 90 || cm > 250) {
-    return units === 'metric'
-      ? 'Enter a height between 90 and 250 cm.'
-      : 'Enter a height between 36 and 98 in.'
-  }
-  return undefined
-}
-
-function ProfileCard({
-  heightCm,
-  sex,
-  units,
-  telegramId,
-  reminderTime,
-  reminderTz,
-  shareToken: initialShareToken,
-}: {
-  heightCm: number | null
-  sex: Sex | null
-  units: UnitSystem
-  telegramId: string | null
-  reminderTime: string | null
-  reminderTz: string | null
-  shareToken: string | null
-}) {
-  const router = useRouter()
-  const [height, setHeight] = useState(() => lengthToInput(heightCm, units))
-  const [sexChoice, setSexChoice] = useState<Sex | null>(sex)
-  const [pending, setPending] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const liveHeight = optionalHeightError(height, units)
-
-  // Daily reminder state: the toggle is derived from the time being set.
-  const [time, setTime] = useState(reminderTime ?? '')
-  const [tz, setTz] = useState(reminderTz ?? '')
-  // Auto-fill the zone once on mount (window-only API; keeps SSR deterministic).
-  useEffect(() => {
-    if (!reminderTz) setTz(Intl.DateTimeFormat().resolvedOptions().timeZone)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const reminderEnabled = time !== ''
-
-  // Share link state (rotation is instant, not part of form save).
-  const [shareToken, setShareToken] = useState(initialShareToken)
-  const [origin, setOrigin] = useState('')
-  const [copied, setCopied] = useState(false)
-  const [sharePending, setSharePending] = useState(false)
-  const [shareError, setShareError] = useState<string | null>(null)
-  useEffect(() => setShareToken(initialShareToken), [initialShareToken])
-  useEffect(() => setOrigin(window.location.origin), [])
-
-  async function handleSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (liveHeight || pending) return
-    setPending(true)
-    setError(null)
-    setSaved(false)
-    try {
-      await saveSettings({
-        data: {
-          heightCm: lengthFromInput(height, units),
-          sex: sexChoice,
-          // Reminder fields ride the same save; a cleared time also drops the zone.
-          ...(telegramId
-            ? { reminderTime: time || null, reminderTz: time ? tz || null : null }
-            : {}),
-        },
-      })
-      await router.invalidate()
-      setSaved(true)
-    } catch {
-      setError('Could not save your profile. Try again.')
-    } finally {
-      setPending(false)
-    }
-  }
-
-  async function handleRotate() {
-    if (sharePending) return
-    setSharePending(true)
-    setShareError(null)
-    setCopied(false)
-    try {
-      const { token } = await rotateShareLink()
-      setShareToken(token)
-      await router.invalidate()
-    } catch {
-      setShareError('Could not update the share link. Try again.')
-    } finally {
-      setSharePending(false)
-    }
-  }
-
-  async function handleCopy() {
-    if (!shareToken || !origin) return
-    setCopied(false)
-    try {
-      await navigator.clipboard.writeText(shareUrl(origin, shareToken))
-      setCopied(true)
-    } catch {
-      setShareError('Could not copy. Select the link text and copy it manually.')
-    }
-  }
-
-  return (
-    <form onSubmit={handleSave} noValidate className="card mt-4 p-4">
-      <h2 className="m-0 text-sm font-semibold">Profile</h2>
-      <p className="m-0 mt-1 text-xs text-dim">
-        Used to estimate body fat from your measurements. Optional.
-      </p>
-
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <div>
-          <label htmlFor="cyc-height" className="label">
-            Height ({units === 'metric' ? 'cm' : 'in'})
-          </label>
-          <input
-            id="cyc-height"
-            type="text"
-            inputMode="decimal"
-            className="input num"
-            placeholder={units === 'metric' ? '180' : '71'}
-            value={height}
-            onChange={(e) => {
-              setHeight(e.target.value)
-              setSaved(false)
-            }}
-            aria-invalid={liveHeight ? true : undefined}
-            aria-describedby={liveHeight ? 'cyc-height-error' : 'cyc-height-hint'}
-          />
-          {liveHeight ? (
-            <p id="cyc-height-error" className="field-error">
-              {liveHeight}
-            </p>
-          ) : (
-            <p id="cyc-height-hint" className="hint">
-              Leave blank to clear.
-            </p>
-          )}
-        </div>
-
-        <div>
-          <span className="label" id="cyc-sex-label">
-            Sex
-          </span>
-          <div
-            role="radiogroup"
-            aria-labelledby="cyc-sex-label"
-            className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-surface2 p-1"
-          >
-            {SEX_OPTIONS.map((opt) => (
-              <button
-                key={opt.label}
-                type="button"
-                role="radio"
-                aria-checked={sexChoice === opt.value}
-                onClick={() => {
-                  setSexChoice(opt.value)
-                  setSaved(false)
-                }}
-                className={`min-h-11 rounded-md px-2 text-sm font-medium ${
-                  sexChoice === opt.value ? 'bg-surface text-text' : 'text-dim hover:text-text'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/*
-        Connect Telegram (G2.4). No button on purpose: every link method in
-        tele-better-auth needs credentials only available inside Telegram
-        (linkMiniApp needs initData, linkTelegram the login widget,
-        linkTelegramOIDC a server OIDC config we don't run). Honest
-        instructions instead of a button that cannot work from the web.
-      */}
-      {!telegramId && (
-        <div className="mt-4 border-t border-line pt-3">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h3 className="m-0 text-sm font-semibold">Connect Telegram</h3>
-            <p className="m-0 text-xs text-dim">Quick logging and daily reminders.</p>
-          </div>
-          <p className="m-0 mt-2 max-w-xl text-xs leading-relaxed text-dim">
-            Open physlane in Telegram and sign in; accounts merge via your
-            email in Settings.
-          </p>
-        </div>
-      )}
-
-      {/* Daily reminder (G2.5): slim row, only meaningful with Telegram linked. */}
-      <div className="mt-4 border-t border-line pt-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="m-0 text-sm font-semibold">Daily reminder</h3>
-          <p className="m-0 text-xs text-dim">
-            One Telegram nudge at your time, only on days you have not logged yet.
-          </p>
-        </div>
-        {telegramId ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <div>
-              <label htmlFor="cyc-remind-time" className="label">
-                Time
-              </label>
-              <input
-                id="cyc-remind-time"
-                type="time"
-                className="input num"
-                value={time}
-                onChange={(e) => {
-                  setTime(e.target.value)
-                  setSaved(false)
-                }}
-              />
-            </div>
-            <div className="min-w-44 flex-1">
-              <label htmlFor="cyc-remind-tz" className="label">
-                Time zone
-              </label>
-              <input
-                id="cyc-remind-tz"
-                type="text"
-                className="input"
-                placeholder="Europe/Berlin"
-                value={tz}
-                onChange={(e) => {
-                  setTz(e.target.value)
-                  setSaved(false)
-                }}
-              />
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={reminderEnabled}
-              onClick={() => {
-                setTime(reminderEnabled ? '' : time || '09:00')
-                setSaved(false)
-              }}
-              className={`inline-flex min-h-11 items-center rounded-lg border px-4 text-sm font-medium ${
-                reminderEnabled
-                  ? 'border-accent/60 bg-accent/10 text-accent'
-                  : 'border-line text-dim hover:text-text'
-              }`}
-            >
-              {reminderEnabled ? 'On' : 'Off'}
-            </button>
-          </div>
-        ) : (
-          <p className="m-0 mt-2 text-xs text-dim">Connect Telegram above to get reminders.</p>
-        )}
-      </div>
-
-      {/* Share progress (G2.6): read-only public card, revocable by rotation. */}
-      <div className="mt-3 border-t border-line pt-3">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="m-0 text-sm font-semibold">Share progress</h3>
-          <p className="m-0 text-xs text-dim">
-            A read-only page with your numbers. No email or Telegram details.
-          </p>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            readOnly
-            aria-label="Share link"
-            className="input num min-w-52 flex-1"
-            placeholder="No link yet"
-            value={shareToken && origin ? shareUrl(origin, shareToken) : ''}
-            onFocus={(e) => e.currentTarget.select()}
-          />
-          {shareToken && (
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text"
-            >
-              Copy
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleRotate}
-            disabled={sharePending}
-            className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
-          >
-            {sharePending ? 'Updating…' : shareToken ? 'Revoke / new link' : 'Create link'}
-          </button>
-          {copied && !sharePending && (
-            <p role="status" className="m-0 text-xs text-dim">
-              Copied.
-            </p>
-          )}
-        </div>
-        {shareError && (
-          <p role="alert" className="m-0 mt-2 text-xs text-rose">
-            {shareError}
-          </p>
-        )}
-      </div>
-
-      {error && (
-        <p
-          role="alert"
-          className="mt-3 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose"
-        >
-          {error}
-        </p>
-      )}
-
-      <div className="mt-4 flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending || Boolean(liveHeight)}
-          className="btn-primary px-5"
-        >
-          {pending ? 'Saving…' : 'Save profile'}
-        </button>
-        {saved && !pending && (
-          <p role="status" className="m-0 text-xs text-dim">
-            Saved.
-          </p>
-        )}
-      </div>
-    </form>
-  )
-}
-
-/** Client-side CSV download via Blob — no page change, no Pro gate. */
-function downloadCsv(filename: string, csv: string) {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
-}
-
-/** Two compact export buttons in the Profile block area (G1.5). */
-function ExportCard() {
-  const [pending, setPending] = useState<'measurements' | 'intake' | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleExport(kind: 'measurements' | 'intake') {
-    if (pending) return
-    setPending(kind)
-    setError(null)
-    try {
-      const csv = kind === 'measurements' ? await exportMeasurementsCsv() : await exportIntakeCsv()
-      downloadCsv(`${kind}.csv`, csv)
-    } catch {
-      setError('Could not build the export. Try again.')
-    } finally {
-      setPending(null)
-    }
-  }
-
-  return (
-    <div className="card mt-4 px-4 py-3">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="m-0 text-sm font-semibold">Export</h2>
-        <p className="m-0 text-xs text-dim">Download your logged data as CSV.</p>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleExport('measurements')}
-            disabled={pending != null}
-            className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
-          >
-            {pending === 'measurements' ? 'Exporting…' : 'Measurements CSV'}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleExport('intake')}
-            disabled={pending != null}
-            className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
-          >
-            {pending === 'intake' ? 'Exporting…' : 'Intake CSV'}
-          </button>
-        </div>
-      </div>
-      {error && (
-        <p
-          role="alert"
-          className="mt-2 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose"
-        >
-          {error}
-        </p>
-      )}
-    </div>
   )
 }
 

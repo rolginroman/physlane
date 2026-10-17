@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect, useRouter } from '@tanstack/react-router'
+import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getActiveCycle, hasAnyCycle } from '#/server/cycles.fns'
 import {
@@ -263,13 +263,9 @@ function DashboardPage() {
             No active cycle
           </span>
         )}
-        <UnitToggle units={units} />
-        <Link
-          to="/cycles"
-          className="ml-auto inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium text-dim hover:text-text"
-        >
-          Cycles
-        </Link>
+        <div className="ml-auto">
+          <UnitToggle units={units} />
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
