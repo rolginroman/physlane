@@ -21,6 +21,9 @@ export const user = sqliteTable(
 		unitSystem: text("unit_system", { enum: ["metric", "imperial"] }).notNull().default("metric"),
 		plan: text("plan", { enum: ["free", "pro"] }).notNull().default("free"),
 		onGlp1: integer("on_glp1", { mode: "boolean" }).notNull().default(false),
+		/* optional profile fields for the Navy body-fat estimate (G1.4) */
+		heightCm: real("height_cm"),
+		sex: text("sex", { enum: ["male", "female"] }),
 		stripeCustomerId: text("stripe_customer_id"),
 		stripeSubscriptionId: text("stripe_subscription_id"),
 		planCurrentPeriodEnd: integer("plan_current_period_end", { mode: "timestamp" }),
