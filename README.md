@@ -22,7 +22,7 @@ pnpm typecheck && pnpm test && pnpm build
 ```
 
 Deploy: `pnpm build && npx wrangler deploy -c dist/server/wrangler.json`
-(secrets: `wrangler secret put AUTH_SECRET`; Stripe keys when billing launches)
+(secrets: `wrangler secret put AUTH_SECRET`; Telegram: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` + `CRON_SECRET` for mini app + reminders; Stripe keys when billing launches)
 
 ## Layout
 
@@ -38,4 +38,4 @@ Pro features (adaptive TDEE, projection, verdicts, full history, GLP-1 mode) are
 
 ## Status (Oct 2026)
 
-MVP shipped (M1–M6). Stripe is Q4: webhook + checkout/portal UI are live but intentionally inert until `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are set.
+MVP shipped (M1–M6). v3 (Oct 17): body-measurement parity — per-site trend charts (10 sites), cm/in display parity, per-site deltas, US Navy body-fat estimate (optional height/sex), free CSV export; Telegram Mini App via `tele-better-auth` (zero-tap sign-in, auto account, link via Settings), daily reminder bot endpoint (`/api/telegram/remind`, cron-secret guarded, inert until secrets set), read-only share cards (`/share/:token`, privacy-scoped). Stripe is Q4: webhook + checkout/portal UI are live but intentionally inert until `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are set. Telegram live wiring (bot token, BotFather menu, reminder cron) pending bot creation.
