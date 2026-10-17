@@ -1,5 +1,6 @@
 import { Link, useMatchRoute, useRouter } from '@tanstack/react-router'
 import { signOut, useSession } from '#/lib/auth-client'
+import { useTelegramMode } from '#/lib/telegram-mode'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -14,6 +15,8 @@ export default function Header() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const matchRoute = useMatchRoute()
+  // Telegram mode: slim the header — no marketing CTAs, no billing/avatar cluster.
+  const tgMode = useTelegramMode()
 
   const user = session?.user
   const displayName = user?.name?.trim() || user?.email || ''
@@ -26,7 +29,12 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 h-14 border-b border-line bg-bg/80 backdrop-blur">
+    <header
+      className={`sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur ${
+        tgMode ? 'min-h-14' : 'h-14'
+      }`}
+      style={tgMode ? { paddingTop: 'var(--tg-safe-top, 0px)' } : undefined}
+    >
       <div className="mx-auto flex h-full max-w-5xl items-center gap-3 px-4">
         <Link
           to="/"
@@ -55,29 +63,35 @@ export default function Header() {
                   </Link>
                 )
               })}
-              <Link
-                to="/billing"
-                className={navLinkBase}
-                activeProps={{ className: 'text-accent' }}
-                inactiveProps={{ className: 'text-dim hover:text-text' }}
-              >
-                Billing
-              </Link>
-              <div
-                className="mx-1 hidden h-5 w-px bg-line sm:block"
-                aria-hidden="true"
-              />
-              <span className="hidden items-center gap-2 sm:flex">
-                <span
-                  title={displayName}
-                  className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface2 text-xs font-semibold text-dim"
+              {!tgMode && (
+                <Link
+                  to="/billing"
+                  className={navLinkBase}
+                  activeProps={{ className: 'text-accent' }}
+                  inactiveProps={{ className: 'text-dim hover:text-text' }}
                 >
-                  {initial}
+                  Billing
+                </Link>
+              )}
+              {!tgMode && (
+                <div
+                  className="mx-1 hidden h-5 w-px bg-line sm:block"
+                  aria-hidden="true"
+                />
+              )}
+              {!tgMode && (
+                <span className="hidden items-center gap-2 sm:flex">
+                  <span
+                    title={displayName}
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface2 text-xs font-semibold text-dim"
+                  >
+                    {initial}
+                  </span>
+                  <span className="inline-block max-w-28 truncate text-xs text-dim">
+                    {displayName}
+                  </span>
                 </span>
-                <span className="inline-block max-w-28 truncate text-xs text-dim">
-                  {displayName}
-                </span>
-              </span>
+              )}
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -86,7 +100,7 @@ export default function Header() {
                 Sign out
               </button>
             </>
-          ) : (
+          ) : tgMode ? null : (
             <>
               <Link
                 to="/sign-in"

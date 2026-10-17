@@ -41,10 +41,12 @@ type Props = {
   units: UnitSystem
   editing: MeasurementDTO | null
   onEditDone: () => void
+  /** Fires after any successful save (used by the dashboard for Telegram feedback). */
+  onSaved?: () => void
   lastWeightKg?: number | null
 }
 
-export default function MeasurementForm({ units, editing, onEditDone, lastWeightKg }: Props) {
+export default function MeasurementForm({ units, editing, onEditDone, onSaved, lastWeightKg }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(true)
   const [date, setDate] = useState(today)
@@ -206,6 +208,7 @@ export default function MeasurementForm({ units, editing, onEditDone, lastWeight
       })
       await router.invalidate()
       setSaved(true)
+      onSaved?.()
       if (savedTimer.current != null) window.clearTimeout(savedTimer.current)
       savedTimer.current = window.setTimeout(() => setSaved(false), 1500)
       if (editing) {

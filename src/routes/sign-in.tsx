@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, type FormEvent } from 'react'
-import { signIn } from '#/lib/auth-client'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { authClient, signIn } from '#/lib/auth-client'
 import { authErrorMessage } from '#/lib/auth-error'
+import { getWebApp } from '#/lib/telegram-web'
 
 export const Route = createFileRoute('/sign-in')({
   head: () => ({
@@ -16,14 +17,59 @@ export const Route = createFileRoute('/sign-in')({
 
 type FieldErrors = { email?: string; password?: string }
 
+/**
+ * Module-level so a redirect loop (sign-in → dashboard → back to sign-in on a
+ * failed attempt) can never re-trigger the mini-app auto sign-in.
+ */
+let miniAppSignInAttempted = false
+
 function SignInPage() {
   const navigate = useNavigate()
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const [miniApp, setMiniApp] = useState<'signing' | 'failed'>('failed')
+  const attempted = useRef(false)
+
+  // Zero-tap sign-in inside the Telegram mini app: exchange initData for a
+  // session, then re-enter the app so the _auth guard passes. Client-only
+  // (useEffect), runs once per page load, falls back to the form on failure.
+  useEffect(() => {
+    if (attempted.current || miniAppSignInAttempted) return
+    attempted.current = true
+    const tg = getWebApp()
+    if (!tg || !tg.initData) return
+    miniAppSignInAttempted = true
+    setMiniApp('signing')
+    void (async () => {
+      const { error } = await authClient.signInWithMiniApp(tg.initData)
+      if (error) {
+        setMiniApp('failed')
+        return
+      }
+      await router.invalidate()
+      await navigate({ to: '/dashboard', replace: true })
+    })()
+  }, [navigate, router])
+
+  if (miniApp === 'signing') {
+    return (
+      <main className="flex min-h-[calc(100dvh-3.5rem)] items-center justify-center px-4 py-10">
+        <div className="card w-full max-w-sm p-6" role="status">
+          <h1 className="m-0 text-lg font-semibold tracking-tight">
+            Signing you in…
+          </h1>
+          <p className="mt-1 mb-0 text-sm text-dim">
+            One moment while Telegram signs you in.
+          </p>
+        </div>
+      </main>
+    )
+  }
 
   function validateEmail(): string | undefined {
     const value = email.trim()
