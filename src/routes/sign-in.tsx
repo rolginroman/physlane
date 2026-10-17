@@ -1,0 +1,155 @@
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useState, type FormEvent } from 'react'
+import { signIn } from '#/lib/auth-client'
+import { authErrorMessage } from '#/lib/auth-error'
+
+export const Route = createFileRoute('/sign-in')({
+  head: () => ({ meta: [{ title: 'Sign in · physlane' }] }),
+  component: SignInPage,
+})
+
+type FieldErrors = { email?: string; password?: string }
+
+function SignInPage() {
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState<FieldErrors>({})
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+
+  function validateEmail(): string | undefined {
+    const value = email.trim()
+    if (!value) return 'Enter your email address.'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      return 'Enter a valid email address.'
+    }
+    return undefined
+  }
+
+  function validatePassword(): string | undefined {
+    if (!password) return 'Enter your password.'
+    return undefined
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const nextErrors: FieldErrors = {
+      email: validateEmail(),
+      password: validatePassword(),
+    }
+    setErrors(nextErrors)
+    setServerError(null)
+    if (nextErrors.email || nextErrors.password) return
+
+    setPending(true)
+    const { error } = await signIn.email({ email: email.trim(), password })
+    if (error) {
+      setServerError(authErrorMessage(error))
+      setPending(false)
+      return
+    }
+    await navigate({ to: '/dashboard' })
+  }
+
+  return (
+    <main className="flex min-h-[calc(100dvh-3.5rem)] items-center justify-center px-4 py-10">
+      <div className="card w-full max-w-sm p-6">
+        <h1 className="m-0 text-lg font-semibold tracking-tight">Sign in</h1>
+        <p className="mt-1 mb-6 text-sm text-dim">
+          Weigh in, log intake, watch the trend.
+        </p>
+
+        {serverError && (
+          <p
+            role="alert"
+            className="mb-4 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose"
+          >
+            {serverError}
+          </p>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="mb-4">
+            <label htmlFor="sign-in-email" className="label">
+              Email
+            </label>
+            <input
+              id="sign-in-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              className="input"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              onBlur={() =>
+                setErrors((prev) => ({ ...prev, email: validateEmail() }))
+              }
+              aria-invalid={errors.email ? true : undefined}
+              aria-describedby={errors.email ? 'sign-in-email-error' : undefined}
+            />
+            {errors.email && (
+              <p id="sign-in-email-error" className="field-error">
+                {errors.email}
+              </p>
+            )}
+          </div>
+
+          <div className="mb-6">
+            <label htmlFor="sign-in-password" className="label">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="sign-in-password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                className="input pr-12"
+                placeholder="Your password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                onBlur={() =>
+                  setErrors((prev) => ({ ...prev, password: validatePassword() }))
+                }
+                aria-invalid={errors.password ? true : undefined}
+                aria-describedby={
+                  errors.password ? 'sign-in-password-error' : undefined
+                }
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-xs font-medium text-dim hover:text-text"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {errors.password && (
+              <p id="sign-in-password-error" className="field-error">
+                {errors.password}
+              </p>
+            )}
+          </div>
+
+          <button type="submit" disabled={pending} className="btn-primary w-full">
+            {pending ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+
+        <p className="mt-5 mb-0 text-center text-sm text-dim">
+          No account?{' '}
+          <Link
+            to="/sign-up"
+            className="font-medium text-accent underline decoration-line underline-offset-2 hover:text-accent-dim"
+          >
+            Create one
+          </Link>
+        </p>
+      </div>
+    </main>
+  )
+}

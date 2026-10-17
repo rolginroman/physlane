@@ -1,0 +1,1 @@
+ALTER TABLE `cycles` ADD `kcal_target_per_day` integer;

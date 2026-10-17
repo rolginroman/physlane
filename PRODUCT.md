@@ -1,0 +1,61 @@
+# PRODUCT.md — physlane
+
+## Product purpose
+
+physlane is a body-recomposition tracker for lifters: the r/leangirls / r/leangains crowd who run
+cut and bulk cycles and want to know their **true burn rate** without a food database, barcode
+scanner, or AI slop. One daily loop under 60 seconds: weigh in, log a single intake number, watch
+the trend. Adaptive TDEE computed from the user's own weight + intake series is the wedge.
+
+Register: **product** for the app (`/dashboard`, `/intake`, `/cycles`, `/onboarding`, `/billing`).
+Register: **brand** for the landing page (`/`) only.
+
+## Users
+
+- **J1 "Cutter" (primary, ~70% of traffic):** discovered via "adaptive TDEE app" / "recomp tracker"
+  searches or Reddit. Signs up with email, no card. Activates in under 2 minutes through the
+  onboarding wizard (goal = cut, current weight, target rate, units, kcal starting point). Days
+  1–13: daily loop, sees the "collecting data n/14" progress bar. Day 14: TDEE estimate exists and
+  is Pro-gated (convert moment #1). Week 3+: rate verdicts and projection (convert #2). Day 90:
+  history gate (convert #3).
+- **J2 "Bulker":** identical loop, target +0.25 kg/wk, verdict copy flips ("too fast, fat-gain
+  risk"). Same screens, different cycle-phase copy.
+- **J3 "GLP-1 user" (later, /glp-1 funnel):** rapid loss + muscle fear; lean-mass-risk banner and
+  Pro mode toggle are the convert moment. Not day-1 positioning.
+
+Journey gates: activation = first log <24h · habit = 7-day streak · insight = 14 complete
+(weight, kcal) pairs · convert = TDEE reveal / verdict / day-90 · retain = cycle rollover.
+
+## Strategic principles
+
+1. The empty dashboard is a dead end; the onboarding wizard is the fix, not polish.
+2. Free users must SEE the TDEE progress bar ("collecting data n/14") — the tension builder. Never
+   hide that the number is coming.
+3. Daily loop budget: <60s total on mobile, one screen, quick-log pinned on the dashboard.
+4. Convert moments surface where value is proven (next to the chart), never in a settings page.
+5. Copy adapts to cycle phase (cut/bulk/maintain) from the same components.
+6. Privacy: no bank/social integrations; only manual numbers stored. Say so plainly.
+
+## Monetization
+
+Pro = $10/mo or $100/yr: adaptive TDEE + rule-based coaching + unlimited history + GLP-1 mode.
+(AI trainer coach is a post-launch fast-follow; photos a later plain utility.) Free tier: 90 days
+of measurements + intake, full logging, charts, streak.
+
+## Tone
+
+Direct, numerate, lifter-literate. Short sentences. Data over adjectives. No hype words, no
+exclamation marks in UI copy, no em dashes in UI copy. Numbers rendered in mono with tabular
+figures. The product talks like a coach who lifts, not like a startup landing page.
+
+## Anti-references
+
+- No food database / barcode / meal-photo AI, ever (locked decision D10).
+- No generic SaaS dashboard look, no light theme, no glassmorphism, no gradient text.
+- No "big number + small label" hero-metric template on the landing (deslopify doctrine).
+- Not GLP-1-first positioning (D3); Pro-only mode later.
+
+## Surfaces
+
+Web app (mobile-first, dark, condensed data-dense) + SEO landing. Telegram Mini App is post-launch
+(M9). Deploy: physlane.workers.dev.

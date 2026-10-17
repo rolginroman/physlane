@@ -1,0 +1,19 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "physlane",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "@tanstack/react-start/server-entry",
+	"observability": { "enabled": true },
+	"upload_source_maps": true,
+	"assets": { "directory": "./.output/public" },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "physlane",
+			"database_id": "PLACEHOLDER_RUN_wrangler_d1_create",
+			"migrations_dir": "migrations"
+		}
+	],
+	"vars": { "APP_URL": "http://localhost:3000" }
+}
