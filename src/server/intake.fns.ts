@@ -1,17 +1,33 @@
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, lte } from "drizzle-orm";
 import { useDb, schema } from "#/db";
 import { requireUser } from "./auth.fns";
 import { computeTdee, type TdeeEntry, type WeeklyEstimate } from "#/lib/tdee";
 import { isValidIntakeDate, validateIntake } from "#/lib/intake-logic";
-import { intakeStreak } from "#/lib/adherence";
+import { intakeStreak, type Phase } from "#/lib/adherence";
+import { weeklyRates } from "#/lib/lean-mass";
+import { paceVerdict, projectWeight, PROJECTION_WEEKS, type PaceVerdict } from "#/lib/projection";
 
 const FREE_HISTORY_DAYS = 90;
+const PROJECTION_INTAKE_DAYS = 7; // "current intake" = avg of the last 7 logged days
 
 export type DailyIntakeDTO = {
 	date: string; // canonical 'YYYY-MM-DD'
 	kcal: number | null;
 	proteinG: number | null;
+};
+
+/** F11 projection + verdict (Pro only). All math lives in #/lib/projection. */
+export type ProjectionDTO = {
+	currentWeightKg: number;
+	avgIntakeKcal: number;
+	impliedRateKgPerWeek: number;
+	projectedDeltaKg4w: number;
+	projectedWeightKg4w: number;
+	observedRateKgPerWeek: number | null;
+	targetRateKgPerWeek: number | null;
+	phase: Phase | null;
+	verdict: PaceVerdict | null;
 };
 
 export type TdeeStatusResult =
@@ -23,7 +39,8 @@ export type TdeeStatusResult =
 			spreadKcal: number | null;
 			pairs: number;
 			weeklyEstimates: WeeklyEstimate[] | null;
-	  };
+			projection: ProjectionDTO | null;
+		};
 
 const toDTO = (r: schema.DailyIntake): DailyIntakeDTO => ({
 	date: r.date,
@@ -132,7 +149,7 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(async () => 
 	if (result.status === "collecting") return result;
 
 	if (me.plan === "pro") {
-		return { ...result, gated: false };
+		return { ...result, gated: false, projection: await buildProjection(db, me.id, intakeRows, measurementRows, result.kcal) };
 	}
 	return {
 		status: "ready" as const,
@@ -141,8 +158,78 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(async () => 
 		spreadKcal: null,
 		pairs: result.pairs,
 		weeklyEstimates: null,
+		projection: null,
 	};
 });
+
+/**
+ * F11 (Pro): 4-week weight projection at current intake plus the
+ * observed-trend-vs-target verdict. Needs the estimate's kcal plus the rows
+ * tdeeStatus already fetched; only the active cycle is a fresh query.
+ */
+async function buildProjection(
+	db: ReturnType<typeof useDb>,
+	userId: string,
+	intakeRows: Array<{ date: string; kcal: number | null }>,
+	measurementRows: Array<{ takenAt: Date; weightKg: number | null }>,
+	tdeeKcal: number,
+): Promise<ProjectionDTO | null> {
+	const [activeCycle] = await db
+		.select({ phase: schema.cycles.phase, targetRateKgPerWeek: schema.cycles.targetRateKgPerWeek })
+		.from(schema.cycles)
+		.where(and(eq(schema.cycles.userId, userId), isNull(schema.cycles.endDate)))
+		.orderBy(desc(schema.cycles.startDate))
+		.limit(1);
+
+	// "Current intake": average of the last 7 logged days.
+	const loggedKcal = intakeRows
+		.filter((r) => r.kcal != null)
+		.slice(-PROJECTION_INTAKE_DAYS)
+		.map((r) => r.kcal as number);
+	const avgIntakeKcal =
+		loggedKcal.length > 0
+			? Math.round(loggedKcal.reduce((s, k) => s + k, 0) / loggedKcal.length)
+			: null;
+
+	// Latest weight in the series (rows are ascending).
+	let currentWeightKg: number | null = null;
+	for (const m of measurementRows) {
+		if (m.weightKg !== null) currentWeightKg = m.weightKg;
+	}
+
+	const observedRateKgPerWeek = weeklyRates(
+		measurementRows.map((m) => ({ takenAt: m.takenAt.toISOString(), weightKg: m.weightKg, waistCm: null })),
+	).weightKgPerWeek;
+
+	if (avgIntakeKcal === null || currentWeightKg === null) return null;
+	const proj = projectWeight({
+		currentWeightKg,
+		avgIntakeKcal,
+		tdeeKcal,
+		weeks: PROJECTION_WEEKS,
+	});
+	if (proj === null) return null;
+
+	const targetRateKgPerWeek = activeCycle?.targetRateKgPerWeek ?? null;
+	// Verdict the observed trend when measurable, else the intake-implied rate.
+	const verdictRateKgPerWeek = observedRateKgPerWeek ?? proj.impliedRateKgPerWeek;
+	const verdict =
+		targetRateKgPerWeek != null
+			? paceVerdict({ actualRateKgPerWeek: verdictRateKgPerWeek, targetRateKgPerWeek })
+			: null;
+
+	return {
+		currentWeightKg,
+		avgIntakeKcal,
+		impliedRateKgPerWeek: proj.impliedRateKgPerWeek,
+		projectedDeltaKg4w: proj.projectedDeltaKg,
+		projectedWeightKg4w: proj.projectedWeightKg,
+		observedRateKgPerWeek,
+		targetRateKgPerWeek,
+		phase: activeCycle?.phase ?? null,
+		verdict,
+	};
+}
 
 /**
  * Consecutive-day intake logging streak (F17), ending today. An unlogged

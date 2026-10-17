@@ -3,7 +3,9 @@ import { Link, useRouter } from '@tanstack/react-router'
 import { saveSettings } from '#/lib/auth-guard.fns'
 import { leanMassStatus } from '#/lib/lean-mass'
 import { fmtKcal, tdeeEnergyCopy } from '#/lib/adherence'
-import type { TdeeStatusResult } from '#/server/intake.fns'
+import { verdictCopy } from '#/lib/projection'
+import { fmtWeight, kgToLb, type UnitSystem } from '#/lib/units'
+import type { ProjectionDTO, TdeeStatusResult } from '#/server/intake.fns'
 import type { MeasurementDTO } from '#/server/measurements.fns'
 
 type Props = {
@@ -13,6 +15,47 @@ type Props = {
   onGlp1: boolean
   targetKcalPerDay: number | null
   entries: MeasurementDTO[]
+  units: UnitSystem
+}
+
+const MINUS_SIGN = '−' as const
+
+/** Signed weight delta in display units, e.g. −1.8 kg / +4.0 lb. */
+function fmtSignedDelta(kg: number, units: UnitSystem): string {
+  const v = units === 'metric' ? kg : kgToLb(kg)
+  const sign = v > 0 ? '+' : v < 0 ? MINUS_SIGN : ''
+  return `${sign}${Math.abs(v).toFixed(1)} ${units === 'metric' ? 'kg' : 'lb'}`
+}
+
+/** Verdict weight: text is the signal, color follows the chart semantics. */
+const VERDICT_TEXT: Record<string, string> = {
+  'on-pace': 'text-text',
+  'too-fast': 'text-rose',
+  'too-slow': 'text-amber',
+}
+
+/** F11 (Pro): forward weight at current intake + pace verdict vs cycle target. */
+function ProjectionBlock({ p, units }: { p: ProjectionDTO; units: UnitSystem }) {
+  const verdict = p.verdict ? verdictCopy(p.verdict, p.phase) : null
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="text-xs text-dim">At current intake, in 4 weeks:</span>
+        <span className="num text-lg font-medium">
+          {fmtWeight(p.projectedWeightKg4w, units)}{' '}
+          <span className="text-sm text-dim">({fmtSignedDelta(p.projectedDeltaKg4w, units)})</span>
+        </span>
+      </div>
+      {p.verdict && verdict && (
+        <>
+          <p className={`num m-0 mt-1.5 text-sm ${VERDICT_TEXT[p.verdict.kind]}`}>
+            {verdict.headline}
+          </p>
+          {verdict.body && <p className="m-0 mt-1 text-xs text-dim">{verdict.body}</p>}
+        </>
+      )}
+    </div>
+  )
 }
 
 /** Shared streak chip: accent only once the habit milestone (7 days) is hit. */
@@ -107,7 +150,7 @@ function Glp1Row({ plan, onGlp1 }: { plan: 'free' | 'pro'; onGlp1: boolean }) {
   )
 }
 
-export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerDay, entries }: Props) {
+export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerDay, entries, units }: Props) {
   const risk = leanMassStatus(entries)
   const energy = tdeeEnergyCopy({
     tdeeKcal: status.status === 'ready' ? (status.kcal ?? 0) : 0,
@@ -151,12 +194,13 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 				<div className="mt-3">
 					<p className="m-0 text-sm font-medium text-text">Your burn-rate estimate is ready.</p>
 					<p className="m-0 mt-1 text-sm text-dim">
-						Built from {status.pairs} days of your own weight + intake pairs.
+						Built from {status.pairs} days of your own weight + intake pairs. The 4-week
+						projection and pace verdict are ready too.
 					</p>
 					<Link to="/billing" className="btn-primary mt-3 no-underline">
 						Unlock with Pro
 					</Link>
-					<p className="hint">Pro reveals the number, its spread, and how it moves week to week. $10/mo or $100/yr.</p>
+					<p className="hint">Pro reveals the number, its spread, the projection, and the verdict. $10/mo or $100/yr.</p>
 				</div>
 			)}
 
@@ -179,6 +223,7 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 							{energy.body && <p className="m-0 mt-1 text-sm text-dim">{energy.body}</p>}
 						</div>
 					)}
+					{status.projection && <ProjectionBlock p={status.projection} units={units} />}
 					{onGlp1 && risk.atRisk && (
 						<div role="status" className="mt-3 rounded-lg border border-rose/50 bg-rose/5 px-3 py-2.5">
 							<p className="num m-0 text-sm text-rose">

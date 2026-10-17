@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import {
   Area,
   CartesianGrid,
@@ -45,9 +46,10 @@ type Props = {
   entries: MeasurementDTO[] // oldest first
   cycle: CycleDTO | null
   units: UnitSystem
+  plan: 'free' | 'pro'
 }
 
-export default function TrendChart({ entries, cycle, units }: Props) {
+export default function TrendChart({ entries, cycle, units, plan }: Props) {
   const [rangeId, setRangeId] = useState<RangeId>('30d')
   const [mounted, setMounted] = useState(false)
   const [animate, setAnimate] = useState(true)
@@ -175,6 +177,25 @@ export default function TrendChart({ entries, cycle, units }: Props) {
           })}
         </div>
       </div>
+
+      {/*
+       * F12: the free plan's history is server-clamped to 90 days, so "All"
+       * silently shows the same window as 90d for free users. Say why, and
+       * where the full history lives, next to the chart where value is proven.
+       */}
+      {plan === 'free' && rangeId === 'all' && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-line bg-surface2 px-3 py-1">
+          <p className="m-0 text-xs text-dim">
+            Free plan sees the last 90 days here. Pro unlocks the full history.
+          </p>
+          <Link
+            to="/billing"
+            className="inline-flex min-h-11 items-center rounded-md px-1 text-sm font-medium text-accent hover:text-accent-dim"
+          >
+            Upgrade
+          </Link>
+        </div>
+      )}
 
       <div className="mt-3" role="img" aria-label={summary} style={{ height: 260 }}>
         {!mounted ? null : kgValues.length < 2 ? (

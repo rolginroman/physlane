@@ -209,9 +209,10 @@ function DashboardPage() {
         onGlp1={onGlp1}
         targetKcalPerDay={cycle?.kcalTargetPerDay ?? null}
         entries={entries}
+        units={units}
       />
 
-      <TrendChart entries={entries} cycle={cycle} units={units} />
+      <TrendChart entries={entries} cycle={cycle} units={units} plan={plan} />
 
       <div ref={formRef} className="mt-4 scroll-mt-20">
         <MeasurementForm
