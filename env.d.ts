@@ -6,6 +6,9 @@
  */
 declare namespace Cloudflare {
 	interface Env {
+		/** Secrets for the Telegram Mini App auth flow (tele-better-auth). */
+		TELEGRAM_BOT_TOKEN?: string;
+		TELEGRAM_BOT_USERNAME?: string;
 		AUTH_SECRET?: string;
 		STRIPE_SECRET_KEY?: string;
 		STRIPE_WEBHOOK_SECRET?: string;
