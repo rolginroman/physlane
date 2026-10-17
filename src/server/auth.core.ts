@@ -19,6 +19,8 @@ export type SessionUser = {
 	unitSystem: "metric" | "imperial";
 	plan: "free" | "pro";
 	onGlp1: boolean;
+	heightCm: number | null;
+	sex: "male" | "female" | null;
 };
 
 export async function loadSessionUser(): Promise<SessionUser | null> {
@@ -37,6 +39,8 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
 			unitSystem: schema.user.unitSystem,
 			plan: schema.user.plan,
 			onGlp1: schema.user.onGlp1,
+			heightCm: schema.user.heightCm,
+			sex: schema.user.sex,
 		})
 		.from(schema.user)
 		.where(eq(schema.user.id, session.user.id))
@@ -54,6 +58,10 @@ export async function requireUser(): Promise<SessionUser> {
 export type SettingsPatch = {
 	unitSystem?: "metric" | "imperial";
 	onGlp1?: boolean;
+	/** null clears the stored height */
+	heightCm?: number | null;
+	/** null clears the stored sex */
+	sex?: "male" | "female" | null;
 };
 
 export async function applySettings(
@@ -65,6 +73,15 @@ export async function applySettings(
 	const patch: Record<string, unknown> = { updatedAt: new Date() };
 	if (data.unitSystem) patch.unitSystem = data.unitSystem;
 	if (typeof data.onGlp1 === "boolean" && me.plan === "pro") patch.onGlp1 = data.onGlp1;
+	if (data.heightCm !== undefined) {
+		patch.heightCm =
+			typeof data.heightCm === "number" && Number.isFinite(data.heightCm)
+				? data.heightCm
+				: null;
+	}
+	if (data.sex !== undefined) {
+		patch.sex = data.sex === "male" || data.sex === "female" ? data.sex : null;
+	}
 	await db.update(schema.user).set(patch).where(eq(schema.user.id, me.id));
 	return { ok: true };
 }

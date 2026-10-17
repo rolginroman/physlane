@@ -3,7 +3,8 @@ import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { hasAnyCycle, saveCycle } from '#/server/cycles.fns'
 import { saveMeasurement } from '#/server/measurements.fns'
 import { saveSettings } from '#/lib/auth-guard.fns'
-import { kgToLb, weightFromInput, type UnitSystem } from '#/lib/units'
+import type { Sex } from '#/lib/navy-bf'
+import { kgToLb, weightFromInput, lengthFromInput, type UnitSystem } from '#/lib/units'
 
 export const Route = createFileRoute('/_auth/onboarding')({
   head: () => ({ meta: [{ title: 'Set up your tracker · physlane' }] }),
@@ -66,6 +67,19 @@ function weightError(weight: string, units: UnitSystem): string | undefined {
   return undefined
 }
 
+/** Height is optional — only a non-empty invalid entry blocks the step. */
+function heightError(height: string, units: UnitSystem): string | undefined {
+  if (!height.trim()) return undefined
+  const cm = lengthFromInput(height, units)
+  if (cm == null) return units === 'metric' ? 'Enter a number in cm.' : 'Enter a number in inches.'
+  if (cm < 90 || cm > 250) {
+    return units === 'metric'
+      ? 'Enter a height between 90 and 250 cm.'
+      : 'Enter a height between 36 and 98 in.'
+  }
+  return undefined
+}
+
 function kcalError(kcal: string): string | undefined {
   const n = Number.parseFloat(kcal)
   if (!Number.isFinite(n) || !Number.isInteger(n)) {
@@ -82,6 +96,8 @@ function OnboardingPage() {
   const [rate, setRate] = useState('-0.5')
   const [units, setUnits] = useState<UnitSystem>('metric')
   const [weight, setWeight] = useState('')
+  const [height, setHeight] = useState('')
+  const [sex, setSex] = useState<Sex | ''>('')
   const [kcal, setKcal] = useState('')
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [pending, setPending] = useState(false)
@@ -89,10 +105,11 @@ function OnboardingPage() {
 
   const liveRate = rateError(phase, rate)
   const liveWeight = weightError(weight, units)
+  const liveHeight = heightError(height, units)
   const liveKcal = kcalError(kcal)
 
   const stepValid =
-    step === 1 ? !liveRate : step === 2 ? !liveWeight : !liveKcal
+    step === 1 ? !liveRate : step === 2 ? !liveWeight && !liveHeight : !liveKcal
 
   const mark = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }))
   const show = (field: string, error?: string) => (touched[field] ? error : undefined)
@@ -124,13 +141,18 @@ function OnboardingPage() {
     }
   }
 
-  /** Convert the entered weight when switching unit systems, so nothing is retyped. */
+  /** Convert the entered weight and height when switching unit systems, so nothing is retyped. */
   function switchUnits(next: UnitSystem) {
     if (next === units) return
     setWeight((prev) => {
       const kg = weightFromInput(prev, units)
       if (kg == null) return prev
       return next === 'metric' ? kg.toFixed(1) : kgToLb(kg).toFixed(1)
+    })
+    setHeight((prev) => {
+      const cm = lengthFromInput(prev, units)
+      if (cm == null) return prev
+      return next === 'metric' ? cm.toFixed(1) : (cm / 2.54).toFixed(1)
     })
     setUnits(next)
   }
@@ -155,7 +177,13 @@ function OnboardingPage() {
         },
       })
       await saveMeasurement({ data: { takenAt: start, weightKg: startWeightKg } })
-      await saveSettings({ data: { unitSystem: units } })
+      await saveSettings({
+        data: {
+          unitSystem: units,
+          heightCm: lengthFromInput(height, units),
+          sex: sex === '' ? null : sex,
+        },
+      })
       await navigate({ to: '/dashboard' })
     } catch {
       setServerError('Could not save your setup. Check your connection and try again.')
@@ -327,6 +355,62 @@ function OnboardingPage() {
                     Your day one baseline weigh-in.
                   </p>
                 )}
+              </div>
+
+              <div className="mt-4">
+                <label htmlFor="onb-height" className="label">
+                  Height ({units === 'metric' ? 'cm' : 'in'})
+                </label>
+                <input
+                  id="onb-height"
+                  type="text"
+                  inputMode="decimal"
+                  className="input num"
+                  placeholder={units === 'metric' ? '180' : '71'}
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  onBlur={() => mark('height')}
+                  aria-invalid={show('height', liveHeight) ? true : undefined}
+                  aria-describedby={
+                    show('height', liveHeight) ? 'onb-height-error' : 'onb-height-hint'
+                  }
+                />
+                {show('height', liveHeight) ? (
+                  <p id="onb-height-error" className="field-error">
+                    {liveHeight}
+                  </p>
+                ) : (
+                  <p id="onb-height-hint" className="hint">
+                    Used to estimate body fat from your measurements. Optional.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <span className="label" id="onb-sex-label">
+                  Sex
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="onb-sex-label"
+                  className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface2 p-1"
+                >
+                  {(['male', 'female'] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      role="radio"
+                      aria-checked={sex === s}
+                      onClick={() => setSex(sex === s ? '' : s)}
+                      className={`min-h-11 rounded-md px-3 text-sm font-medium capitalize ${
+                        sex === s ? 'bg-surface text-text' : 'text-dim hover:text-text'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <p className="hint">Used to estimate body fat from your measurements. Optional.</p>
               </div>
             </>
           )}

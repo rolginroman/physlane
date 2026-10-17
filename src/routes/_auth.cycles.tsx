@@ -8,8 +8,16 @@ import {
   type CycleDTO,
 } from '#/server/cycles.fns'
 import { listMeasurements, type MeasurementDTO } from '#/server/measurements.fns'
-import { getViewer } from '#/lib/auth-guard.fns'
-import { fmtWeight, kgToLb, weightFromInput, type UnitSystem } from '#/lib/units'
+import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
+import type { Sex } from '#/lib/navy-bf'
+import {
+  fmtWeight,
+  kgToLb,
+  lengthFromInput,
+  lengthToInput,
+  weightFromInput,
+  type UnitSystem,
+} from '#/lib/units'
 
 export const Route = createFileRoute('/_auth/cycles')({
   head: () => ({ meta: [{ title: 'Cycles · physlane' }] }),
@@ -20,7 +28,14 @@ export const Route = createFileRoute('/_auth/cycles')({
       listMeasurements(),
       getViewer(),
     ])
-    return { active, cycles, entries, units: (viewer?.unitSystem ?? 'metric') as UnitSystem }
+    return {
+      active,
+      cycles,
+      entries,
+      units: (viewer?.unitSystem ?? 'metric') as UnitSystem,
+      heightCm: viewer?.heightCm ?? null,
+      sex: viewer?.sex ?? null,
+    }
   },
   component: CyclesPage,
 })
@@ -78,7 +93,7 @@ function PhaseChip({ phase }: { phase: Phase }) {
 }
 
 function CyclesPage() {
-  const { active, cycles, entries, units } = Route.useLoaderData()
+  const { active, cycles, entries, units, heightCm, sex } = Route.useLoaderData()
 
   const history = cycles.filter((c) => c.endDate != null)
   let latestWeightKg: number | null = null
@@ -89,6 +104,8 @@ function CyclesPage() {
   return (
     <section className="pt-8">
       <h1 className="m-0 text-xl font-semibold tracking-tight">Cycles</h1>
+
+      <ProfileCard heightCm={heightCm} sex={sex} units={units} />
 
       {active ? (
         <ActiveCycleCard cycle={active} units={units} />
@@ -102,6 +119,159 @@ function CyclesPage() {
 
       <HistoryCard history={history} entries={entries} units={units} />
     </section>
+  )
+}
+
+const SEX_OPTIONS: { value: Sex | null; label: string }[] = [
+  { value: null, label: 'Prefer not to say' },
+  { value: 'male', label: 'Male' },
+  { value: 'female', label: 'Female' },
+]
+
+/** Height + sex are optional; stored in cm / as male|female|null for the Navy estimate. */
+function optionalHeightError(height: string, units: UnitSystem): string | undefined {
+  if (!height.trim()) return undefined
+  const cm = lengthFromInput(height, units)
+  if (cm == null) return units === 'metric' ? 'Enter a number in cm.' : 'Enter a number in inches.'
+  if (cm < 90 || cm > 250) {
+    return units === 'metric'
+      ? 'Enter a height between 90 and 250 cm.'
+      : 'Enter a height between 36 and 98 in.'
+  }
+  return undefined
+}
+
+function ProfileCard({
+  heightCm,
+  sex,
+  units,
+}: {
+  heightCm: number | null
+  sex: Sex | null
+  units: UnitSystem
+}) {
+  const router = useRouter()
+  const [height, setHeight] = useState(() => lengthToInput(heightCm, units))
+  const [sexChoice, setSexChoice] = useState<Sex | null>(sex)
+  const [pending, setPending] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const liveHeight = optionalHeightError(height, units)
+
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (liveHeight || pending) return
+    setPending(true)
+    setError(null)
+    setSaved(false)
+    try {
+      await saveSettings({
+        data: {
+          heightCm: lengthFromInput(height, units),
+          sex: sexChoice,
+        },
+      })
+      await router.invalidate()
+      setSaved(true)
+    } catch {
+      setError('Could not save your profile. Try again.')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSave} noValidate className="card mt-4 p-4">
+      <h2 className="m-0 text-sm font-semibold">Profile</h2>
+      <p className="m-0 mt-1 text-xs text-dim">
+        Used to estimate body fat from your measurements. Optional.
+      </p>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <label htmlFor="cyc-height" className="label">
+            Height ({units === 'metric' ? 'cm' : 'in'})
+          </label>
+          <input
+            id="cyc-height"
+            type="text"
+            inputMode="decimal"
+            className="input num"
+            placeholder={units === 'metric' ? '180' : '71'}
+            value={height}
+            onChange={(e) => {
+              setHeight(e.target.value)
+              setSaved(false)
+            }}
+            aria-invalid={liveHeight ? true : undefined}
+            aria-describedby={liveHeight ? 'cyc-height-error' : 'cyc-height-hint'}
+          />
+          {liveHeight ? (
+            <p id="cyc-height-error" className="field-error">
+              {liveHeight}
+            </p>
+          ) : (
+            <p id="cyc-height-hint" className="hint">
+              Leave blank to clear.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <span className="label" id="cyc-sex-label">
+            Sex
+          </span>
+          <div
+            role="radiogroup"
+            aria-labelledby="cyc-sex-label"
+            className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-surface2 p-1"
+          >
+            {SEX_OPTIONS.map((opt) => (
+              <button
+                key={opt.label}
+                type="button"
+                role="radio"
+                aria-checked={sexChoice === opt.value}
+                onClick={() => {
+                  setSexChoice(opt.value)
+                  setSaved(false)
+                }}
+                className={`min-h-11 rounded-md px-2 text-sm font-medium ${
+                  sexChoice === opt.value ? 'bg-surface text-text' : 'text-dim hover:text-text'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <p
+          role="alert"
+          className="mt-3 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose"
+        >
+          {error}
+        </p>
+      )}
+
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending || Boolean(liveHeight)}
+          className="btn-primary px-5"
+        >
+          {pending ? 'Saving…' : 'Save profile'}
+        </button>
+        {saved && !pending && (
+          <p role="status" className="m-0 text-xs text-dim">
+            Saved.
+          </p>
+        )}
+      </div>
+    </form>
   )
 }
 
