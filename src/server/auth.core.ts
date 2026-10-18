@@ -26,6 +26,10 @@ export type SessionUser = {
 	reminderTime: string | null;
 	reminderTz: string | null;
 	shareToken: string | null;
+	/* day-14 target prompt state (migration 0006) */
+	targetPromptLastAppliedAt: Date | null;
+	targetPromptLastDismissedAt: Date | null;
+	targetPromptAppliedKcal: number | null;
 };
 
 export async function loadSessionUser(): Promise<SessionUser | null> {
@@ -50,6 +54,9 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
 			reminderTime: schema.user.reminderTime,
 			reminderTz: schema.user.reminderTz,
 			shareToken: schema.user.shareToken,
+			targetPromptLastAppliedAt: schema.user.targetPromptLastAppliedAt,
+			targetPromptLastDismissedAt: schema.user.targetPromptLastDismissedAt,
+			targetPromptAppliedKcal: schema.user.targetPromptAppliedKcal,
 		})
 		.from(schema.user)
 		.where(eq(schema.user.id, session.user.id))

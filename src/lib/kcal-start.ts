@@ -37,6 +37,12 @@ export interface StartingKcalInput {
 	targetRateKgPerWeek: number | null
 }
 
+/** Round to 50s and clamp to the app's valid target range. Shared by the day-one prefill and the day-14 measured correction. */
+export function normalizeTargetKcal(kcal: number): number {
+	const rounded = Math.round(kcal / 50) * 50
+	return Math.min(6000, Math.max(800, rounded))
+}
+
 /** Day-one target suggestion, or null when there is nothing to compute from. */
 export function estimateStartingKcal(input: StartingKcalInput): number | null {
 	const { weightKg, sex, phase, targetRateKgPerWeek } = input
@@ -47,6 +53,5 @@ export function estimateStartingKcal(input: StartingKcalInput): number | null {
 		const delta = rateToDailyKcal(targetRateKgPerWeek)
 		estimate = phase === 'cut' ? estimate - delta : estimate + delta
 	}
-	const rounded = Math.round(estimate / 50) * 50
-	return Math.min(6000, Math.max(800, rounded))
+	return normalizeTargetKcal(estimate)
 }

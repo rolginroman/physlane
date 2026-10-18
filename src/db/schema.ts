@@ -33,6 +33,13 @@ export const user = sqliteTable(
 		reminderTz: text("reminder_tz"),
 		/* last day a reminder was sent (timestamp; compared per local day) */
 		telegramNotifiedAt: integer("telegram_notified_at", { mode: "timestamp" }),
+		/* weekly digest (migration 0006): last send; also the cadence anchor */
+		lastDigestAt: integer("last_digest_at", { mode: "timestamp" }),
+		/* day-14 target prompt (migration 0006): apply/dismiss state machine */
+		targetPromptLastAppliedAt: integer("target_prompt_last_applied_at", { mode: "timestamp" }),
+		targetPromptLastDismissedAt: integer("target_prompt_last_dismissed_at", { mode: "timestamp" }),
+		/** measured kcal at the last Apply, for the >10% re-prompt rule */
+		targetPromptAppliedKcal: integer("target_prompt_applied_kcal"),
 		/* public read-only progress card (migration 0005); rotating revokes links */
 		shareToken: text("share_token"),
 		stripeCustomerId: text("stripe_customer_id"),

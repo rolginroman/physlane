@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Link, useRouter } from '@tanstack/react-router'
 import { saveSettings } from '#/lib/auth-guard.fns'
+import { applyMeasuredTarget, dismissTargetPrompt } from '#/server/target-prompt.fns'
+import { daysToTight } from '#/lib/band'
+import { normalizeTargetKcal } from '#/lib/kcal-start'
 import { leanMassStatus } from '#/lib/lean-mass'
 import { fmtKcal, tdeeEnergyCopy } from '#/lib/adherence'
 import { verdictCopy } from '#/lib/projection'
@@ -104,6 +107,103 @@ function Switch({
   )
 }
 
+/**
+ * G1.3: the band's narrowing bar. Width is the tightness percent; the label is
+ * supplied by the caller because free and Pro frame it differently. Never
+ * carries a kcal figure by itself.
+ */
+function BandBar({ confidence, label }: { confidence: number; label: string }) {
+  const pct = Math.round(confidence * 100)
+  return (
+    <div className="mt-2.5">
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        aria-label="Estimate tightness"
+        className="h-1.5 w-full overflow-hidden rounded-full bg-surface2"
+      >
+        <div
+          className="h-full rounded-full bg-accent"
+          style={{ width: `${Math.max(4, pct)}%` }}
+        />
+      </div>
+      <p className="m-0 mt-1.5 text-xs text-dim">{label}</p>
+    </div>
+  )
+}
+
+/** Tightness copy shared by both plans: percent now, days left to full precision. */
+function tightnessLabel(confidence: number, pairs: number, prefix: 'pro' | 'free'): string {
+  const pct = Math.round(confidence * 100)
+  const remaining = daysToTight(pairs)
+  if (prefix === 'pro') {
+    return remaining > 0
+      ? `Your estimate is ${pct}% tight · measured from your logs, ${pairs} days · ${remaining} more days to full precision`
+      : `Your estimate is ${pct}% tight · measured from your logs, ${pairs} days`
+  }
+  return remaining > 0
+    ? `Your estimate is ${pct}% tight · ${remaining} more days to full precision`
+    : `Your estimate is ${pct}% tight and keeps refining with every log`
+}
+
+/** G3.2 (Pro): the day-14 follow-the-measurement card. */
+function TargetPromptCard({
+  measuredKcal,
+  targetKcalPerDay,
+  onDone,
+}: {
+  measuredKcal: number
+  targetKcalPerDay: number | null
+  onDone: () => Promise<void>
+}) {
+  const [pending, setPending] = useState<'apply' | 'dismiss' | null>(null)
+  const applied = normalizeTargetKcal(measuredKcal)
+
+  async function act(kind: 'apply' | 'dismiss') {
+    if (pending) return
+    setPending(kind)
+    try {
+      if (kind === 'apply') await applyMeasuredTarget()
+      else await dismissTargetPrompt()
+      await onDone()
+    } catch {
+      // Write failed; the card re-renders from server state after reload.
+    } finally {
+      setPending(null)
+    }
+  }
+
+  return (
+    <div role="status" className="mt-3 rounded-lg border border-accent/50 bg-accent/5 px-3 py-2.5">
+      <p className="num m-0 text-sm text-text">
+        Your logs say you burn about {fmtKcal(measuredKcal)}
+        {targetKcalPerDay != null ? <> a day. Your target assumes {fmtKcal(targetKcalPerDay)}.</> : <> a day.</>}{' '}
+        Follow the measurement?
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => act('apply')}
+          disabled={pending != null}
+          className="btn-primary inline-flex min-h-9 items-center rounded-md px-3 text-sm disabled:opacity-60"
+        >
+          {pending === 'apply' ? 'Applying' : `Apply ${fmtKcal(applied)}`}
+        </button>
+        <button
+          type="button"
+          onClick={() => act('dismiss')}
+          disabled={pending != null}
+          className="inline-flex min-h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
+        >
+          Keep mine
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Glp1Row({ plan, onGlp1 }: { plan: 'free' | 'pro'; onGlp1: boolean }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -151,6 +251,7 @@ function Glp1Row({ plan, onGlp1 }: { plan: 'free' | 'pro'; onGlp1: boolean }) {
 }
 
 export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerDay, entries, units }: Props) {
+  const router = useRouter()
   const risk = leanMassStatus(entries)
   const energy = tdeeEnergyCopy({
     tdeeKcal: status.status === 'ready' ? (status.kcal ?? 0) : 0,
@@ -158,6 +259,9 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
     onGlp1,
   })
   const wRate = risk.rates.weightKgPerWeek ?? 0
+  const refresh = async () => {
+    await router.invalidate()
+  }
 
 	return (
 		<section className="card mt-4 p-4 sm:p-5" aria-label="Adaptive TDEE">
@@ -197,6 +301,16 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 						Built from {status.pairs} days of your own weight + intake pairs. The 4-week
 						projection and pace verdict are ready too.
 					</p>
+					<BandBar
+						confidence={status.confidence}
+						label={tightnessLabel(status.confidence, status.pairs, 'free')}
+					/>
+					{status.targetPrompt.eligible && (
+						<p className="m-0 mt-3 rounded-lg border border-line bg-surface2 px-3 py-2.5 text-sm text-dim">
+							Your logs and your daily target have drifted apart. Pro shows the measured number
+							and realigns your target in one tap.
+						</p>
+					)}
 					<Link to="/billing" className="btn-primary mt-3 no-underline">
 						Unlock with Pro
 					</Link>
@@ -207,21 +321,31 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 			{status.status === 'ready' && !status.gated && status.kcal != null && (
 				<div className="mt-3">
 					<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-						<span className="num text-3xl font-semibold tracking-tight">{fmtKcal(status.kcal)}</span>
+						<span className="num text-3xl font-semibold tracking-tight">
+							{fmtKcal(status.kcal)} <span className="text-xl">± {fmtKcal(status.bandKcal)}</span>
+						</span>
 						<span className="text-sm text-dim">kcal per day</span>
-						{status.spreadKcal != null && status.spreadKcal > 0 && (
-							<span className="num text-sm text-dim">± {fmtKcal(status.spreadKcal)}</span>
-						)}
 					</div>
+					<BandBar
+						confidence={status.confidence}
+						label={tightnessLabel(status.confidence, status.pairs, 'pro')}
+					/>
 					<p className="m-0 mt-1.5 text-xs text-faint">
-						Adaptive estimate from your last {status.pairs} days of same-day weight + intake. Smoothed
-						weekly; the spread is half the range of the last 3 weeks.
+						Adaptive estimate from your same-day weight + intake, smoothed weekly. The band
+						narrows as the weeks agree.
 					</p>
 					{energy && (
 						<div className="mt-3">
 							<p className="m-0 text-sm text-text">{energy.headline}</p>
 							{energy.body && <p className="m-0 mt-1 text-sm text-dim">{energy.body}</p>}
 						</div>
+					)}
+					{status.targetPrompt.eligible && status.targetPrompt.measuredKcal != null && (
+						<TargetPromptCard
+							measuredKcal={status.targetPrompt.measuredKcal}
+							targetKcalPerDay={targetKcalPerDay}
+							onDone={refresh}
+						/>
 					)}
 					{status.projection && <ProjectionBlock p={status.projection} units={units} />}
 					{onGlp1 && risk.atRisk && (

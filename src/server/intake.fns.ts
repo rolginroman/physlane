@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, desc, eq, gte, isNull, lte } from "drizzle-orm";
+import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { useDb, schema } from "#/db";
 import { requireUser } from "./auth.fns";
-import { computeTdee, type TdeeEntry, type WeeklyEstimate } from "#/lib/tdee";
+import { computeTdee } from "#/lib/tdee";
+import { shapeTdeeStatus } from "#/lib/band";
+import { loadActiveCycle, loadIntakeContext, type ActiveCycleRow, type IntakeContext } from "./intake.core";
 import { isValidIntakeDate, validateIntake } from "#/lib/intake-logic";
 import { intakeStreak, type Phase } from "#/lib/adherence";
 import { weeklyRates } from "#/lib/lean-mass";
@@ -30,17 +32,8 @@ export type ProjectionDTO = {
 	verdict: PaceVerdict | null;
 };
 
-export type TdeeStatusResult =
-	| { status: "collecting"; pairs: number; needed: 14 }
-	| {
-			status: "ready";
-			gated: boolean;
-			kcal: number | null;
-			spreadKcal: number | null;
-			pairs: number;
-			weeklyEstimates: WeeklyEstimate[] | null;
-			projection: ProjectionDTO | null;
-		};
+export type TdeeStatusResult = import("#/lib/band").TdeeStatusPayload;
+export type TargetPromptPayload = import("#/lib/band").TargetPromptPayload;
 
 const toDTO = (r: schema.DailyIntake): DailyIntakeDTO => ({
 	date: r.date,
@@ -115,71 +108,46 @@ export const intakeRange = createServerFn({ method: "GET" })
 
 /**
  * TDEE pipeline state: intake kcal joined with same-day measurement weights.
- * Free users get status + pair count but never the estimate numbers (gated).
+ * Free users get status + pair count + the confidence band but never the
+ * estimate numbers; the gate itself lives in the pure shaper (src/lib/band.ts).
  */
 export const tdeeStatus = createServerFn({ method: "GET" }).handler(async () => {
 	const me = await requireUser();
-	const db = useDb();
+	const ctx = await loadIntakeContext(me.id);
+	const result = computeTdee(ctx.entries);
+	const activeCycle = await loadActiveCycle(me.id);
 
-	const intakeRows = await db
-		.select({ date: schema.dailyIntake.date, kcal: schema.dailyIntake.kcal })
-		.from(schema.dailyIntake)
-		.where(eq(schema.dailyIntake.userId, me.id));
+	const projection =
+		me.plan === "pro" && result.status === "ready"
+			? buildProjection(ctx, result.kcal, activeCycle)
+			: null;
 
-	// Ascending so the last same-day measurement (latest) wins per date.
-	const measurementRows = await db
-		.select({ takenAt: schema.measurements.takenAt, weightKg: schema.measurements.weightKg })
-		.from(schema.measurements)
-		.where(eq(schema.measurements.userId, me.id))
-		.orderBy(asc(schema.measurements.takenAt));
-
-	const byDate = new Map<string, TdeeEntry>();
-	for (const r of intakeRows) {
-		byDate.set(r.date, { date: r.date, kcal: r.kcal, weightKg: null });
-	}
-	for (const m of measurementRows) {
-		if (m.weightKg === null) continue;
-		const day = toDate(m.takenAt);
-		const entry = byDate.get(day);
-		if (entry) entry.weightKg = m.weightKg; // same-day measurement = that date's weight
-	}
-
-	const entries = [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-	const result = computeTdee(entries);
-	if (result.status === "collecting") return result;
-
-	if (me.plan === "pro") {
-		return { ...result, gated: false, projection: await buildProjection(db, me.id, intakeRows, measurementRows, result.kcal) };
-	}
-	return {
-		status: "ready" as const,
-		gated: true,
-		kcal: null,
-		spreadKcal: null,
-		pairs: result.pairs,
-		weeklyEstimates: null,
-		projection: null,
-	};
+	return shapeTdeeStatus(result, {
+		plan: me.plan,
+		projection,
+		prompt: {
+			targetKcalPerDay: activeCycle?.kcalTargetPerDay ?? null,
+			state: {
+				lastAppliedAt: me.targetPromptLastAppliedAt,
+				lastDismissedAt: me.targetPromptLastDismissedAt,
+				appliedKcal: me.targetPromptAppliedKcal,
+			},
+			now: new Date(),
+		},
+	});
 });
 
 /**
  * F11 (Pro): 4-week weight projection at current intake plus the
- * observed-trend-vs-target verdict. Needs the estimate's kcal plus the rows
- * tdeeStatus already fetched; only the active cycle is a fresh query.
+ * observed-trend-vs-target verdict. Composes the rows tdeeStatus already
+ * fetched; the active cycle is passed in.
  */
-async function buildProjection(
-	db: ReturnType<typeof useDb>,
-	userId: string,
-	intakeRows: Array<{ date: string; kcal: number | null }>,
-	measurementRows: Array<{ takenAt: Date; weightKg: number | null }>,
+function buildProjection(
+	ctx: IntakeContext,
 	tdeeKcal: number,
-): Promise<ProjectionDTO | null> {
-	const [activeCycle] = await db
-		.select({ phase: schema.cycles.phase, targetRateKgPerWeek: schema.cycles.targetRateKgPerWeek })
-		.from(schema.cycles)
-		.where(and(eq(schema.cycles.userId, userId), isNull(schema.cycles.endDate)))
-		.orderBy(desc(schema.cycles.startDate))
-		.limit(1);
+	activeCycle: ActiveCycleRow,
+): ProjectionDTO | null {
+	const { intakeRows, measurementRows } = ctx;
 
 	// "Current intake": average of the last 7 logged days.
 	const loggedKcal = intakeRows
