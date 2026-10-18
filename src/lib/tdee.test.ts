@@ -56,17 +56,17 @@ describe("computeTdee — synthetic anchors (±5%)", () => {
 describe("computeTdee — collecting state", () => {
 	it("returns collecting below 14 complete pairs", () => {
 		const result = computeTdee(series("2026-01-01", 13, () => 2500, () => 80));
-		expect(result).toEqual({ status: "collecting", pairs: 13, needed: 14 });
+		expect(result).toEqual({ status: "collecting", pairs: 13, needed: 14, outliersRejected: 0 });
 	});
 
 	it("empty input → collecting with 0 pairs", () => {
-		expect(computeTdee([])).toEqual({ status: "collecting", pairs: 0, needed: 14 });
+		expect(computeTdee([])).toEqual({ status: "collecting", pairs: 0, needed: 14, outliersRejected: 0 });
 	});
 
 	it("days without weight are not complete pairs", () => {
 		// 20 logged days but only 10 with weight → 10 pairs.
 		const entries = series("2026-01-01", 20, () => 2500, (d) => (d % 2 === 0 ? 80 : null));
-		expect(computeTdee(entries)).toEqual({ status: "collecting", pairs: 10, needed: 14 });
+		expect(computeTdee(entries)).toEqual({ status: "collecting", pairs: 10, needed: 14, outliersRejected: 0 });
 	});
 
 	it("exactly 14 complete pairs is enough", () => {
@@ -96,16 +96,100 @@ describe("computeTdee — spread & estimates", () => {
 		if (result.status !== "ready") return;
 		expect(result.spreadKcal).toBeGreaterThan(0);
 	});
+});
 
-	it("skips windows whose boundary weights are not 7 days apart", () => {
-		// Entries every 8 days: 16 complete pairs but no two boundary entries
-		// sit exactly 7 days apart, so no valid window can be formed.
+describe("computeTdee v2 — sparse windows (7–10 day spans)", () => {
+	it("entries every 8 days still reach ready (was collecting in v1)", () => {
 		const entries: TdeeEntry[] = Array.from({ length: 16 }, (_, d) => ({
 			date: day("2026-01-01", d * 8),
 			kcal: 2500,
 			weightKg: 80,
 		}));
 		const result = computeTdee(entries);
-		expect(result).toEqual({ status: "collecting", pairs: 16, needed: 14 });
+		expect(result.status).toBe("ready");
+		if (result.status !== "ready") return;
+		expect(result.kcal).toBe(2500); // flat weight, constant intake
+	});
+
+	it("entries every 12 days exceed the tolerance → collecting", () => {
+		const entries: TdeeEntry[] = Array.from({ length: 16 }, (_, d) => ({
+			date: day("2026-01-01", d * 12),
+			kcal: 2500,
+			weightKg: 80,
+		}));
+		expect(computeTdee(entries)).toEqual({
+			status: "collecting",
+			pairs: 16,
+			needed: 14,
+			outliersRejected: 0,
+		});
+	});
+
+	it("scattered missed days in a daily series keep windows alive", () => {
+		// 24 days with days 5, 12, 18 missing entirely (no kcal, no weight).
+		const entries = series("2026-01-01", 24, () => 2600, () => 80).filter(
+			(_, d) => d !== 5 && d !== 12 && d !== 18,
+		);
+		const result = computeTdee(entries);
+		expect(result.status).toBe("ready");
+		if (result.status !== "ready") return;
+		expect(result.pairs).toBe(21);
+		expect(result.kcal).toBe(2600);
+	});
+
+	it("span is normalized per-week: gaining 0.5 kg/wk every 8 days → ≈2450 at 3000", () => {
+		const entries: TdeeEntry[] = Array.from({ length: 16 }, (_, d) => ({
+			date: day("2026-01-01", d * 8),
+			kcal: 3000,
+			weightKg: 80 + (0.5 * d * 8) / 7,
+		}));
+		const result = computeTdee(entries);
+		expect(result.status).toBe("ready");
+		if (result.status !== "ready") return;
+		expect(result.kcal).toBeGreaterThanOrEqual(2450 * 0.95);
+		expect(result.kcal).toBeLessThanOrEqual(2450 * 1.05);
+	});
+});
+
+describe("computeTdee v2 — outlier rejection", () => {
+	it("a +2.5 kg salt spike is interpolated away: estimate stays ≈2600", () => {
+		const entries = series("2026-01-01", 21, () => 2600, (d) => (d === 10 ? 82.5 : 80));
+		const result = computeTdee(entries);
+		expect(result.status).toBe("ready");
+		if (result.status !== "ready") return;
+		expect(result.outliersRejected).toBe(1);
+		expect(result.pairs).toBe(21); // pair kept, weight interpolated
+		expect(result.kcal).toBeGreaterThanOrEqual(2600 * 0.95);
+		expect(result.kcal).toBeLessThanOrEqual(2600 * 1.05);
+	});
+
+	it("a −2 kg whoosh drop is interpolated away symmetrically", () => {
+		const entries = series("2026-01-01", 21, () => 2600, (d) => (d === 9 ? 78 : 80));
+		const result = computeTdee(entries);
+		expect(result.status).toBe("ready");
+		if (result.status !== "ready") return;
+		expect(result.outliersRejected).toBe(1);
+		expect(result.kcal).toBe(2600);
+	});
+
+	it("steady steep loss is a trend, not a spike: never rejected", () => {
+		// 0.3 kg/day sustained (2.1 kg/wk) — deltas identical, no opposite-sign signature.
+		const entries = series("2026-01-01", 21, () => 2000, (d) => 90 - 0.3 * d);
+		const result = computeTdee(entries);
+		expect(result.status).toBe("ready");
+		if (result.status !== "ready") return;
+		expect(result.outliersRejected).toBe(0);
+		expect(result.pairs).toBe(21);
+		// 2000 + 2.1 kg/wk × 1100 = 4310
+		expect(result.kcal).toBeGreaterThanOrEqual(4310 * 0.95);
+		expect(result.kcal).toBeLessThanOrEqual(4310 * 1.05);
+	});
+
+	it("quiet noisy series rejects nothing", () => {
+		const entries = series("2026-01-01", 21, () => 2600, (d) => 80 + (d % 2 === 0 ? 0.1 : -0.1));
+		const result = computeTdee(entries);
+		expect(result.status).toBe("ready");
+		if (result.status !== "ready") return;
+		expect(result.outliersRejected).toBe(0);
 	});
 });

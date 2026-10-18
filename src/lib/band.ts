@@ -12,6 +12,7 @@
 import type { TdeeResult, WeeklyEstimate } from "./tdee";
 import type { TargetPromptState } from "./target-prompt";
 import { targetPromptEligible } from "./target-prompt";
+import type { DriftSignal } from "./drift";
 import type { ProjectionDTO } from "#/server/intake.fns";
 
 export type ConfidenceBand = {
@@ -71,6 +72,10 @@ export type TdeeStatusPayload =
 			weeklyEstimates: WeeklyEstimate[] | null;
 			projection: ProjectionDTO | null;
 			targetPrompt: TargetPromptPayload;
+			/** Pro only: the reporting-drift signal with its kcal magnitude. Always null for free. */
+			drift: DriftSignal;
+			/** Both plans: whether the drift banner should show. Free copy carries no numbers. */
+			driftFired: boolean;
 	  };
 
 export function shapeTdeeStatus(
@@ -79,6 +84,8 @@ export function shapeTdeeStatus(
 		plan: "free" | "pro";
 		projection: ProjectionDTO | null;
 		prompt: { targetKcalPerDay: number | null; state: TargetPromptState; now: Date };
+		/** Reporting-drift signal computed server-side from the user's own series. */
+		drift?: DriftSignal;
 	},
 ): TdeeStatusPayload {
 	if (result.status === "collecting") {
@@ -93,6 +100,7 @@ export function shapeTdeeStatus(
 		state: opts.prompt.state,
 		now: opts.prompt.now,
 	});
+	const drift = opts.drift ?? null;
 
 	if (opts.plan === "pro") {
 		return {
@@ -106,6 +114,8 @@ export function shapeTdeeStatus(
 			weeklyEstimates: result.weeklyEstimates,
 			projection: opts.projection,
 			targetPrompt: { eligible, measuredKcal: result.kcal },
+			drift,
+			driftFired: drift !== null,
 		};
 	}
 	return {
@@ -119,5 +129,7 @@ export function shapeTdeeStatus(
 		weeklyEstimates: null,
 		projection: null,
 		targetPrompt: { eligible, measuredKcal: null },
+		drift: null,
+		driftFired: drift !== null,
 	};
 }

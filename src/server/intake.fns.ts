@@ -7,6 +7,7 @@ import { shapeTdeeStatus } from "#/lib/band";
 import { loadActiveCycle, loadIntakeContext, type ActiveCycleRow, type IntakeContext } from "./intake.core";
 import { isValidIntakeDate, validateIntake } from "#/lib/intake-logic";
 import { intakeStreak, type Phase } from "#/lib/adherence";
+import { detectReportingDrift, driftWindows } from "#/lib/drift";
 import { weeklyRates } from "#/lib/lean-mass";
 import { paceVerdict, projectWeight, PROJECTION_WEEKS, type PaceVerdict } from "#/lib/projection";
 
@@ -117,6 +118,16 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(async () => 
 	const result = computeTdee(ctx.entries);
 	const activeCycle = await loadActiveCycle(me.id);
 
+	// Drift detector consumes the same paired series, anchored at the newest
+	// logged day; burn must be ready or there is nothing to diverge from.
+	const drift =
+		result.status === "ready" && ctx.entries.length > 0
+			? detectReportingDrift(
+					result.weeklyEstimates,
+					driftWindows(ctx.entries, ctx.entries[ctx.entries.length - 1].date) ?? [],
+				)
+			: null;
+
 	const projection =
 		me.plan === "pro" && result.status === "ready"
 			? buildProjection(ctx, result.kcal, activeCycle)
@@ -125,6 +136,7 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(async () => 
 	return shapeTdeeStatus(result, {
 		plan: me.plan,
 		projection,
+		drift,
 		prompt: {
 			targetKcalPerDay: activeCycle?.kcalTargetPerDay ?? null,
 			state: {

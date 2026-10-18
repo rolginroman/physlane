@@ -15,6 +15,7 @@ const readyResult = (over: Partial<Extract<TdeeResult, { status: "ready" }>> = {
 	spreadKcal: 120,
 	weeklyEstimates: [{ weekStart: "2026-01-01", kcal: 2600 }],
 	pairs: 14,
+	outliersRejected: 0,
 	...over,
 });
 
@@ -132,7 +133,7 @@ describe("shapeTdeeStatus — gate leak-check", () => {
 	it("collecting payload carries confidence + bandKcal on both plans", () => {
 		for (const plan of ["free", "pro"] as const) {
 			const payload = shapeTdeeStatus(
-				{ status: "collecting", pairs: 6, needed: 14 },
+				{ status: "collecting", pairs: 6, needed: 14, outliersRejected: 0 },
 				{ plan, projection: null, prompt },
 			);
 			expect(payload.status).toBe("collecting");
@@ -149,5 +150,27 @@ describe("shapeTdeeStatus — gate leak-check", () => {
 		expect(free.targetPrompt.eligible).toBe(true);
 		expect(free.targetPrompt.measuredKcal).toBeNull();
 		expect(pro.targetPrompt.eligible).toBe(true);
+	});
+
+	it("drift is gated: free gets the fired flag only, Pro gets the signal", () => {
+		const signal = { direction: "under" as const, impliedKcalPerDay: 523 };
+		const free = shapeTdeeStatus(readyResult(), { plan: "free", projection: null, prompt, drift: signal });
+		const pro = shapeTdeeStatus(readyResult(), { plan: "pro", projection: null, prompt, drift: signal });
+		if (free.status !== "ready" || pro.status !== "ready") throw new Error("expected ready");
+		expect(free.driftFired).toBe(true);
+		expect(free.drift).toBeNull();
+		expect(JSON.stringify(free)).not.toContain("523");
+		expect(pro.driftFired).toBe(true);
+		expect(pro.drift?.direction).toBe("under");
+		expect(pro.drift?.impliedKcalPerDay).toBe(523);
+	});
+
+	it("no drift input means fired false on both plans", () => {
+		const free = shapeTdeeStatus(readyResult(), { plan: "free", projection: null, prompt });
+		const pro = shapeTdeeStatus(readyResult(), { plan: "pro", projection: null, prompt });
+		if (free.status !== "ready" || pro.status !== "ready") throw new Error("expected ready");
+		expect(free.driftFired).toBe(false);
+		expect(pro.driftFired).toBe(false);
+		expect(pro.drift).toBeNull();
 	});
 });
