@@ -261,7 +261,7 @@ export default function MeasurementForm({ units, editing, onEditDone, onSaved, l
 
       {open && (
         <form onSubmit={handleSubmit} noValidate className="border-t border-line p-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div>
               <label htmlFor="m-date" className="label">
                 Date
