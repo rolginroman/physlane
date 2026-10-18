@@ -108,13 +108,11 @@ function Hero() {
       <div className="hero-main">
         <p className="kicker">Weight · Calories · Body · Web&nbsp;or&nbsp;Telegram</p>
         <h1>
-          Calorie apps guess.
-          <br />
-          This one measures.
+          Calorie apps guess. This one measures.
         </h1>
         <p className="sub">
           Most apps run a 1990 formula on your height and weight and call the
-          result personal. physlane gives you a sane target on day one, then
+          result personal. physlane gives you a sane target on day 1, then
           works out what you actually burn from two weeks of your own weights
           and calories. Your target follows that number, and it keeps moving
           when your metabolism does.
@@ -138,12 +136,16 @@ function Hero() {
       </div>
       <div className="hero-side">
         <div className="fact">
-          <b className="mono">20<small> s</small></b>
-          <span>daily time cost, wherever you open it</span>
+          <b className="mono">20</b>
+          <span>seconds a day, wherever you open it</span>
         </div>
         <div className="fact">
           <b className="mono">day&nbsp;1</b>
           <span>a sane target to start, measured by day&nbsp;14</span>
+        </div>
+        <div className="fact">
+          <b className="mono">2</b>
+          <span>weeks of your logs before the first fit</span>
         </div>
         <div className="fact">
           <b className="mono">0</b>

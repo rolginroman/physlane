@@ -39,7 +39,7 @@ function Glp1Page() {
       <div className="wrap hero">
         <div className="hero-main">
           <p className="kicker">For GLP-1 users</p>
-          <h1>
+          <h1 className="tight">
             Fast loss is
             <br />
             easy to see.
@@ -79,8 +79,8 @@ function Glp1Page() {
             <span>kg per week, typical mid-treatment rate</span>
           </div>
           <div className="fact">
-            <b className="mono">30<small> s</small></b>
-            <span>for waist and neck tape</span>
+            <b className="mono">30</b>
+            <span>seconds for waist and neck tape</span>
           </div>
           <div className="fact">
             <b className="mono">2</b>
