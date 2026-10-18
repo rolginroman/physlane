@@ -10,8 +10,8 @@
  * order never decides the outcome.
  */
 .lp {
-  --paper: #0b0d10; --ink: #e6eaf2; --dim: #8b94a7; --faint: #5b6475;
-  --line: #232936; --srf: #11141a; --accent: #34d399; --accent-dim: #10b981;
+  --paper: #141821; --ink: #e6eaf2; --dim: #8b94a7; --faint: #5e6778;
+  --line: #232936; --srf: #1b212b; --accent: #34d399; --accent-dim: #10b981;
   --sans: system-ui, -apple-system, "Helvetica Neue", "Segoe UI", sans-serif;
   --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
   background: var(--paper);

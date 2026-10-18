@@ -76,7 +76,7 @@ export const Route = createFileRoute('/')({
       { title: TITLE },
       { name: 'description', content: DESCRIPTION },
       { name: 'robots', content: 'index, follow' },
-      { name: 'theme-color', content: '#0b0d10' },
+      { name: 'theme-color', content: '#141821' },
       { property: 'og:site_name', content: SITE_NAME },
       { property: 'og:type', content: 'website' },
       { property: 'og:url', content: SITE_URL },
