@@ -1,6 +1,6 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, useRouterState } from '@tanstack/react-router'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 
@@ -60,7 +60,16 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
+/*
+ * Public landing pages (variant C) ship their own shell (LandingShell) and
+ * must not carry the dark app chrome. Every other route, including all
+ * signed-in app surfaces, keeps Header and Footer exactly as before.
+ */
+const LANDING_PATHS = new Set(['/', '/guide', '/glp-1', '/analytics', '/tracking'])
+
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const isLanding = LANDING_PATHS.has(pathname)
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -74,9 +83,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        <Header />
+        {!isLanding && <Header />}
         {children}
-        <Footer />
+        {!isLanding && <Footer />}
         {import.meta.env.DEV && (
           <TanStackDevtools
             config={{
