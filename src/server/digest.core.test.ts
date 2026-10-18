@@ -195,3 +195,66 @@ describe("shouldSendDigest — weekly cadence and dedupe", () => {
 		).toBe(false);
 	});
 });
+
+describe("buildDigestStats — drift integration", () => {
+	/** 28 honest flat days at 2600, then 14 days reporting 2500 while losing 0.49 kg/wk. */
+	const driftSeries = (): DigestInput => {
+		const intake: DigestInput["intake"] = [];
+		const weights: DigestInput["weights"] = [];
+		for (let i = 0; i < 42; i++) {
+			const d = day(TODAY, -41 + i);
+			const drifting = i >= 28;
+			intake.push({ date: d, kcal: drifting ? 2500 : 2600 });
+			weights.push({
+				takenAt: new Date(`${d}T08:00:00Z`),
+				weightKg: drifting ? 80 - 0.07 * (i - 27) : 80,
+			});
+		}
+		return baseInput({ intake, weights });
+	};
+
+	it("detects underreporting when the scale diverges from the logs", () => {
+		const stats = buildDigestStats(driftSeries());
+		expect(stats?.drift).not.toBeNull();
+		expect(stats?.drift?.direction).toBe("under");
+		expect(stats?.drift?.impliedKcalPerDay).toBeGreaterThan(390); // >15% of the 2600 anchor
+	});
+
+	it("clean flat series produces no drift", () => {
+		const stats = buildDigestStats(readySeries(35));
+		expect(stats?.drift).toBeNull();
+	});
+});
+
+describe("renderDigest — drift copy", () => {
+	const statsWithDrift = (plan: "free" | "pro") =>
+		renderDigest(
+			{
+				daysLogged: 7,
+				avgIntakeKcal: plan === "pro" ? 2500 : null,
+				targetKcalPerDay: plan === "pro" ? 2400 : null,
+				weightDeltaKg: plan === "pro" ? -0.49 : null,
+				verdict: null,
+				confidence: 1,
+				pairs: 42,
+				measuredKcal: plan === "pro" ? 2900 : null,
+				bandKcal: plan === "pro" ? 80 : null,
+				drift: { direction: "under", impliedKcalPerDay: 439 },
+			},
+			{ plan, unitSystem: "metric", name: null },
+		);
+
+	it("pro names the mismatch in kcal", () => {
+		const text = statsWithDrift("pro");
+		expect(text).toContain("439 kcal a day");
+		expect(text).toContain("unlogged");
+	});
+
+	it("free warns without any number and keeps the copy rules", () => {
+		const text = statsWithDrift("free");
+		expect(text).toContain("logs may be missing bites");
+		expect(text).not.toContain("439");
+		expect(text).not.toContain("—");
+		expect(text).not.toContain("!");
+	});
+});

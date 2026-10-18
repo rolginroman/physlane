@@ -305,6 +305,11 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 						confidence={status.confidence}
 						label={tightnessLabel(status.confidence, status.pairs, 'free')}
 					/>
+					{status.driftFired && (
+						<p className="m-0 mt-3 rounded-lg border border-line bg-surface2 px-3 py-2.5 text-sm text-dim">
+							Your weight trend and your logged intake disagree. Logs may be missing bites.
+						</p>
+					)}
 					{status.targetPrompt.eligible && (
 						<p className="m-0 mt-3 rounded-lg border border-line bg-surface2 px-3 py-2.5 text-sm text-dim">
 							Your logs and your daily target have drifted apart. Pro shows the measured number
@@ -334,6 +339,20 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 						Adaptive estimate from your same-day weight + intake, smoothed weekly. The band
 						narrows as the weeks agree.
 					</p>
+					{status.drift != null && (
+						<div role="status" className="mt-3 rounded-lg border border-amber/50 bg-amber/5 px-3 py-2.5">
+							<p className="num m-0 text-sm text-text">
+								{status.drift.direction === 'under'
+									? `Your weight trend says the deficit is about ${fmtKcal(status.drift.impliedKcalPerDay)} kcal a day bigger than your logs do.`
+									: `Your weight trend says the surplus is about ${fmtKcal(status.drift.impliedKcalPerDay)} kcal a day bigger than your logs do.`}
+							</p>
+							<p className="m-0 mt-1 text-xs text-dim">
+								{status.drift.direction === 'under'
+									? 'Logs and scale cannot both be right. Some days are probably going unlogged; weigh what you eat for a week.'
+									: 'Logs and scale cannot both be right. More is going in than the logs show; weigh what you eat for a week.'}
+							</p>
+						</div>
+					)}
 					{energy && (
 						<div className="mt-3">
 							<p className="m-0 text-sm text-text">{energy.headline}</p>

@@ -11,6 +11,7 @@
 
 import { localDate, parseReminderMinute, REMINDER_BUCKET_MINUTES } from "#/lib/remind";
 import { computeTdee, type TdeeEntry } from "#/lib/tdee";
+import { detectReportingDrift, driftWindows, type DriftSignal } from "#/lib/drift";
 import { estimateBand } from "#/lib/band";
 import { paceVerdict, type PaceVerdict } from "#/lib/projection";
 import { weeklyRates } from "#/lib/lean-mass";
@@ -46,6 +47,8 @@ export type DigestStats = {
 	/** Pro only: measured burn when the estimator is ready, else null. */
 	measuredKcal: number | null;
 	bandKcal: number | null;
+	/** Reporting-drift signal, null unless the estimator is ready and firing. */
+	drift: DriftSignal;
 };
 
 /** 'YYYY-MM-DD' → UTC weekday index, for the same-weekday cadence check. */
@@ -111,6 +114,10 @@ export function buildDigestStats(input: DigestInput): DigestStats | null {
 		.sort((a, b) => (a.date < b.date ? -1 : 1));
 	const tdee = computeTdee(entries);
 	const pairs = tdee.pairs;
+	const drift =
+		tdee.status === "ready"
+			? detectReportingDrift(tdee.weeklyEstimates, driftWindows(entries, todayLocal) ?? [])
+			: null;
 	if (tdee.status === "ready") {
 		const band = estimateBand(tdee.pairs, tdee.spreadKcal);
 		return {
@@ -123,6 +130,7 @@ export function buildDigestStats(input: DigestInput): DigestStats | null {
 			pairs,
 			measuredKcal: tdee.kcal,
 			bandKcal: band.bandKcal,
+			drift,
 		};
 	}
 	const band = estimateBand(pairs);
@@ -136,6 +144,7 @@ export function buildDigestStats(input: DigestInput): DigestStats | null {
 		pairs,
 		measuredKcal: null,
 		bandKcal: null,
+		drift: null,
 	};
 }
 
@@ -181,6 +190,18 @@ export function renderDigest(
 		);
 	} else if (pct != null) {
 		parts.push(`Your burn estimate is ${pct}% tight and keeps tightening as you log.`);
+	}
+
+	if (stats.drift) {
+		if (opts.plan === "pro") {
+			parts.push(
+				stats.drift.direction === "under"
+					? `Your weight trend implies a deficit about ${fmtKcal(stats.drift.impliedKcalPerDay)} kcal a day larger than your logs do; some days are probably going unlogged.`
+					: `Your weight trend implies a surplus about ${fmtKcal(stats.drift.impliedKcalPerDay)} kcal a day larger than your logs do; more is going in than the logs show.`,
+			);
+		} else {
+			parts.push("Your weight trend and your logged intake disagree; logs may be missing bites.");
+		}
 	}
 
 	parts.push("The full picture is in the app.");
