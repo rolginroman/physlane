@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as Glp1RouteImport } from './routes/glp-1'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
@@ -32,6 +33,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Glp1Route = Glp1RouteImport.update({
+  id: '/glp-1',
+  path: '/glp-1',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuideRoute = GuideRouteImport.update({
@@ -102,6 +108,7 @@ const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/glp-1': typeof Glp1Route
   '/guide': typeof GuideRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/glp-1': typeof Glp1Route
   '/guide': typeof GuideRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
+  '/glp-1': typeof Glp1Route
   '/guide': typeof GuideRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/glp-1'
     | '/guide'
     | '/sign-in'
     | '/sign-up'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/glp-1'
     | '/guide'
     | '/sign-in'
     | '/sign-up'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/glp-1'
     | '/guide'
     | '/sign-in'
     | '/sign-up'
@@ -205,6 +217,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  Glp1Route: typeof Glp1Route
   GuideRoute: typeof GuideRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -229,6 +242,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/glp-1': {
+      id: '/glp-1'
+      path: '/glp-1'
+      fullPath: '/glp-1'
+      preLoaderRoute: typeof Glp1RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guide': {
@@ -346,6 +366,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  Glp1Route: Glp1Route,
   GuideRoute: GuideRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
