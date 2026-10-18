@@ -39,7 +39,15 @@ function Glp1Page() {
       <div className="wrap hero">
         <div className="hero-main">
           <p className="kicker">For GLP-1 users</p>
-          <h1>Fast loss is easy to see. Composition is the question.</h1>
+          <h1>
+            Fast loss is
+            <br />
+            easy to see.
+            <br />
+            Composition is
+            <br />
+            the question.
+          </h1>
           <p className="sub">
             The medication suppresses appetite and the weight comes off. What
             the scale cannot tell you is how much of that loss is fat, whether
@@ -71,7 +79,7 @@ function Glp1Page() {
             <span>kg per week, typical mid-treatment rate</span>
           </div>
           <div className="fact">
-            <b className="mono">30 s</b>
+            <b className="mono">30<small> s</small></b>
             <span>for waist and neck tape</span>
           </div>
           <div className="fact">

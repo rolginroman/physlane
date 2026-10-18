@@ -143,7 +143,7 @@ function Hero() {
         </div>
         <div className="fact">
           <b className="mono">day&nbsp;1</b>
-          <span>a sane target to start, your burn measured by day&nbsp;14</span>
+          <span>a sane target to start, measured by day&nbsp;14</span>
         </div>
         <div className="fact">
           <b className="mono">0</b>

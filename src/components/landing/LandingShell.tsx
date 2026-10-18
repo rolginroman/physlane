@@ -33,7 +33,6 @@ export default function LandingShell({
           <Link
             className="brand"
             to="/"
-            aria-current={current === 'home' ? 'page' : undefined}
           >
             physlane
           </Link>

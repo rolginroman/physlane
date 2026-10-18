@@ -53,7 +53,7 @@
 .lp .actions { display: flex; gap: 12px; margin-top: 34px; flex-wrap: wrap; }
 .lp .hero-side .fact { border-top: 1px solid var(--ink); padding-top: 12px; }
 .lp .hero-side .fact b { font-family: var(--mono); font-size: 26px; display: block; letter-spacing: -.02em; font-weight: 700; }
-.lp .hero-side .fact b small { font-size: 15px; font-weight: 600; color: var(--dim); letter-spacing: 0; }
+.lp .hero-side .fact b small { font-size: 16px; font-weight: 600; color: var(--dim); letter-spacing: 0; }
 .lp .hero-side .fact span { color: var(--dim); font-size: 13px; }
 .lp .hero-side .note { color: var(--dim); font-size: 13.5px; border-top: 1px solid var(--ink); padding-top: 10px; margin-top: auto; }
 
@@ -148,6 +148,7 @@
   .lp .hero { grid-template-columns: 1fr; }
   .lp .hero-main { border-right: 0; padding-right: 0; }
   .lp .hero-side { border-top: 1px solid var(--ink); padding: 28px 0; }
+  .lp .hero h1 br { display: none; }
   .lp .cols3 { grid-template-columns: 1fr; }
   .lp .cols3 > div { border-right: 0; border-bottom: 1px solid var(--line); }
   .lp .cols3 > div:last-child { border-bottom: 0; }
