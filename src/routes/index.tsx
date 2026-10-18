@@ -310,6 +310,12 @@ function Hero() {
             >
               Guide
             </Link>
+            <Link
+              to="/glp-1"
+              className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-faint no-underline hover:text-text"
+            >
+              GLP-1
+            </Link>
           </>
         )}
       </div>
