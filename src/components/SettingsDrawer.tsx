@@ -42,6 +42,27 @@ function downloadCsv(filename: string, csv: string) {
 
 const sectionClass = 'border-t border-line pt-4'
 
+/** Device timezone, the only source of truth for reminder delivery. */
+function browserTimeZone(): string {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+	} catch {
+		return 'UTC'
+	}
+}
+
+/** "GMT+2"-style offset for the hint line. */
+function tzOffsetLabel(tz: string): string {
+	try {
+		const part = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'shortOffset' })
+			.formatToParts(new Date())
+			.find((p) => p.type === 'timeZoneName')
+		return part?.value ?? ''
+	} catch {
+		return ''
+	}
+}
+
 const rowButton =
 	'inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60'
 
@@ -75,7 +96,6 @@ export default function SettingsDrawer({
 	const [height, setHeight] = useState('')
 	const [sexChoice, setSexChoice] = useState<Sex | null>(null)
 	const [time, setTime] = useState('')
-	const [tz, setTz] = useState('')
 	const [pending, setPending] = useState(false)
 	const [saved, setSaved] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -95,6 +115,8 @@ export default function SettingsDrawer({
 	const telegramId = viewer?.telegramId ?? null
 	const reminderEnabled = time !== ''
 	const liveHeight = optionalHeightError(height, units)
+	// Drawer renders only when open (client), so this is never evaluated on the server.
+	const browserTz = browserTimeZone()
 
 	// Load settings on open; refetch each time so saves elsewhere stay honest.
 	useEffect(() => {
@@ -119,8 +141,6 @@ export default function SettingsDrawer({
 				setHeight(lengthToInput(v.heightCm ?? null, (v.unitSystem ?? 'metric') as UnitSystem))
 				setSexChoice(v.sex ?? null)
 				setTime(v.reminderTime ?? '')
-				setTz(v.reminderTz ?? '')
-				if (!v.reminderTz) setTz(Intl.DateTimeFormat().resolvedOptions().timeZone)
 				setShareToken(v.shareToken ?? null)
 				setSaved(false)
 			})
@@ -179,7 +199,7 @@ export default function SettingsDrawer({
 					heightCm: lengthFromInput(height, units),
 					sex: sexChoice,
 					...(telegramId
-						? { reminderTime: time || null, reminderTz: time ? tz || null : null }
+						? { reminderTime: time || null, reminderTz: time ? browserTz : null }
 						: {}),
 				},
 			})
@@ -482,20 +502,18 @@ export default function SettingsDrawer({
 											{reminderEnabled ? 'On' : 'Off'}
 										</button>
 										<div className="col-span-2 min-w-0">
-											<label htmlFor="set-remind-tz" className="label">
-												Time zone
-											</label>
-											<input
-												id="set-remind-tz"
-												type="text"
-												className="input"
-												placeholder="Europe/Berlin"
-												value={tz}
-												onChange={(e) => {
-													setTz(e.target.value)
-													setSaved(false)
-												}}
-											/>
+											<span className="label">Time zone</span>
+											<p className="m-0 rounded-lg border border-line bg-surface2 px-3 py-2.5 text-sm text-dim">
+												{browserTz}
+												{tzOffsetLabel(browserTz) ? (
+													<span className="text-faint">
+														{' '}
+														· {tzOffsetLabel(browserTz)} · from this device
+													</span>
+												) : (
+													<span className="text-faint"> · from this device</span>
+												)}
+											</p>
 										</div>
 									</div>
 								) : (
