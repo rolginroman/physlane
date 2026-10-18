@@ -106,7 +106,7 @@ function Hero() {
   return (
     <div className="wrap hero">
       <div className="hero-main">
-        <p className="kicker">Weight · Calories · Body · Web or Telegram</p>
+        <p className="kicker">Weight · Calories · Body · Web&nbsp;or&nbsp;Telegram</p>
         <h1>
           Calorie apps guess.
           <br />
@@ -138,12 +138,12 @@ function Hero() {
       </div>
       <div className="hero-side">
         <div className="fact">
-          <b className="mono">20 s</b>
+          <b className="mono">20<small> s</small></b>
           <span>daily time cost, wherever you open it</span>
         </div>
         <div className="fact">
-          <b className="mono">day 1</b>
-          <span>a sane target to start, your burn measured by day 14</span>
+          <b className="mono">day&nbsp;1</b>
+          <span>a sane target to start, your burn measured by day&nbsp;14</span>
         </div>
         <div className="fact">
           <b className="mono">0</b>

@@ -74,7 +74,7 @@ export default function WaitlistForm({ source = 'landing' }: { source?: string }
           {state.reason}
         </p>
       )}
-      <p className="fine">One email when the founding cohort reports, then silence. Your address is never shared.</p>
+      <p className="fine">Your address is never shared. One email, no follow-ups.</p>
     </form>
   )
 }
