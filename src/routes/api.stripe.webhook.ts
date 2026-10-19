@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { env } from "cloudflare:workers";
 import { useDb, schema } from "#/db";
 import { useStripe } from "#/lib/stripe";
+import { deriveUserPatch, type PlanUserPatch } from "#/server/billing.core";
 
 /**
  * Stripe webhook endpoint. POST-only.
@@ -40,7 +41,7 @@ async function handleWebhook(request: Request): Promise<Response> {
 	}
 
 	try {
-		await processEvent(event);
+		await processEvent(event, stripe);
 	} catch (err) {
 		console.error("stripe webhook handler error", event.type, err);
 		return new Response("webhook handler error", { status: 500 });
@@ -48,9 +49,7 @@ async function handleWebhook(request: Request): Promise<Response> {
 	return Response.json({ received: true });
 }
 
-type UserPatch = Partial<typeof schema.user.$inferInsert>;
-
-async function processEvent(event: Stripe.Event): Promise<void> {
+async function processEvent(event: Stripe.Event, stripe: Stripe): Promise<void> {
 	switch (event.type) {
 		case "checkout.session.completed": {
 			const session = event.data.object as Stripe.Checkout.Session;
@@ -59,42 +58,26 @@ async function processEvent(event: Stripe.Event): Promise<void> {
 			const user = await findUser(customerId, userId);
 			if (!user) return;
 			const subscriptionId = expandableId(session.subscription);
-			const patch: UserPatch = {};
+			const patch: PlanUserPatch = {};
 			if (customerId && user.stripeCustomerId !== customerId) patch.stripeCustomerId = customerId;
-			if (subscriptionId && user.stripeSubscriptionId !== subscriptionId) {
-				patch.stripeSubscriptionId = subscriptionId;
-			}
-			if (user.plan !== "pro") patch.plan = "pro"; // activate pro
-			await applyPatch(user.id, patch);
-			return;
-		}
-		case "customer.subscription.updated": {
-			const sub = event.data.object as Stripe.Subscription;
-			const user = await findUser(expandableId(sub.customer), sub.metadata?.userId ?? null);
-			if (!user) return;
-			const active = sub.status === "active" || sub.status === "trialing";
-			const patch: UserPatch = {};
-			const targetPlan: "free" | "pro" = active ? "pro" : "free";
-			if (user.plan !== targetPlan) patch.plan = targetPlan;
-			if (sub.id && user.stripeSubscriptionId !== sub.id) patch.stripeSubscriptionId = sub.id;
-			const periodEndSec = sub.items.data[0]?.current_period_end;
-			if (periodEndSec !== undefined) {
-				const periodEnd = new Date(periodEndSec * 1000);
-				if (!user.planCurrentPeriodEnd || user.planCurrentPeriodEnd.getTime() !== periodEnd.getTime()) {
-					patch.planCurrentPeriodEnd = periodEnd;
-				}
+			if (subscriptionId) {
+				const sub = await retrieveSubscription(stripe, subscriptionId);
+				Object.assign(patch, deriveUserPatch(sub, user));
 			}
 			await applyPatch(user.id, patch);
 			return;
 		}
+		case "customer.subscription.updated":
 		case "customer.subscription.deleted": {
-			const sub = event.data.object as Stripe.Subscription;
-			const user = await findUser(expandableId(sub.customer), sub.metadata?.userId ?? null);
+			const payloadSub = event.data.object as Stripe.Subscription;
+			const user = await findUser(expandableId(payloadSub.customer), payloadSub.metadata?.userId ?? null);
 			if (!user) return;
-			const patch: UserPatch = {};
-			if (user.plan !== "free") patch.plan = "free";
-			if (user.stripeSubscriptionId !== null) patch.stripeSubscriptionId = null; // clear
-			await applyPatch(user.id, patch);
+			const sub = await retrieveSubscription(
+				stripe,
+				payloadSub.id,
+				event.type === "customer.subscription.deleted" ? payloadSub : undefined,
+			);
+			await applyPatch(user.id, deriveUserPatch(sub, user));
 			return;
 		}
 		default:
@@ -102,8 +85,22 @@ async function processEvent(event: Stripe.Event): Promise<void> {
 	}
 }
 
+/** Fetch authoritative subscription state; deleted events may fall back to the webhook payload. */
+async function retrieveSubscription(
+	stripe: Stripe,
+	subscriptionId: string,
+	fallback?: Stripe.Subscription,
+): Promise<Stripe.Subscription> {
+	try {
+		return await stripe.subscriptions.retrieve(subscriptionId);
+	} catch (err) {
+		if (fallback) return fallback;
+		throw err;
+	}
+}
+
 /** Write only when something actually changed (idempotent replays are no-ops). */
-async function applyPatch(userId: string, patch: UserPatch): Promise<void> {
+async function applyPatch(userId: string, patch: PlanUserPatch): Promise<void> {
 	if (Object.keys(patch).length === 0) return;
 	await useDb()
 		.update(schema.user)

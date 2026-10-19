@@ -16,7 +16,5 @@ declare namespace Cloudflare {
 		AUTH_SECRET?: string;
 		STRIPE_SECRET_KEY?: string;
 		STRIPE_WEBHOOK_SECRET?: string;
-		STRIPE_PRICE_MONTHLY?: string;
-		STRIPE_PRICE_YEARLY?: string;
 	}
 }

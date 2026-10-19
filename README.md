@@ -39,3 +39,15 @@ Pro features (adaptive TDEE, projection, verdicts, full history, GLP-1 mode) are
 ## Status (Oct 2026)
 
 MVP shipped (M1–M6). v3 (Oct 17): body-measurement parity — per-site trend charts (10 sites), cm/in display parity, per-site deltas, US Navy body-fat estimate (optional height/sex), free CSV export; Telegram Mini App via `tele-better-auth` (zero-tap sign-in, auto account, link via Settings), daily reminder bot endpoint (`/api/telegram/remind`, cron-secret guarded, inert until secrets set), read-only share cards (`/share/:token`, privacy-scoped). Stripe is Q4: webhook + checkout/portal UI are live but intentionally inert until `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are set. Telegram live wiring (bot token, BotFather menu, reminder cron) pending bot creation.
+
+## Stripe launch runbook
+
+Launch-day checklist (test and live are separate Stripe accounts/objects — repeat per mode).
+
+- [ ] **Catalog** — Reproduce product + prices: `pnpm stripe:fixtures` ([Stripe CLI](https://docs.stripe.com/stripe-cli) required; fixture format: [CLI fixtures](https://docs.stripe.com/cli/fixtures)). Copy returned `price_…` IDs into config (below).
+- [ ] **One subscription per customer** — In Dashboard → Checkout / Payment Links settings, enable [Limit customers to one subscription](https://docs.stripe.com/payments/checkout/limit-subscriptions). This is the Stripe-side guard against a customer completing checkout twice (e.g. two tabs); app code does not replace it.
+- [ ] **Payment methods** — Disable [Cash App Pay](https://docs.stripe.com/payments/cash-app-pay) for checkout (Dashboard payment method settings; see [integration options](https://docs.stripe.com/payments/payment-methods/integration-options)).
+- [ ] **Webhook** — Register `POST /api/stripe/webhook` on your production URL. Subscribe to **only** `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted` ([webhook setup](https://docs.stripe.com/webhooks)).
+- [ ] **Test ↔ live** — Recreate products/prices, webhook endpoint + signing secret, and API keys per mode; objects do not cross modes ([API keys](https://docs.stripe.com/keys)). At live launch, swap `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` in `wrangler.jsonc` to the live `price_…` IDs.
+- [ ] **Env matrix** — `.dev.vars` (local overrides, incl. price IDs; copy from `.dev.vars.example`), `wrangler.jsonc` `vars` (deployed public price IDs), `wrangler secret put STRIPE_SECRET_KEY` and `wrangler secret put STRIPE_WEBHOOK_SECRET` for secrets ([Wrangler secrets](https://developers.cloudflare.com/workers/configuration/secrets/)).
+- [ ] **Manual smoke (launch day)** — `stripe listen --forward-to localhost:3000/api/stripe/webhook`, complete checkout with test card `4242…`, confirm `user.plan` flips in D1; cancel in portal and confirm revert. Not automated in CI.

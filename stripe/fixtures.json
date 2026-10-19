@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "template_version": 0
+  },
+  "fixtures": [
+    {
+      "name": "physlane_pro_product",
+      "path": "/v1/products",
+      "method": "post",
+      "params": {
+        "name": "physlane Pro",
+        "description": "Adaptive TDEE, projection, verdicts, unlimited history, GLP-1 mode (created by stripe fixtures)"
+      }
+    },
+    {
+      "name": "physlane_pro_price_monthly",
+      "path": "/v1/prices",
+      "method": "post",
+      "params": {
+        "product": "${physlane_pro_product:id}",
+        "unit_amount": "1000",
+        "currency": "usd",
+        "recurring[interval]": "month"
+      }
+    },
+    {
+      "name": "physlane_pro_price_yearly",
+      "path": "/v1/prices",
+      "method": "post",
+      "params": {
+        "product": "${physlane_pro_product:id}",
+        "unit_amount": "10000",
+        "currency": "usd",
+        "recurring[interval]": "year"
+      }
+    }
+  ]
+}

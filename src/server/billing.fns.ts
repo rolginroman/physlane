@@ -39,11 +39,14 @@ export const createCheckout = createServerFn({ method: "POST" })
 			.limit(1);
 		let customer = row?.stripeCustomerId ?? null;
 		if (!customer) {
-			const created = await stripe.customers.create({
-				email: me.email,
-				name: me.name,
-				metadata: { userId: me.id },
-			});
+			const created = await stripe.customers.create(
+				{
+					email: me.email,
+					name: me.name,
+					metadata: { userId: me.id },
+				},
+				{ idempotencyKey: `customer:${me.id}` },
+			);
 			customer = created.id;
 			await db
 				.update(schema.user)
@@ -54,6 +57,7 @@ export const createCheckout = createServerFn({ method: "POST" })
 		const price = data.interval === "yearly" ? env.STRIPE_PRICE_YEARLY : env.STRIPE_PRICE_MONTHLY;
 		const session = await stripe.checkout.sessions.create({
 			customer,
+			client_reference_id: me.id,
 			mode: "subscription",
 			line_items: [{ price, quantity: 1 }],
 			success_url: `${env.APP_URL}/billing?checkout=success`,
