@@ -21,6 +21,8 @@ describe('blogPostingJsonLd', () => {
     })
     expect(jsonLd.publisher).toEqual({ '@type': 'Organization', name: 'physlane' })
     expect(jsonLd.mainEntityOfPage).toBe(`${SITE_URL}/blog/what-is-tdee`)
+    expect(typeof jsonLd.image).toBe('string')
+    expect(jsonLd.image).toMatch(/^https:\/\/physlane\.unpackit\.top\/og\/blog\/what-is-tdee\.png/)
   })
 })
 

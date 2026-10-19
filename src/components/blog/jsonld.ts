@@ -1,4 +1,5 @@
 import type { BlogPost } from '#/lib/blog'
+import { ogImageForPost } from '#/lib/blog/og'
 import { SITE_URL } from '#/lib/seo'
 
 export function blogPostingJsonLd(post: BlogPost) {
@@ -9,6 +10,7 @@ export function blogPostingJsonLd(post: BlogPost) {
     description: post.description,
     datePublished: post.published,
     dateModified: post.updated,
+    image: ogImageForPost(post),
     author: {
       '@type': 'Person',
       name: 'physlane team',
