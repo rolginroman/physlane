@@ -122,7 +122,7 @@ export default function HistoryTable({ entries, units, onEdit }: Props) {
             const prev = entries[index + 1]
             if (confirming === entry.id) {
               return (
-                <tr key={entry.id} className="border-b border-line bg-rose/5">
+                <tr key={entry.id} className="border-b border-line bg-danger/5">
                   <td colSpan={4} className="px-3 py-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="m-0 text-sm text-text">Delete this entry?</p>
@@ -131,7 +131,7 @@ export default function HistoryTable({ entries, units, onEdit }: Props) {
                           type="button"
                           onClick={() => handleDelete(entry.id)}
                           disabled={deleting}
-                          className="inline-flex min-h-11 items-center rounded-lg border border-rose/60 bg-rose/15 px-4 text-sm font-medium text-rose hover:bg-rose/25"
+                          className="inline-flex min-h-11 items-center rounded-lg border border-danger/60 bg-danger/15 px-4 text-sm font-medium text-danger hover:bg-danger/25"
                         >
                           {deleting ? 'Deleting…' : 'Delete'}
                         </button>
@@ -212,7 +212,7 @@ export default function HistoryTable({ entries, units, onEdit }: Props) {
                       <button
                         type="button"
                         onClick={() => setConfirming(entry.id)}
-                        className="inline-flex min-h-11 -my-1 items-center rounded-md px-2 text-xs font-medium text-dim hover:text-rose"
+                        className="inline-flex min-h-11 -my-1 items-center rounded-md px-2 text-xs font-medium text-dim hover:text-danger"
                       >
                         Delete
                       </button>

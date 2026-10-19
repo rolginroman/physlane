@@ -320,7 +320,7 @@ export default function SettingsDrawer({
 							<div className="h-11 animate-pulse rounded-lg bg-surface2" />
 						</div>
 					) : loadError ? (
-						<p role="alert" className="m-0 text-sm text-rose">
+						<p role="alert" className="m-0 text-sm text-danger">
 							Could not load your settings. Close and reopen the drawer to retry.
 						</p>
 					) : (
@@ -559,7 +559,7 @@ export default function SettingsDrawer({
 									)}
 								</div>
 								{shareError && (
-									<p role="alert" className="m-0 mt-2 text-xs text-rose">
+									<p role="alert" className="m-0 mt-2 text-xs text-danger">
 										{shareError}
 									</p>
 								)}
@@ -589,7 +589,7 @@ export default function SettingsDrawer({
 									</button>
 								</div>
 								{exportError && (
-									<p role="alert" className="m-0 mt-2 text-xs text-rose">
+									<p role="alert" className="m-0 mt-2 text-xs text-danger">
 										{exportError}
 									</p>
 								)}
@@ -598,7 +598,7 @@ export default function SettingsDrawer({
 							{error && (
 								<p
 									role="alert"
-									className="mt-3 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose"
+									className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger"
 								>
 									{error}
 								</p>
@@ -629,7 +629,7 @@ export default function SettingsDrawer({
 					<button
 						type="button"
 						onClick={handleSignOut}
-						className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-rose/40 px-4 text-sm font-medium text-rose hover:bg-rose/10"
+						className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-danger/40 px-4 text-sm font-medium text-danger hover:bg-danger/10"
 					>
 						Sign out
 					</button>

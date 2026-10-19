@@ -80,13 +80,13 @@ export function safeReady(): void {
 	}
 }
 
-/** Match the Telegram chrome (header/body) to our single dark background. */
-export function applyChrome(): void {
+/** Match Telegram header/background chrome to the app canvas color (no-op outside Telegram). */
+export function applyChrome(color: string): void {
 	const tg = getWebApp()
 	if (!tg) return
 	try {
-		tg.setBackgroundColor?.('#0b0d10')
-		tg.setHeaderColor?.('#0b0d10')
+		tg.setBackgroundColor?.(color)
+		tg.setHeaderColor?.(color)
 	} catch {
 		// Older clients may reject hex here; the default chrome is close enough.
 	}

@@ -31,4 +31,8 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: ReturnType<typeof getRouter>
   }
+  interface StaticDataRouteOption {
+    /** Set false on routes that render their own shell (no app Header/Footer). Any matched route can opt out. */
+    appChrome?: boolean
+  }
 }

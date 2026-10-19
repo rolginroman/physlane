@@ -400,7 +400,7 @@ export default function MeasurementForm({ units, editing, onEditDone, onSaved, l
           )}
 
           {serverError && (
-            <p role="alert" className="mt-3 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose">
+            <p role="alert" className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
               {serverError}
             </p>
           )}

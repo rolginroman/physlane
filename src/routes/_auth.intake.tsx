@@ -48,7 +48,7 @@ const monthDay = (date: string) =>
 
 const CELL_VALUE: Record<string, string> = {
   hit: 'text-text',
-  off: 'text-amber',
+  off: 'text-dim',
   logged: 'text-text',
   missed: 'text-faint',
   pending: 'text-accent',
@@ -157,7 +157,7 @@ function IntakePage() {
       </div>
 
       <form onSubmit={onSubmit} noValidate className="card mt-4 p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-h-11 flex-wrap items-center justify-between gap-2">
           <h2 className="m-0 text-base font-semibold">
             {selected === today
               ? `Today, ${monthDay(selected)}`
@@ -231,7 +231,7 @@ function IntakePage() {
             </span>
           )}
           {serverError && (
-            <p className="m-0 text-sm text-rose" role="alert">
+            <p className="m-0 text-sm text-danger" role="alert">
               {serverError}
             </p>
           )}

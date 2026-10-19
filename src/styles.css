@@ -1,54 +1,161 @@
 @import "tailwindcss";
 
-@theme {
-  --color-bg: #0b0d10;
-  --color-surface: #11141a;
-  --color-surface2: #171b23;
-  --color-line: #232936;
-  --color-line2: #2e3646;
-  --color-text: #e6eaf2;
-  --color-dim: #8b94a7;
-  --color-faint: #5b6475;
-  --color-accent: #34d399;
-  --color-accent-dim: #10b981;
-  --color-blue: #60a5fa;
-  --color-rose: #fb7185;
-  --color-amber: #fbbf24;
-  --color-violet: #a78bfa;
-
-  --font-sans: "Geist", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Geist Mono", monospace;
+/*
+  Self-hosted fonts (SIL OFL, public/fonts/OFL.txt), latin subset, preloaded in
+  __root.tsx. The "Fallback" faces are local fonts scaled to the web fonts'
+  average advance width and vertical metrics, so the swap does not reflow text.
+  Overrides = web font hhea metric / size-adjust; size-adjust = web font average
+  advance / local font average advance over an English sample string.
+*/
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/instrument-serif-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-html, body { height: 100%; }
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Greek subset (e.g. the dashboard's "Δ 7d"). Not preloaded: unicode-range
+   means only pages that render Greek download it. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-greek-var.woff2") format("woff2");
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+
+@font-face {
+  font-family: "Instrument Serif Fallback";
+  src: local("Times New Roman"), local("Times"), local("Noto Serif"), local("DejaVu Serif");
+  size-adjust: 83.36%;
+  ascent-override: 118.76%;
+  descent-override: 37.19%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial"), local("Helvetica"), local("Roboto"), local("Liberation Sans");
+  size-adjust: 106.91%;
+  ascent-override: 90.61%;
+  descent-override: 22.56%;
+  line-gap-override: 0%;
+}
+
+/* v2 semantic tokens — light defaults; dark overrides on <html data-theme="dark"> */
+@theme {
+  --font-display: "Instrument Serif", "Instrument Serif Fallback", serif;
+  --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
+  --font-mono: "Inter", "Inter Fallback", system-ui, sans-serif;
+
+  --color-canvas: #f7f4ee;
+  --color-surface: #fffefc;
+  --color-surface-muted: #eeeae2;
+  --color-surface-raised: #ffffff;
+  --color-ink: #171717;
+  --color-text-secondary: #62615e;
+  --color-text-muted: #6b6964;
+  --color-border: #e3ded5;
+  --color-brand: #d92f28;
+  --color-brand-hover: #b92520;
+  --color-brand-soft: #f5dcd7;
+  --color-brand-on: #fffefc;
+  --color-brand-text: #b92520;
+  --color-chart-grid: #e7e2d9;
+  --color-chart-neutral: #777773;
+  --color-data-positive: #426c56;
+  --color-focus-ring: #345b9a;
+  --color-danger: #b92520;
+
+  --radius-card: 0.75rem;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #101112;
+  --color-surface: #171819;
+  --color-surface-muted: #1e2021;
+  --color-surface-raised: #242526;
+  --color-ink: #f4f1ea;
+  --color-text-secondary: #b6b3ad;
+  --color-text-muted: #8d8a84;
+  --color-border: #343332;
+  --color-brand: #e63a33;
+  --color-brand-hover: #f04a42;
+  --color-brand-soft: #482321;
+  --color-brand-on: #101112;
+  --color-brand-text: #e63a33;
+  --color-chart-grid: #343332;
+  --color-chart-neutral: #aaa79f;
+  --color-data-positive: #8db69a;
+  --color-focus-ring: #a8c7ff;
+  --color-danger: #f04a42;
+}
+
+@theme inline {
+  /* Legacy utility aliases (v1 class names → v2 tokens) */
+  --color-bg: var(--color-canvas);
+  --color-surface2: var(--color-surface-muted);
+  --color-line: var(--color-border);
+  --color-line2: var(--color-border);
+  --color-text: var(--color-ink);
+  --color-dim: var(--color-text-secondary);
+  --color-faint: var(--color-text-muted);
+  --color-accent: var(--color-brand-text);
+  --color-accent-dim: var(--color-brand-hover);
+}
+
+html,
+body {
+  height: 100%;
+}
 
 body {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-canvas);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.num {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
 
-/* landing display scale (brand register: tight grotesk, cloudflare discipline) */
+.font-display {
+  font-family: var(--font-display);
+}
+
 .display-1 {
+  font-family: var(--font-display);
   font-size: clamp(2.625rem, 5vw + 1.25rem, 4.75rem);
-  line-height: 1.0;
-  letter-spacing: -0.025em;
-  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 400;
   text-wrap: balance;
 }
 
 .display-2 {
+  font-family: var(--font-display);
   font-size: clamp(1.625rem, 2.5vw + 0.875rem, 2.5rem);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-weight: 400;
   text-wrap: balance;
 }
 
-/* faq accordion: grid-rows transition, transform-free */
 .faq-item summary {
   cursor: pointer;
   list-style: none;
@@ -58,23 +165,38 @@ body {
   gap: 1rem;
   min-height: 2.75rem;
 }
-.faq-item summary::-webkit-details-marker { display: none; }
-.faq-item summary .faq-marker { transition: transform 200ms ease-out; }
-.faq-item[open] summary .faq-marker { transform: rotate(45deg); }
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item summary .faq-marker {
+  transition: transform 200ms ease-out;
+}
+.faq-item[open] summary .faq-marker {
+  transform: rotate(45deg);
+}
 
-/* thin scrollbars */
-* { scrollbar-width: thin; scrollbar-color: var(--color-line2) transparent; }
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-thumb { background: var(--color-line2); border-radius: 4px; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
 
-/* focus rings */
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
 
-/* app utilities */
 .card {
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-card);
 }
 
 .btn-primary {
@@ -85,50 +207,54 @@ body {
   min-height: 2.75rem;
   padding-inline: 1rem;
   border-radius: 0.5rem;
-  background: var(--color-accent);
-  color: var(--color-bg);
+  background: var(--color-brand);
+  color: var(--color-brand-on);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  transition: opacity 150ms ease-out;
+  transition: background 150ms ease-out;
 }
-.btn-primary:hover:not(:disabled) { background: var(--color-accent-dim); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .input {
   display: block;
   width: 100%;
   height: 2.75rem;
   padding-inline: 0.75rem;
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  background: var(--color-surface2);
-  color: var(--color-text);
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
   font-size: 0.9375rem;
 }
-.input::placeholder { color: var(--color-faint); }
-.input:focus { border-color: var(--color-accent); }
-.input[aria-invalid="true"] { border-color: var(--color-rose); }
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+.input:focus {
+  border-color: var(--color-focus-ring);
+}
+.input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
 
-/*
- * Native date/time controls: iOS/WebKit gives them a large intrinsic
- * min-width (long-form date text) that ignores width:100% in grid/flex
- * cells and inflates their height. Strip the native appearance so they
- * style like every other input; tapping still opens the platform picker.
- */
-input[type="date"],
-input[type="time"] {
+input[type='date'],
+input[type='time'] {
   -webkit-appearance: none;
   appearance: none;
   min-width: 0;
   text-align: left;
 }
 
-/* keep dark fill on browser autofill */
 input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 1000px var(--color-surface2) inset;
-  -webkit-text-fill-color: var(--color-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--color-surface-muted) inset;
+  -webkit-text-fill-color: var(--color-ink);
 }
 
 .label {
@@ -136,19 +262,19 @@ input:-webkit-autofill {
   margin-bottom: 0.375rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--color-dim);
+  color: var(--color-text-secondary);
 }
 
 .hint {
   margin-top: 0.375rem;
   font-size: 0.75rem;
-  color: var(--color-faint);
+  color: var(--color-text-muted);
 }
 
 .field-error {
   margin-top: 0.375rem;
   font-size: 0.8125rem;
-  color: var(--color-rose);
+  color: var(--color-danger);
 }
 
 @keyframes drawer-in {

@@ -39,7 +39,7 @@ export const Route = createFileRoute('/share/$token')({
 
 function ShareNotFound() {
   return (
-    <section className="pt-8">
+    <main className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16">
       <div className="card mt-4 p-4">
         <h1 className="m-0 text-xl font-semibold tracking-tight">No such card</h1>
         <p className="m-0 mt-1 text-sm text-dim">
@@ -49,7 +49,7 @@ function ShareNotFound() {
           Go to physlane
         </Link>
       </div>
-    </section>
+    </main>
   )
 }
 
@@ -112,7 +112,7 @@ function SharePage() {
     : null
 
   return (
-    <section className="pt-8">
+    <main className="mx-auto w-full max-w-5xl px-4 pt-8 pb-16">
       <h1 className="m-0 text-xl font-semibold tracking-tight">
         {card.firstName ? `${card.firstName}'s progress` : 'Progress'}
       </h1>
@@ -157,6 +157,6 @@ function SharePage() {
         </Link>
         . Read-only view.
       </p>
-    </section>
+    </main>
   )
 }

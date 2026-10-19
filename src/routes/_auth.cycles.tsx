@@ -146,7 +146,7 @@ function ActiveCycleCard({ cycle, units }: { cycle: CycleDTO; units: UnitSystem 
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="ml-auto inline-flex min-h-11 items-center rounded-lg border border-rose/40 px-4 text-sm font-medium text-rose hover:bg-rose/10"
+            className="ml-auto inline-flex min-h-11 items-center rounded-lg border border-danger/40 px-4 text-sm font-medium text-danger hover:bg-danger/10"
           >
             End cycle
           </button>
@@ -175,14 +175,14 @@ function ActiveCycleCard({ cycle, units }: { cycle: CycleDTO; units: UnitSystem 
       </dl>
 
       {confirming && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-rose/40 bg-rose/5 px-3 py-2">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2">
           <p className="m-0 text-sm">End this cycle? History is kept.</p>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleEnd}
               disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-lg border border-rose/60 bg-rose/15 px-4 text-sm font-medium text-rose hover:bg-rose/25"
+              className="inline-flex min-h-11 items-center rounded-lg border border-danger/60 bg-danger/15 px-4 text-sm font-medium text-danger hover:bg-danger/25"
             >
               {pending ? 'Ending…' : 'End'}
             </button>
@@ -199,7 +199,7 @@ function ActiveCycleCard({ cycle, units }: { cycle: CycleDTO; units: UnitSystem 
       )}
 
       {error && (
-        <p role="alert" className="mt-3 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose">
+        <p role="alert" className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
           {error}
         </p>
       )}
@@ -437,7 +437,7 @@ function NewPhaseCard({
       {serverError && (
         <p
           role="alert"
-          className="mt-3 rounded-lg border border-rose/40 bg-rose/10 px-3 py-2 text-sm text-rose"
+          className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger"
         >
           {serverError}
         </p>

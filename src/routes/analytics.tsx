@@ -1,5 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import LandingShell from '../components/landing/LandingShell'
+import SiteShell, { Arrow } from '../components/site/SiteShell'
+import { ConvergeFigure } from '../components/site/charts'
+import { LearnIcon, TapeIcon, TrendIcon } from '../components/site/icons'
+import { ART_PANEL_SIZES, ArtImage, Closer, Facts, PageHero, Steps } from '../components/site/sections'
+import SiteTable from '../components/site/SiteTable'
 
 const SITE_URL = 'https://physlane.unpackit.top'
 const TITLE = 'Measure Your TDEE From Your Own Logs · physlane'
@@ -7,12 +11,12 @@ const DESCRIPTION =
   'What is my TDEE? physlane measures your total daily energy expenditure from your own calorie and weight logs: a sane start on day one, a measured number in two weeks.'
 
 export const Route = createFileRoute('/analytics')({
+  staticData: { appChrome: false },
   head: () => ({
     meta: [
       { title: TITLE },
       { name: 'description', content: DESCRIPTION },
       { name: 'robots', content: 'index, follow' },
-      { name: 'theme-color', content: '#141821' },
       { property: 'og:site_name', content: 'physlane' },
       { property: 'og:type', content: 'website' },
       { property: 'og:url', content: `${SITE_URL}/analytics` },
@@ -33,126 +37,113 @@ export const Route = createFileRoute('/analytics')({
 
 function AnalyticsPage() {
   return (
-    <LandingShell current="analytics">
-      <div className="wrap hero">
-        <div className="hero-main">
-          <p className="kicker">Analytics</p>
-          <h1>Your burn rate, solved from your own data.</h1>
-          <p className="sub">
-            Every calculator runs Mifflin-St Jeor, 1990, times an activity
-            multiplier you picked by feel. physlane uses your ledger instead:
-            what you ate, what you weighed, and the difference between the two.
-            After two weeks of logs the estimate settles on your actual burn,
-            and it keeps moving as your metabolism adapts.
-          </p>
-          <div className="actions">
-            <Link to="/sign-up" className="btn btn-ink">
-              Open physlane
+    <SiteShell>
+      <PageHero
+        eyebrow="Analytics"
+        title={
+          <>
+            Your burn rate, solved from your own <span className="em">data.</span>
+          </>
+        }
+        sub="physlane reads your ledger: what you ate, what you weighed, and the difference between the two. After two weeks of logs, the estimate settles on your actual burn."
+        actions={
+          <>
+            <Link className="btn site-btn-primary" to="/sign-up">
+              Start tracking <Arrow />
             </Link>
-            <Link to="/guide" className="btn btn-line">
+            <Link className="link" to="/guide">
               Method and references
             </Link>
-          </div>
-        </div>
-        <div className="hero-side">
-          <div className="fact">
-            <b className="mono">±300</b>
-            <span>how far a calculator estimate is often off, per day</span>
-          </div>
-          <div className="fact">
-            <b className="mono">7-14 d</b>
-            <span>from sane starting target to measured burn</span>
-          </div>
-          <div className="fact">
-            <b className="mono">1</b>
-            <span>adherence number per week</span>
-          </div>
-          <div className="note">Illustrative figures on this page. Yours come from your logs.</div>
-        </div>
-      </div>
+          </>
+        }
+        art={
+          <ArtImage
+            name="athlete-c3-analytics"
+            sizes={ART_PANEL_SIZES}
+            loading="eager"
+            alt="Illustration of a hand holding a phone with a chart grid on screen, a red trend line running behind it"
+          />
+        }
+        figure={<ConvergeFigure />}
+      />
 
-      <section className="block">
+      <section className="block" aria-labelledby="charts">
         <div className="wrap">
-          <div className="block-head">
-            <span className="no">§1</span>
-            <h2>The ledger.</h2>
+          <div className="section-head">
+            <h2 className="display-md" id="charts">
+              What the charts tell you.
+            </h2>
           </div>
-          <table className="spec">
-            <thead>
-              <tr>
-                <th>Line</th>
-                <th>Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Calories in</td>
-                <td>Your daily notes, 7-day windows</td>
-              </tr>
-              <tr>
-                <td>Mass change</td>
-                <td>Daily weigh-ins, smoothed trend</td>
-              </tr>
-              <tr>
-                <td>Energy density</td>
-                <td>≈ 7,700 kcal per kg, Wishnofsky 1958</td>
-              </tr>
-              <tr>
-                <td>Adaptation</td>
-                <td>Drift follows your logs, per Hall et al. 2011</td>
-              </tr>
-              <tr>
-                <td>Output</td>
-                <td>Daily burn with confidence bounds, re-solved as you log</td>
-              </tr>
-            </tbody>
-          </table>
+          <Steps
+            label="What the charts tell you"
+            flow={false}
+            items={[
+              {
+                icon: <TrendIcon />,
+                title: 'Whether it is working',
+                body: 'Weight trend with phase bands and weekly slope. Plateaus get dates instead of feelings.',
+              },
+              {
+                icon: <TapeIcon />,
+                title: 'What the loss consists of',
+                body: 'A Navy-method body fat estimate from tape, trending next to weight.',
+              },
+              {
+                icon: <LearnIcon />,
+                title: 'How close you ran to target',
+                body: 'Adherence per cycle: intake against target, one number a week.',
+              },
+            ]}
+          />
         </div>
       </section>
 
-      <section className="block">
-        <div className="wrap">
-          <div className="block-head">
-            <span className="no">§2</span>
-            <h2>What the charts tell you.</h2>
-          </div>
-          <div className="cols3">
-            <div>
-              <span className="no">01</span>
-              <h3>Whether it is working</h3>
-              <p>Weight trend with phase bands and weekly slope. Plateaus get dates instead of feelings.</p>
-            </div>
-            <div>
-              <span className="no">02</span>
-              <h3>What the loss consists of</h3>
-              <p>Navy-method body fat estimate from tape, trending next to weight.</p>
-            </div>
-            <div>
-              <span className="no">03</span>
-              <h3>How close you ran to target</h3>
-              <p>Adherence per cycle: intake against target, one number a week.</p>
-            </div>
-          </div>
-          <div className="disclaimer">
-            <b>Read the sources yourself.</b> Wishnofsky 1958, Hall et al. 2011,
-            Mifflin-St Jeor 1990, Siri 1956, Hodgdon and Beckett 1984. All
-            linked in the <Link to="/guide">guide</Link>, which also states what
-            physlane does not know.
-          </div>
-        </div>
-      </section>
-
-      <section className="block">
-        <div className="wrap final">
+      <section className="block band" aria-labelledby="ledger">
+        <div className="wrap split">
           <div>
-            <h2>A number no formula can give you.</h2>
-            <p>Measured from your logs, updated as you change.</p>
-            <Link to="/sign-up" className="btn btn-ink">
-              Open physlane
-            </Link>
+            <p className="site-label">The method</p>
+            <h2 className="display-md" id="ledger" style={{ marginTop: 16 }}>
+              The ledger.
+            </h2>
+            <p className="body-md">
+              Every calculator runs Mifflin-St Jeor (1990) times an activity multiplier you picked by feel. physlane
+              uses your ledger instead. The estimate keeps moving as your metabolism adapts.
+            </p>
+            <p className="body-sm note">
+              <b>Read the sources yourself.</b> Wishnofsky 1958, Hall et al. 2011, Mifflin-St Jeor 1990, Siri 1956,
+              Hodgdon and Beckett 1984. All linked in the <Link to="/guide">guide</Link>, which also states what
+              physlane does not know.
+            </p>
           </div>
+          <SiteTable
+            caption="The ledger: each line and its source"
+            columns={['Line', 'Source']}
+            rows={[
+              ['Calories in', 'Your daily notes, 7-day windows'],
+              ['Mass change', 'Daily weigh-ins, smoothed trend'],
+              ['Energy density', '≈ 7,700 kcal per kg, Wishnofsky 1958'],
+              ['Adaptation', 'Drift follows your logs, per Hall et al. 2011'],
+              ['Output', 'Daily burn with confidence bounds, re-solved as you log'],
+            ]}
+          />
         </div>
       </section>
-    </LandingShell>
+
+      <Facts
+        items={[
+          ['±300', 'kcal a day: how far a calculator estimate is often off'],
+          ['7–14 d', 'from a sane starting target to a measured burn'],
+          ['1', 'adherence number per week'],
+        ]}
+        note="Illustrative figures on this page. Yours come from your logs."
+      />
+
+      <Closer lead="A number no formula can give you." accent="Measured from your logs, updated as you change.">
+        <p className="body-md">Free while in beta. Works in any browser and in Telegram.</p>
+        <Link className="btn site-btn-primary" to="/sign-up">
+          Start tracking <Arrow />
+        </Link>
+      </Closer>
+    </SiteShell>
   )
 }
