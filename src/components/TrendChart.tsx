@@ -440,7 +440,10 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
       )}
 
       <div className="mt-3" role="img" aria-label={summary} style={{ height: 260 }}>
-        {!mounted || !enough ? (
+        {!mounted ? (
+          // Recharts renders client-only; hold the plot area until hydration.
+          <div aria-hidden="true" className="h-full rounded-lg bg-surface2 motion-safe:animate-pulse" />
+        ) : !enough ? (
           <div className="flex h-full items-center justify-center px-4 text-center">
             <p className="m-0 text-sm text-dim">
               {isWeight

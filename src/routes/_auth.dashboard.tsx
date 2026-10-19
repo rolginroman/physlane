@@ -15,6 +15,7 @@ import MeasurementForm from '#/components/MeasurementForm'
 import HistoryTable from '#/components/HistoryTable'
 import TrendChart from '#/components/TrendChart'
 import TdeePanel from '#/components/TdeePanel'
+import PhaseLabel from '#/components/PhaseLabel'
 import { fmtLength, fmtWeight, formatWeightRate, kgToLb, type UnitSystem } from '#/lib/units'
 
 export const Route = createFileRoute('/_auth/dashboard')({
@@ -192,9 +193,7 @@ function DashboardPage() {
         <h1 className="m-0 text-xl font-semibold tracking-tight">Dashboard</h1>
         {cycle ? (
           <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-sm text-text-muted">
-            <span className="text-base font-semibold tracking-wide text-brand-text">
-              {cycle.phase.toUpperCase()}
-            </span>
+            <PhaseLabel phase={cycle.phase} />
             {cycle.targetRateKgPerWeek != null && (
               <span className="num whitespace-nowrap">{formatWeightRate(cycle.targetRateKgPerWeek, units)}</span>
             )}
