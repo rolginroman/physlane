@@ -18,12 +18,13 @@ import { FIELD_LABELS, cmToIn, formatGirth, fmtWeight, kgToLb, type MeasurementF
 const DAY_MS = 86_400_000
 const WEEK_MS = 7 * DAY_MS
 
-const WEIGHT_COLOR = '#60a5fa'
-const WAIST_COLOR = '#fbbf24'
-const GIRTH_COLOR = '#a78bfa'
-const TARGET_COLOR = '#5b6475'
-const GRID_COLOR = '#232936'
-const AXIS_TICK_COLOR = '#8b94a7'
+const SERIES_COLOR = 'var(--color-ink)'
+const WAIST_OVERLAY_COLOR = 'var(--color-chart-neutral)'
+const SURFACE_COLOR = 'var(--color-surface)'
+const TARGET_COLOR = 'var(--color-text-muted)'
+const GRID_COLOR = 'var(--color-chart-grid)'
+const AXIS_TICK_COLOR = 'var(--color-text-secondary)'
+const CURSOR_COLOR = 'var(--color-border)'
 
 type RangeId = '14d' | '30d' | '90d' | 'all'
 
@@ -48,16 +49,16 @@ type SiteId =
   | 'calf'
 
 const SITES: { id: SiteId; field: MeasurementField; color: string }[] = [
-  { id: 'weight', field: 'weightKg', color: WEIGHT_COLOR },
-  { id: 'waist', field: 'waistCm', color: WAIST_COLOR },
-  { id: 'neck', field: 'neckCm', color: GIRTH_COLOR },
-  { id: 'chest', field: 'chestCm', color: GIRTH_COLOR },
-  { id: 'hips', field: 'hipsCm', color: GIRTH_COLOR },
-  { id: 'armL', field: 'armLeftCm', color: GIRTH_COLOR },
-  { id: 'armR', field: 'armRightCm', color: GIRTH_COLOR },
-  { id: 'thighL', field: 'thighLeftCm', color: GIRTH_COLOR },
-  { id: 'thighR', field: 'thighRightCm', color: GIRTH_COLOR },
-  { id: 'calf', field: 'calfCm', color: GIRTH_COLOR },
+  { id: 'weight', field: 'weightKg', color: SERIES_COLOR },
+  { id: 'waist', field: 'waistCm', color: SERIES_COLOR },
+  { id: 'neck', field: 'neckCm', color: SERIES_COLOR },
+  { id: 'chest', field: 'chestCm', color: SERIES_COLOR },
+  { id: 'hips', field: 'hipsCm', color: SERIES_COLOR },
+  { id: 'armL', field: 'armLeftCm', color: SERIES_COLOR },
+  { id: 'armR', field: 'armRightCm', color: SERIES_COLOR },
+  { id: 'thighL', field: 'thighLeftCm', color: SERIES_COLOR },
+  { id: 'thighR', field: 'thighRightCm', color: SERIES_COLOR },
+  { id: 'calf', field: 'calfCm', color: SERIES_COLOR },
 ]
 
 /** Deterministic (UTC, fixed locale) so SSR and client render the same string. */
@@ -146,7 +147,7 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
     const inRange = entries.filter((e) => new Date(e.takenAt).getTime() >= cutoff)
 
     const series: Series[] = isWeight
-      ? [{ key: 'weight', label: 'Weight', color: WEIGHT_COLOR, kind: 'weight' }]
+      ? [{ key: 'weight', label: 'Weight', color: SERIES_COLOR, kind: 'weight' }]
       : [{ key: 'girth', label: FIELD_LABELS[siteDef.field], color: siteDef.color, kind: 'girth' }]
 
     let rows: Row[] = []
@@ -176,7 +177,7 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
         }))
 
       if (dualWaist) {
-        series.push({ key: 'waist', label: 'Waist', color: WAIST_COLOR, kind: 'girth' })
+        series.push({ key: 'waist', label: 'Waist', color: WAIST_OVERLAY_COLOR, kind: 'girth' })
       }
 
       if (targetAt) {
@@ -440,7 +441,7 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
                 />
               )}
               <Tooltip
-                cursor={{ stroke: '#2e3646', strokeDasharray: '3 3' }}
+                cursor={{ stroke: CURSOR_COLOR, strokeDasharray: '3 3' }}
                 isAnimationActive={false}
                 content={(tip) => (
                   <TrendTip tip={tip} units={units} series={series} targetAt={targetAt} rows={rows} />
@@ -452,7 +453,7 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
                     yAxisId="w"
                     dataKey="weight"
                     stroke="none"
-                    fill={WEIGHT_COLOR}
+                    fill={SERIES_COLOR}
                     fillOpacity={0.08}
                     isAnimationActive={false}
                     dot={false}
@@ -463,10 +464,10 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
                   <Line
                     yAxisId="w"
                     dataKey="weight"
-                    stroke={WEIGHT_COLOR}
+                    stroke={SERIES_COLOR}
                     strokeWidth={2}
-                    dot={{ r: 2, fill: WEIGHT_COLOR, strokeWidth: 0 }}
-                    activeDot={{ r: 4, fill: WEIGHT_COLOR, strokeWidth: 0 }}
+                    dot={{ r: 2, fill: SERIES_COLOR, strokeWidth: 0 }}
+                    activeDot={{ r: 4, fill: SERIES_COLOR, strokeWidth: 0 }}
                     connectNulls
                     isAnimationActive={animate}
                     animationDuration={200}
@@ -476,10 +477,20 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
                     <Line
                       yAxisId="g"
                       dataKey="waist"
-                      stroke={WAIST_COLOR}
+                      stroke={WAIST_OVERLAY_COLOR}
                       strokeWidth={1.5}
-                      dot={{ r: 2, fill: WAIST_COLOR, strokeWidth: 0 }}
-                      activeDot={{ r: 4, fill: WAIST_COLOR, strokeWidth: 0 }}
+                      dot={{
+                        r: 2,
+                        fill: SURFACE_COLOR,
+                        stroke: WAIST_OVERLAY_COLOR,
+                        strokeWidth: 1.5,
+                      }}
+                      activeDot={{
+                        r: 4,
+                        fill: SURFACE_COLOR,
+                        stroke: WAIST_OVERLAY_COLOR,
+                        strokeWidth: 1.5,
+                      }}
                       connectNulls
                       isAnimationActive={animate}
                       animationDuration={200}

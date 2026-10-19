@@ -6,6 +6,7 @@ import {
 	isTelegram,
 	safeReady,
 } from './telegram-web'
+import { readThemePreference, resolveTheme, THEME_COLORS } from './theme'
 
 /**
  * True once the app has mounted inside the Telegram client.
@@ -29,7 +30,7 @@ export function useTelegramChrome(): void {
 		const tg = getWebApp()
 		if (!tg || !isTelegram()) return
 		safeReady()
-		applyChrome()
+		applyChrome(THEME_COLORS[resolveTheme(readThemePreference())])
 		disableVerticalSwipes()
 
 		const publishInsets = () => {

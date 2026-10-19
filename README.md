@@ -10,7 +10,7 @@ Adaptive TDEE and recomp tracker for lifters. Manual numbers only: weigh in, log
 - Cloudflare Workers + D1 (drizzle-orm, drizzle-kit migrations)
 - better-auth (email/password, sessions)
 - Stripe (checkout + billing portal + webhook; **pre-launch: degrades gracefully until keys are configured**)
-- Tailwind v4 (single dark theme), Recharts, vitest
+- Tailwind v4, Recharts, vitest (code still ships the legacy dark theme; target is the light + dark system in `DESIGN.md`)
 
 ## Commands
 
@@ -29,7 +29,7 @@ Deploy: `pnpm build && npx wrangler deploy -c dist/server/wrangler.json`
 - `src/lib/` pure logic (tdee, projection, adherence, units) + tests — no I/O
 - `src/server/*.fns.ts` server functions (owner-checked, DTO-only) · `auth.core.ts` plain auth logic
 - `src/routes/` landing, auth pages, `_auth.*` app routes · `src/components/` UI
-- `migrations/` D1 migrations · `PRODUCT.md` / `DESIGN.md` product + design contract
+- `migrations/` D1 migrations · `DESIGN.md` (Design Language System v2, source of truth) · `PRODUCT.md` funnel + monetization
 
 ## Plan gates
 

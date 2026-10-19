@@ -33,8 +33,8 @@ function fmtSignedDelta(kg: number, units: UnitSystem): string {
 /** Verdict weight: text is the signal, color follows the chart semantics. */
 const VERDICT_TEXT: Record<string, string> = {
   'on-pace': 'text-text',
-  'too-fast': 'text-rose',
-  'too-slow': 'text-amber',
+  'too-fast': 'text-text',
+  'too-slow': 'text-text',
 }
 
 /** F11 (Pro): forward weight at current intake + pace verdict vs cycle target. */
@@ -340,7 +340,7 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 						narrows as the weeks agree.
 					</p>
 					{status.drift != null && (
-						<div role="status" className="mt-3 rounded-lg border border-amber/50 bg-amber/5 px-3 py-2.5">
+						<div role="status" className="mt-3 rounded-lg border border-line bg-surface2 px-3 py-2.5">
 							<p className="num m-0 text-sm text-text">
 								{status.drift.direction === 'under'
 									? `Your weight trend says the deficit is about ${fmtKcal(status.drift.impliedKcalPerDay)} kcal a day bigger than your logs do.`
@@ -368,8 +368,8 @@ export default function TdeePanel({ status, streak, plan, onGlp1, targetKcalPerD
 					)}
 					{status.projection && <ProjectionBlock p={status.projection} units={units} />}
 					{onGlp1 && risk.atRisk && (
-						<div role="status" className="mt-3 rounded-lg border border-rose/50 bg-rose/5 px-3 py-2.5">
-							<p className="num m-0 text-sm text-rose">
+						<div role="status" className="mt-3 rounded-lg border border-danger/50 bg-danger/5 px-3 py-2.5">
+							<p className="num m-0 text-sm text-danger">
 								Losing {Math.abs(wRate).toFixed(1)} kg per week with a near-flat waist.
 							</p>
 							<p className="m-0 mt-1 text-xs text-dim">

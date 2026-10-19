@@ -1,11 +1,20 @@
 # PRODUCT.md — physlane
 
+> Visual identity, positioning language, copy rules, and theming are governed by `DESIGN.md`
+> (Physlane Design Language System v2), which wins on any conflict. This file keeps the funnel,
+> journeys, and monetization decisions.
+
 ## Product purpose
 
-physlane is a body-recomposition tracker for lifters: the r/leangirls / r/leangains crowd who run
-cut and bulk cycles and want to know their **true burn rate** without a food database, barcode
-scanner, or AI slop. One daily loop under 60 seconds: weigh in, log a single intake number, watch
-the trend. Adaptive TDEE computed from the user's own weight + intake series is the wedge.
+Physlane helps people understand their body's energy expenditure from their own weight and
+calorie-intake data. Core message: **"Calorie apps guess. This one measures."** One daily loop under
+60 seconds: weigh in, log a single intake number, watch the trend. Adaptive TDEE computed from the
+user's own weight + intake series is the wedge. No food database, barcode scanner, or AI slop.
+
+Audience (DESIGN.md §1.1): general weight-management users, gym-goers, strength-training
+enthusiasts, body-composition-curious people, and anyone tired of conventional calorie tracking.
+Lifters running cut/bulk cycles remain the primary acquisition channel (J1, J2), but Physlane is
+not positioned exclusively as a bodybuilding, women's wellness, or medical product.
 
 Register: **product** for the app (`/dashboard`, `/intake`, `/cycles`, `/onboarding`, `/billing`).
 Register: **brand** for the landing page (`/`) only.
@@ -44,18 +53,18 @@ of measurements + intake, full logging, charts, streak.
 
 ## Tone
 
-Direct, numerate, lifter-literate. Short sentences. Data over adjectives. No hype words, no
-exclamation marks in UI copy, no em dashes in UI copy. Numbers rendered in mono with tabular
-figures. The product talks like a coach who lifts, not like a startup landing page.
+See DESIGN.md §10. Confident, knowledgeable, direct, honest. Short sentences, active voice, clear
+units, transparent about estimates, calm and nonjudgmental about weight trends. No hype, shame,
+guilt, fear, or guaranteed outcomes. Numbers use stable tabular figures.
 
 ## Anti-references
 
 - No food database / barcode / meal-photo AI, ever (locked decision D10).
-- No generic SaaS dashboard look, no light theme, no glassmorphism, no gradient text.
-- No "big number + small label" hero-metric template on the landing (deslopify doctrine).
+- Visual anti-references: DESIGN.md §2.2 (no photoreal people, no gym clichés, no neon, no
+  purple-blue SaaS, no glassmorphism overload, no calorie-shaming).
 - Not GLP-1-first positioning (D3); Pro-only mode later.
 
 ## Surfaces
 
-Web app (mobile-first, dark, condensed data-dense) + SEO landing. Telegram Mini App is post-launch
+Web app (mobile-first, Light Editorial + Dark Performance themes per DESIGN.md §3) + SEO landing. Telegram Mini App is post-launch
 (M9). Deploy: physlane.workers.dev.

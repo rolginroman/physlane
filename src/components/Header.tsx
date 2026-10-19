@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useSession } from '#/lib/auth-client'
 import { useTelegramMode } from '#/lib/telegram-mode'
 import SettingsDrawer from '#/components/SettingsDrawer'
+import ThemeSwitch from '#/components/ThemeSwitch'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
@@ -12,6 +13,9 @@ const NAV_ITEMS = [
 
 const navLinkBase =
   'inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium sm:px-2.5'
+// Signed-in links sit in the header row from sm up; below sm they move to the
+// strip under the header (the row cannot fit them on 320-400px phones).
+const navLinkWide = 'hidden min-h-11 items-center rounded-md px-2.5 text-sm font-medium sm:inline-flex'
 
 export default function Header() {
   const { data: session, isPending } = useSession()
@@ -36,18 +40,19 @@ export default function Header() {
             aria-label="physlane home"
             className="shrink-0 text-base font-semibold tracking-tight text-text no-underline"
           >
-            phys<span className="text-accent">lane</span>
+            phys<span className="text-brand-text">lane</span>
           </Link>
 
           <nav aria-label="App" className="ml-auto flex items-center gap-0.5 sm:gap-1">
+            <ThemeSwitch className="mr-1 shrink-0" />
             {isPending ? null : user ? (
               <>
                 {NAV_ITEMS.map((item) => (
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={navLinkBase}
-                    activeProps={{ className: 'text-accent' }}
+                    className={navLinkWide}
+                    activeProps={{ className: 'text-brand-text' }}
                     inactiveProps={{ className: 'text-dim hover:text-text' }}
                   >
                     {item.label}
@@ -56,8 +61,8 @@ export default function Header() {
                 {!tgMode && (
                   <Link
                     to="/billing"
-                    className="hidden min-h-11 items-center rounded-md px-2 text-sm font-medium sm:inline-flex sm:px-2.5"
-                    activeProps={{ className: 'text-accent' }}
+                    className={navLinkWide}
+                    activeProps={{ className: 'text-brand-text' }}
                     inactiveProps={{ className: 'text-dim hover:text-text' }}
                   >
                     Billing
@@ -84,9 +89,9 @@ export default function Header() {
                       strokeWidth="1.5"
                       strokeLinecap="round"
                     />
-                    <circle cx="6.5" cy="5" r="1.75" fill="var(--color-bg)" />
-                    <circle cx="12" cy="9" r="1.75" fill="var(--color-bg)" />
-                    <circle cx="5" cy="13" r="1.75" fill="var(--color-bg)" />
+                    <circle cx="6.5" cy="5" r="1.75" fill="var(--color-canvas)" />
+                    <circle cx="12" cy="9" r="1.75" fill="var(--color-canvas)" />
+                    <circle cx="5" cy="13" r="1.75" fill="var(--color-canvas)" />
                     <circle
                       cx="6.5"
                       cy="5"
@@ -115,18 +120,37 @@ export default function Header() {
               <>
                 <Link
                   to="/sign-in"
-                  className={`${navLinkBase} text-dim hover:text-text`}
+                  className={`${navLinkBase} whitespace-nowrap text-dim hover:text-text`}
                 >
                   Sign in
                 </Link>
-                <Link to="/sign-up" className="btn-primary px-3">
-                  Create account
+                <Link to="/sign-up" className="btn-primary whitespace-nowrap px-3">
+                  {/* Full label needs ~350px of header; narrower phones get the short one. */}
+                  <span className="min-[360px]:hidden">Sign up</span>
+                  <span className="hidden min-[360px]:inline">Create account</span>
                 </Link>
               </>
             )}
           </nav>
         </div>
       </header>
+      {!isPending && user && (
+        <nav aria-label="Sections" className="border-b border-line sm:hidden">
+          <div className="mx-auto flex max-w-5xl px-3">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`${navLinkBase} flex-1 justify-center`}
+                activeProps={{ className: 'text-brand-text' }}
+                inactiveProps={{ className: 'text-dim hover:text-text' }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
       <SettingsDrawer
         open={settingsOpen}
         onClose={() => {

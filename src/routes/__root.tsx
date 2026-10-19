@@ -1,13 +1,14 @@
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { HeadContent, Scripts, createRootRoute, useRouterState } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, useMatches } from '@tanstack/react-router'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 
+import { THEME_COLORS, themeBootstrapScript } from '#/lib/theme'
 import appCss from '../styles.css?url'
 
-const FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap'
+// Self-hosted, declared in styles.css @font-face; preloaded so first paint rarely needs the fallback faces.
+const FONT_PRELOADS = ['/fonts/instrument-serif-latin.woff2', '/fonts/inter-latin-var.woff2']
 
 export const Route = createRootRoute({
   head: () => ({
@@ -28,8 +29,12 @@ export const Route = createRootRoute({
           'Body-recomposition tracker for lifters. Two numbers a day, adaptive TDEE from your own data.',
       },
       {
+        name: 'color-scheme',
+        content: 'light dark',
+      },
+      {
         name: 'theme-color',
-        content: '#0b0d10',
+        content: THEME_COLORS.light,
       },
     ],
     links: [
@@ -38,19 +43,13 @@ export const Route = createRootRoute({
         type: 'image/svg+xml',
         href: '/favicon.svg',
       },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.googleapis.com',
-      },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.gstatic.com',
-        crossOrigin: '',
-      },
-      {
-        rel: 'stylesheet',
-        href: FONTS_HREF,
-      },
+      ...FONT_PRELOADS.map((href) => ({
+        rel: 'preload',
+        href,
+        as: 'font',
+        type: 'font/woff2',
+        crossOrigin: 'anonymous' as const,
+      })),
       {
         rel: 'stylesheet',
         href: appCss,
@@ -60,19 +59,12 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
-/*
- * Public landing pages (variant C) ship their own shell (LandingShell) and
- * must not carry the dark app chrome. Every other route, including all
- * signed-in app surfaces, keeps Header and Footer exactly as before.
- */
-const LANDING_PATHS = new Set(['/', '/guide', '/glp-1', '/analytics', '/tracking'])
-
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const isLanding = LANDING_PATHS.has(pathname)
+  const appChrome = useMatches({ select: (ms) => ms.every((m) => m.staticData.appChrome !== false) })
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
         {/*
           Telegram WebApp SDK: inert outside Telegram (initData stays '').
           Rendered directly in the head JSX (not via head() scripts, which
@@ -83,9 +75,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        {!isLanding && <Header />}
+        {appChrome && <Header />}
         {children}
-        {!isLanding && <Footer />}
+        {appChrome && <Footer />}
         {import.meta.env.DEV && (
           <TanStackDevtools
             config={{

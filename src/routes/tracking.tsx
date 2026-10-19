@@ -1,5 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import LandingShell from '../components/landing/LandingShell'
+import SiteShell, { Arrow } from '../components/site/SiteShell'
+import DashboardPreview from '../components/site/DashboardPreview'
+import { LearnIcon, LogIcon, OpenIcon } from '../components/site/icons'
+import { ART_PANEL_SIZES, ArtImage, Closer, Facts, PageHero, Steps } from '../components/site/sections'
+import SiteTable from '../components/site/SiteTable'
 
 const SITE_URL = 'https://physlane.unpackit.top'
 const TITLE = 'Daily Weight and Calorie Log · physlane'
@@ -7,12 +11,12 @@ const DESCRIPTION =
   'A daily weight and calorie log in any browser or Telegram: twenty-second check-ins, tape and body fat, reminders, editable history and CSV export. Free while beta.'
 
 export const Route = createFileRoute('/tracking')({
+  staticData: { appChrome: false },
   head: () => ({
     meta: [
       { title: TITLE },
       { name: 'description', content: DESCRIPTION },
       { name: 'robots', content: 'index, follow' },
-      { name: 'theme-color', content: '#141821' },
       { property: 'og:site_name', content: 'physlane' },
       { property: 'og:type', content: 'website' },
       { property: 'og:url', content: `${SITE_URL}/tracking` },
@@ -33,133 +37,107 @@ export const Route = createFileRoute('/tracking')({
 
 function TrackingPage() {
   return (
-    <LandingShell current="tracking">
-      <div className="wrap hero">
-        <div className="hero-main">
-          <p className="kicker">Tracking</p>
-          <h1>One form, twenty seconds. That is the product.</h1>
-          <p className="sub">
-            You install nothing and there is no maze of screens to learn. Open
-            it in any browser or from the Telegram menu button; the log takes
-            twenty seconds, and the entries accumulate into the one dataset
-            that matters: yours.
-          </p>
-          <div className="actions">
-            <Link to="/sign-up" className="btn btn-ink">
-              Open physlane
+    <SiteShell>
+      <PageHero
+        eyebrow="Tracking"
+        title={
+          <>
+            A weight and calorie log in twenty <span className="em">seconds.</span>
+          </>
+        }
+        sub="One form. That is the product. Nothing to install, no maze of screens. Open it in any browser or from the Telegram menu button, and the entries add up to the one dataset that matters: yours."
+        actions={
+          <>
+            <Link className="btn site-btn-primary" to="/sign-up">
+              Start tracking <Arrow />
             </Link>
-            <Link to="/analytics" className="btn btn-line">
+            <Link className="link" to="/analytics">
               What the data becomes
             </Link>
-          </div>
-        </div>
-        <div className="hero-side">
-          <div className="fact">
-            <b className="mono">4</b>
-            <span>fields: date, weight, calories, tape</span>
-          </div>
-          <div className="fact">
-            <b className="mono">1</b>
-            <span>required: make the day count</span>
-          </div>
-          <div className="fact">
-            <b className="mono">∞</b>
-            <span>edits. Fix any entry, everything recomputes</span>
-          </div>
-          <div className="note">Reminders fire at your local time, from the device you saved on.</div>
-        </div>
-      </div>
+          </>
+        }
+        art={
+          <ArtImage
+            name="athlete-c1-everyday"
+            sizes={ART_PANEL_SIZES}
+            loading="eager"
+            alt="Illustration of a grey-haired man in a jacket and T-shirt, looking ahead, with a red circle and trend line behind him"
+          />
+        }
+        figure={<DashboardPreview tab="Log" />}
+      />
 
-      <section className="block">
+      <section className="block" aria-labelledby="loop">
         <div className="wrap">
-          <div className="block-head">
-            <span className="no">§1</span>
-            <h2>The loop.</h2>
+          <div className="section-head">
+            <h2 className="display-md" id="loop">
+              The loop.
+            </h2>
           </div>
-          <div className="cols3">
-            <div>
-              <span className="no">01</span>
-              <h3>Open</h3>
-              <p>
-                Browser bookmark, Telegram menu button, or the daily reminder.
-                One tap, the form is up, prefilled with today.
-              </p>
-            </div>
-            <div>
-              <span className="no">02</span>
-              <h3>Enter</h3>
-              <p>
-                Weight. Calories. Tape, some days. Fields you skip stay empty
-                and the day still counts.
-              </p>
-            </div>
-            <div>
-              <span className="no">03</span>
-              <h3>Review</h3>
-              <p>
-                One screen: trend, target, adherence. History with every delta,
-                every entry editable.
-              </p>
-            </div>
-          </div>
+          <Steps
+            label="The loop"
+            items={[
+              {
+                icon: <OpenIcon />,
+                title: 'Open',
+                body: 'Browser bookmark, Telegram menu button, or the daily reminder. One tap, and the form is up, prefilled with today.',
+              },
+              {
+                icon: <LogIcon />,
+                title: 'Enter',
+                body: 'Weight. Calories. Tape, some days. Fields you skip stay empty, and the day still counts.',
+              },
+              {
+                icon: <LearnIcon />,
+                title: 'Review',
+                body: 'One screen: trend, target, adherence. History with every delta, every entry editable.',
+              },
+            ]}
+          />
         </div>
       </section>
 
-      <section className="block">
-        <div className="wrap">
-          <div className="block-head">
-            <span className="no">§2</span>
-            <h2>The terms.</h2>
-          </div>
-          <table className="spec">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Detail</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Units</td>
-                <td>kg and cm, or lb and in, switchable anytime</td>
-              </tr>
-              <tr>
-                <td>Reminders</td>
-                <td>Daily, local time zone, set from the device</td>
-              </tr>
-              <tr>
-                <td>Sharing</td>
-                <td>Opt-in card, revocable link, off by default</td>
-              </tr>
-              <tr>
-                <td>Export</td>
-                <td>CSV of measurements and intake, any day</td>
-              </tr>
-              <tr>
-                <td>Price</td>
-                <td>Free while beta, Pro at $10 per month later</td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="disclaimer">
-            <b>Why it sticks.</b> A check-in that opens where you already are,
-            browser or chat, is the one you keep. Friction kills more diets
-            than pizza does.
-          </div>
-        </div>
-      </section>
-
-      <section className="block">
-        <div className="wrap final">
+      <section className="block band" aria-labelledby="terms">
+        <div className="wrap split">
           <div>
-            <h2>Twenty seconds a day, a real dataset in two weeks.</h2>
-            <p>That is the whole commitment.</p>
-            <Link to="/sign-up" className="btn btn-ink">
-              Open physlane
-            </Link>
+            <p className="site-label">The details</p>
+            <h2 className="display-md" id="terms" style={{ marginTop: 16 }}>
+              The terms.
+            </h2>
+            <p className="body-sm note">
+              <b>Why it sticks.</b> A check-in that opens where you already are, browser or chat, is the one you keep.
+              Friction kills more diets than pizza does.
+            </p>
           </div>
+          <SiteTable
+            caption="The terms: units, reminders, sharing, export and price"
+            columns={['Item', 'Detail']}
+            rows={[
+              ['Units', 'kg and cm, or lb and in, switchable anytime'],
+              ['Reminders', 'Daily, local time zone, set from the device'],
+              ['Sharing', 'Opt-in card, revocable link, off by default'],
+              ['Export', 'CSV of measurements and intake, any day'],
+              ['Price', 'Free while beta, Pro at $10 per month later'],
+            ]}
+          />
         </div>
       </section>
-    </LandingShell>
+
+      <Facts
+        items={[
+          ['4', 'fields: date, weight, calories, tape'],
+          ['1', 'required: make the day count'],
+          ['∞', 'edits. Fix any entry, and everything recomputes'],
+        ]}
+        note="Reminders fire at your local time, from the device you saved on."
+      />
+
+      <Closer lead="Twenty seconds a day." accent="A real dataset in two weeks.">
+        <p className="body-md">That is the whole commitment.</p>
+        <Link className="btn site-btn-primary" to="/sign-up">
+          Start tracking <Arrow />
+        </Link>
+      </Closer>
+    </SiteShell>
   )
 }
