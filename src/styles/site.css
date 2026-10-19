@@ -330,3 +330,15 @@ html[data-theme="dark"] .site .art-panel { background: var(--art-backing); borde
   .site .prose { font-size: 16px; }
   .site .foot { flex-direction: column; align-items: flex-start; }
 }
+
+/* ---------- Blog article ---------- */
+.site .blog-meta { margin-top: var(--space-5); color: var(--color-text-muted); }
+.site .blog-hero { display: block; width: 100%; margin-top: var(--space-7); border-radius: var(--radius-card); }
+.site .blog-body .blog-chart { margin: var(--space-7) 0; max-width: calc(68 * var(--ch)); }
+.site .blog-body .blog-chart-canvas { margin-top: var(--space-4); }
+.site .blog-body .blog-chart-source { margin-top: var(--space-3); color: var(--color-text-muted); }
+.site .blog-body h2 { font: 400 clamp(36px, 4.4vw, 60px)/1.0 var(--font-display); letter-spacing: -0.015em; margin-top: var(--space-8); margin-bottom: var(--space-5); }
+.site .blog-body h3 { font: 400 clamp(28px, 2.8vw, 40px)/1.05 var(--font-display); margin-top: var(--space-8); margin-bottom: var(--space-5); }
+.site .blog-body img { max-width: 100%; border-radius: var(--radius-card); }
+.site .blog-body .footnotes { margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--color-border); font-size: 15px; color: var(--color-text-muted); }
+.site .blog-body .footnotes ol { padding-left: 1.25em; }
