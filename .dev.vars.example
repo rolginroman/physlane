@@ -1,0 +1,15 @@
+# Local overrides for `wrangler dev` (copy to `.dev.vars`; not committed).
+# Wrangler merges these over `wrangler.jsonc` vars.
+
+# --- Secrets (also set in production via `wrangler secret put`) ---
+# AUTH_SECRET=
+# TELEGRAM_BOT_TOKEN=
+# TELEGRAM_BOT_USERNAME=
+# CRON_SECRET=
+# TELEGRAM_WEBHOOK_SECRET=
+# STRIPE_SECRET_KEY=
+# STRIPE_WEBHOOK_SECRET=
+
+# --- Public deployable config (defaults live in wrangler.jsonc vars) ---
+# STRIPE_PRICE_MONTHLY=price_...
+# STRIPE_PRICE_YEARLY=price_...

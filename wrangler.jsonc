@@ -15,5 +15,10 @@
 			"migrations_dir": "migrations"
 		}
 	],
-	"vars": { "APP_URL": "https://physlane.unpackit.top" }
+	"vars": {
+		"APP_URL": "https://physlane.unpackit.top",
+		// Public data — price IDs are safe to commit; set at launch, override in .dev.vars
+		"STRIPE_PRICE_MONTHLY": "",
+		"STRIPE_PRICE_YEARLY": ""
+	}
 }
