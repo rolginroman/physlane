@@ -341,7 +341,10 @@ html[data-theme="dark"] .site .art-panel { background: var(--art-backing); borde
 .site .blog-body h3 { font: 400 clamp(28px, 2.8vw, 40px)/1.05 var(--font-display); margin-top: var(--space-8); margin-bottom: var(--space-5); }
 .site .blog-body img { max-width: 100%; border-radius: var(--radius-card); }
 .site .blog-body .footnotes { margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--color-border); font-size: 15px; color: var(--color-text-muted); }
-.site .blog-body .footnotes ol { padding-left: 1.25em; }
+.site .blog-body .footnotes ol { list-style: none; margin: 0; padding-left: 0; counter-reset: blogfn; }
+.site .blog-body .footnotes ol > li { counter-increment: blogfn; position: relative; padding-left: 2em; }
+.site .blog-body .footnotes ol > li .data-footnote-backref { position: absolute; left: 0; top: 0.25em; font-size: 0; color: inherit; }
+.site .blog-body .footnotes ol > li .data-footnote-backref::before { content: counter(blogfn); font-size: 12px; }
 .site .blog-listing { list-style: none; margin: var(--space-7) 0 0; padding: 0; max-width: calc(68 * var(--ch)); border-top: 1px solid var(--color-ink); }
 .site .blog-listing > li { border-bottom: 1px solid var(--color-border); }
 .site .blog-listing-card { display: block; padding: var(--space-6) 0; text-decoration: none; color: inherit; }
