@@ -14,7 +14,8 @@
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "stripe:fixtures": "stripe fixtures stripe/fixtures.json"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
