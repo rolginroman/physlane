@@ -53,6 +53,11 @@ export default function Footer() {
               </Link>
             </li>
             <li>
+              <Link to="/blog" className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text">
+                Blog
+              </Link>
+            </li>
+            <li>
               <a href="/#pricing" className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text">
                 Pricing
               </a>

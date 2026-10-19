@@ -14,6 +14,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       <Link to="/analytics" onClick={onNavigate}>
         Analytics
       </Link>
+      <Link to="/blog" onClick={onNavigate}>
+        Blog
+      </Link>
       <Link to="/glp-1" onClick={onNavigate}>
         GLP-1
       </Link>
