@@ -17,13 +17,11 @@ const sub = (
 	over: Partial<{
 		id: string;
 		status: string;
-		current_period_end: number;
 		itemPeriodEnd: number | null;
 	}>,
 ) => ({
 	id: over.id ?? "sub_test",
 	status: over.status ?? "active",
-	current_period_end: over.current_period_end ?? 1_762_512_000,
 	items: { data: [{ current_period_end: over.itemPeriodEnd ?? 1_762_512_000 }] },
 });
 
@@ -45,14 +43,18 @@ describe("deriveUserPatch — activation", () => {
 });
 
 describe("deriveUserPatch — demotion by status", () => {
-	const inactiveStatuses = ["past_due", "unpaid", "canceled"] as const;
-
-	for (const status of inactiveStatuses) {
-		it(`demotes to free when status is ${status}`, () => {
+	for (const status of ["past_due", "unpaid"] as const) {
+		it(`demotes to free but retains stripeSubscriptionId when status is ${status}`, () => {
 			const patch = deriveUserPatch(sub({ status }), proUser());
 			expect(patch.plan).toBe("free");
+			expect(patch.stripeSubscriptionId).toBe("sub_test");
 		});
 	}
+
+	it("demotes to free when status is canceled", () => {
+		const patch = deriveUserPatch(sub({ status: "canceled" }), proUser());
+		expect(patch.plan).toBe("free");
+	});
 });
 
 describe("deriveUserPatch — reorder protection (mapping boundary; handler always re-fetches)", () => {

@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { env } from "cloudflare:workers";
 import { useDb, schema } from "#/db";
 import { useStripe } from "#/lib/stripe";
-import { deriveUserPatch } from "#/server/billing.core";
+import { deriveUserPatch, type PlanUserPatch } from "#/server/billing.core";
 
 /**
  * Stripe webhook endpoint. POST-only.
@@ -49,8 +49,6 @@ async function handleWebhook(request: Request): Promise<Response> {
 	return Response.json({ received: true });
 }
 
-type UserPatch = Partial<typeof schema.user.$inferInsert>;
-
 async function processEvent(event: Stripe.Event, stripe: Stripe): Promise<void> {
 	switch (event.type) {
 		case "checkout.session.completed": {
@@ -60,7 +58,7 @@ async function processEvent(event: Stripe.Event, stripe: Stripe): Promise<void> 
 			const user = await findUser(customerId, userId);
 			if (!user) return;
 			const subscriptionId = expandableId(session.subscription);
-			const patch: UserPatch = {};
+			const patch: PlanUserPatch = {};
 			if (customerId && user.stripeCustomerId !== customerId) patch.stripeCustomerId = customerId;
 			if (subscriptionId) {
 				const sub = await retrieveSubscription(stripe, subscriptionId);
@@ -104,7 +102,7 @@ async function retrieveSubscription(
 }
 
 /** Write only when something actually changed (idempotent replays are no-ops). */
-async function applyPatch(userId: string, patch: UserPatch): Promise<void> {
+async function applyPatch(userId: string, patch: PlanUserPatch): Promise<void> {
 	if (Object.keys(patch).length === 0) return;
 	await useDb()
 		.update(schema.user)

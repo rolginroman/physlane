@@ -20,16 +20,10 @@ export function deriveUserPatch(
 
 	if (user.plan !== targetPlan) patch.plan = targetPlan;
 
-	if (active) {
-		if (sub.id && user.stripeSubscriptionId !== sub.id) {
-			patch.stripeSubscriptionId = sub.id;
-		}
-	} else if (sub.status === "canceled") {
-		if (user.stripeSubscriptionId !== null) {
-			patch.stripeSubscriptionId = null;
-		}
+	if (sub.status === "canceled") {
+		if (user.stripeSubscriptionId !== null) patch.stripeSubscriptionId = null; // terminal: clear
 	} else if (sub.id && user.stripeSubscriptionId !== sub.id) {
-		patch.stripeSubscriptionId = sub.id;
+		patch.stripeSubscriptionId = sub.id; // active, trialing, past_due, unpaid keep the binding
 	}
 
 	const periodEndSec = sub.items.data[0]?.current_period_end;
