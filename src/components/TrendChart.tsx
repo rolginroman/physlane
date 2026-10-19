@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   Area,
@@ -100,6 +100,67 @@ function domainOf(vals: number[]): [number, number] {
   }
   const pad = (max - min) * 0.12
   return [min - pad, max + pad]
+}
+
+/**
+ * One-row horizontal chip scroller. The scrollbar is hidden, the edge that
+ * still has chips beyond it fades out, and the pressed chip is kept in view.
+ */
+function ChipScroller({ label, activeKey, children }: { label: string; activeKey: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const firstScroll = useRef(true)
+  const [edges, setEdges] = useState({ start: false, end: false })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () =>
+      setEdges({
+        start: el.scrollLeft > 1,
+        end: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+      })
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const el = ref.current
+    const chip = el?.querySelector<HTMLElement>('[aria-pressed="true"]')
+    if (!el || !chip) return
+    // scrollTo on the row only: scrollIntoView would also move the page.
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({
+      left: chip.offsetLeft - (el.clientWidth - chip.offsetWidth) / 2,
+      behavior: firstScroll.current || reduced ? 'auto' : 'smooth',
+    })
+    firstScroll.current = false
+  }, [activeKey])
+
+  const fade = '1.5rem'
+  const mask =
+    edges.start || edges.end
+      ? `linear-gradient(to right, ${edges.start ? 'transparent' : '#000'}, #000 ${fade}, #000 calc(100% - ${fade}), ${edges.end ? 'transparent' : '#000'})`
+      : undefined
+
+  return (
+    <div className="min-w-0 max-w-full overflow-hidden rounded-full border border-line bg-surface">
+      <div
+        ref={ref}
+        role="group"
+        aria-label={label}
+        className="relative flex snap-x snap-proximity scroll-px-1 items-center gap-1 overflow-x-auto p-1 [scrollbar-width:none]! [&::-webkit-scrollbar]:hidden"
+        style={{ maskImage: mask, WebkitMaskImage: mask }}
+      >
+        {children}
+      </div>
+    </div>
+  )
 }
 
 export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent }: Props) {
@@ -306,12 +367,8 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
             </span>
           )}
         </p>
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-          <div
-            role="group"
-            aria-label="Chart site"
-            className="inline-flex flex-wrap items-center gap-1 rounded-full border border-line bg-surface p-1"
-          >
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <ChipScroller label="Chart site" activeKey={site}>
             {SITES.map((s) => {
               const active = s.id === site
               const isEnabled = enabled.get(s.id) ?? false
@@ -325,7 +382,7 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
                     isEnabled ? undefined : `Needs at least two logged ${FIELD_LABELS[s.field].toLowerCase()} entries`
                   }
                   onClick={() => setSiteId(s.id)}
-                  className={`relative inline-flex h-7 items-center rounded-full px-2 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
+                  className={`relative inline-flex h-9 shrink-0 snap-start items-center whitespace-nowrap rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] sm:h-7 sm:px-2 ${
                     active
                       ? 'bg-surface2 text-text'
                       : isEnabled
@@ -337,11 +394,11 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
                 </button>
               )
             })}
-          </div>
+          </ChipScroller>
           <div
             role="group"
             aria-label="Trend range"
-            className="inline-flex items-center gap-1 rounded-full border border-line bg-surface p-1"
+            className="grid w-full grid-cols-4 items-center gap-1 rounded-full border border-line bg-surface p-1 sm:inline-flex sm:w-auto"
           >
             {RANGES.map((r) => {
               const active = r.id === rangeId
@@ -351,7 +408,7 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
                   type="button"
                   aria-pressed={active}
                   onClick={() => setRangeId(r.id)}
-                  className={`relative inline-flex h-9 items-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
+                  className={`relative inline-flex h-9 items-center justify-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
                     active ? 'bg-surface2 text-text' : 'text-dim hover:text-text'
                   }`}
                 >
@@ -383,7 +440,10 @@ export default function TrendChart({ entries, cycle, units, plan, bodyFatPercent
       )}
 
       <div className="mt-3" role="img" aria-label={summary} style={{ height: 260 }}>
-        {!mounted || !enough ? (
+        {!mounted ? (
+          // Recharts renders client-only; hold the plot area until hydration.
+          <div aria-hidden="true" className="h-full rounded-lg bg-surface2 motion-safe:animate-pulse" />
+        ) : !enough ? (
           <div className="flex h-full items-center justify-center px-4 text-center">
             <p className="m-0 text-sm text-dim">
               {isWeight

@@ -11,10 +11,15 @@ import { listMeasurements, type MeasurementDTO } from '#/server/measurements.fns
 import { getViewer } from '#/lib/auth-guard.fns'
 import {
   fmtWeight,
+  formatWeightRate,
   kgToLb,
+  rateFromInput,
+  rateLimitInput,
+  rateToInput,
   weightFromInput,
   type UnitSystem,
 } from '#/lib/units'
+import PhaseLabel from '#/components/PhaseLabel'
 
 export const Route = createFileRoute('/_auth/cycles')({
   head: () => ({ meta: [{ title: 'Cycles · physlane' }] }),
@@ -37,11 +42,13 @@ export const Route = createFileRoute('/_auth/cycles')({
 
 type Phase = 'cut' | 'bulk' | 'maintain'
 
-const PHASES: { id: Phase; label: string; blurb: string; rate: string }[] = [
-  { id: 'cut', label: 'Cut', blurb: 'Lose fat, keep muscle.', rate: '-0.5' },
-  { id: 'bulk', label: 'Bulk', blurb: 'Add muscle, limit fat.', rate: '0.25' },
-  { id: 'maintain', label: 'Maintain', blurb: 'Hold weight steady.', rate: '0' },
+const PHASES: { id: Phase; label: string; blurb: string; rateKg: number }[] = [
+  { id: 'cut', label: 'Cut', blurb: 'Lose fat, keep muscle.', rateKg: -0.5 },
+  { id: 'bulk', label: 'Bulk', blurb: 'Add muscle, limit fat.', rateKg: 0.25 },
+  { id: 'maintain', label: 'Maintain', blurb: 'Hold weight steady.', rateKg: 0 },
 ]
+
+const MAX_RATE_KG_PER_WEEK = 2
 
 const SIGN = { minus: '−' as const, plus: '+' as const }
 
@@ -50,12 +57,6 @@ function fmtSignedKg(kg: number | null, units: UnitSystem): string {
   const v = units === 'metric' ? kg : kgToLb(kg)
   const sign = v > 0 ? SIGN.plus : v < 0 ? SIGN.minus : ''
   return `${sign}${Math.abs(v).toFixed(1)} ${units === 'metric' ? 'kg' : 'lb'}`
-}
-
-function fmtSignedRate(kgPerWeek: number | null): string {
-  if (kgPerWeek == null) return '—'
-  const sign = kgPerWeek > 0 ? SIGN.plus : kgPerWeek < 0 ? SIGN.minus : ''
-  return `${sign}${parseFloat(Math.abs(kgPerWeek).toFixed(2))} kg/wk`
 }
 
 const CURRENT_YEAR = new Date().getUTCFullYear()
@@ -78,14 +79,6 @@ function fmtDate(iso: string): string {
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
-
-function PhaseChip({ phase }: { phase: Phase }) {
-  return (
-    <span className="rounded border border-accent px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-accent">
-      {phase.toUpperCase()}
-    </span>
-  )
-}
 
 function CyclesPage() {
   const { active, cycles, entries, units } = Route.useLoaderData()
@@ -141,7 +134,7 @@ function ActiveCycleCard({ cycle, units }: { cycle: CycleDTO; units: UnitSystem 
     <div className="card mt-4 p-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h2 className="m-0 text-sm font-semibold">Active phase</h2>
-        <PhaseChip phase={cycle.phase} />
+        <PhaseLabel phase={cycle.phase} />
         {!confirming && (
           <button
             type="button"
@@ -164,7 +157,7 @@ function ActiveCycleCard({ cycle, units }: { cycle: CycleDTO; units: UnitSystem 
         </div>
         <div>
           <dt className="text-xs text-dim">Target rate</dt>
-          <dd className="num m-0 mt-0.5 text-sm">{fmtSignedRate(cycle.targetRateKgPerWeek)}</dd>
+          <dd className="num m-0 mt-0.5 text-sm">{formatWeightRate(cycle.targetRateKgPerWeek, units)}</dd>
         </div>
         <div>
           <dt className="text-xs text-dim">Kcal target</dt>
@@ -207,12 +200,17 @@ function ActiveCycleCard({ cycle, units }: { cycle: CycleDTO; units: UnitSystem 
   )
 }
 
-function rateError(phase: Phase, rate: string): string | undefined {
-  const n = Number.parseFloat(rate)
-  if (!Number.isFinite(n)) return 'Enter a number, like -0.5.'
-  if (Math.abs(n) > 2) return 'Keep the rate between -2 and 2 kg per week.'
-  if (phase === 'cut' && n >= 0) return 'Cut needs a negative rate, like -0.5.'
-  if (phase === 'bulk' && n <= 0) return 'Bulk needs a positive rate, like 0.25.'
+function rateError(phase: Phase, rate: string, units: UnitSystem): string | undefined {
+  const n = rateFromInput(rate, units)
+  const cut = rateToInput(-0.5, units)
+  const bulk = rateToInput(0.25, units)
+  if (n == null) return `Enter a number, like ${cut}.`
+  if (Math.abs(n) > MAX_RATE_KG_PER_WEEK) {
+    const max = rateLimitInput(MAX_RATE_KG_PER_WEEK, units)
+    return `Keep the rate between -${max} and ${max} ${units === 'metric' ? 'kg' : 'lb'} per week.`
+  }
+  if (phase === 'cut' && n >= 0) return `Cut needs a negative rate, like ${cut}.`
+  if (phase === 'bulk' && n <= 0) return `Bulk needs a positive rate, like ${bulk}.`
   if (phase === 'maintain' && n !== 0) return 'Maintain uses 0. Pick cut or bulk to chase a rate.'
   return undefined
 }
@@ -250,14 +248,14 @@ function NewPhaseCard({
 }) {
   const router = useRouter()
   const [phase, setPhase] = useState<Phase>('cut')
-  const [rate, setRate] = useState('-0.5')
+  const [rate, setRate] = useState(() => rateToInput(PHASES[0].rateKg, units))
   const [kcal, setKcal] = useState('')
   const [weight, setWeight] = useState('')
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [pending, setPending] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
-  const liveRate = rateError(phase, rate)
+  const liveRate = rateError(phase, rate, units)
   const liveKcal = optionalKcalError(kcal)
   const liveWeight = optionalWeightError(weight, units)
   const hasError = Boolean(liveRate || liveKcal || liveWeight)
@@ -269,7 +267,7 @@ function NewPhaseCard({
     setPhase(id)
     const preset = PHASES.find((p) => p.id === id)
     if (preset) {
-      setRate(preset.rate)
+      setRate(rateToInput(preset.rateKg, units))
       setTouched((prev) => ({ ...prev, rate: false }))
     }
   }
@@ -303,7 +301,7 @@ function NewPhaseCard({
           phase,
           startDate: today(),
           startWeightKg: weightFromInput(weight, units) ?? latestWeightKg ?? null,
-          targetRateKgPerWeek: Number.parseFloat(rate),
+          targetRateKgPerWeek: rateFromInput(rate, units),
           kcalTargetPerDay: kcal.trim() ? Number.parseInt(kcal, 10) : null,
         },
       })
@@ -353,7 +351,7 @@ function NewPhaseCard({
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <div>
           <label htmlFor="cyc-rate" className="label">
-            Target rate (kg/wk)
+            Target rate ({weightUnit}/wk)
           </label>
           <input
             id="cyc-rate"
@@ -372,7 +370,7 @@ function NewPhaseCard({
             </p>
           ) : (
             <p id="cyc-rate-hint" className="hint">
-              Kg per week. Negative is loss.
+              {units === 'metric' ? 'Kg' : 'Lb'} per week. Negative is loss.
             </p>
           )}
         </div>
@@ -489,7 +487,7 @@ function HistoryCard({
                 key={c.id}
                 className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line px-4 py-2.5 last:border-b-0"
               >
-                <PhaseChip phase={c.phase} />
+                <PhaseLabel phase={c.phase} />
                 <span className="text-xs text-dim">
                   {fmtDate(c.startDate)} – {fmtDate(c.endDate ?? c.startDate)}
                 </span>

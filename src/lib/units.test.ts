@@ -4,10 +4,14 @@ import {
 	formatGirth,
 	formatGirthDelta,
 	formatWeightDelta,
+	formatWeightRate,
 	inToCm,
 	kgToLb,
 	lbToKg,
 	lengthFromInput,
+	rateFromInput,
+	rateLimitInput,
+	rateToInput,
 	weightFromInput,
 	leanMassRisk,
 } from "./units";
@@ -88,6 +92,49 @@ describe("formatGirth / formatGirthDelta / formatWeightDelta", () => {
 		expect(formatWeightDelta(-0.45, "metric")).toBe("−0.5 kg");
 		expect(formatWeightDelta(0.453592, "imperial")).toBe("+1.0 lb");
 		expect(formatWeightDelta(null, "imperial")).toBe("");
+	});
+
+	it("formatWeightRate converts the weekly rate and trims trailing zeros", () => {
+		expect(formatWeightRate(-0.5, "metric")).toBe("−0.5 kg/wk");
+		expect(formatWeightRate(0.25, "metric")).toBe("+0.25 kg/wk");
+		expect(formatWeightRate(-0.5, "imperial")).toBe("−1.1 lb/wk");
+		expect(formatWeightRate(0, "imperial")).toBe("0 lb/wk");
+		expect(formatWeightRate(null, "metric")).toBe("—");
+	});
+});
+
+describe("rateToInput / rateFromInput / rateLimitInput", () => {
+	it("prefills presets in the user's units", () => {
+		expect(rateToInput(-0.5, "metric")).toBe("-0.5");
+		expect(rateToInput(-0.5, "imperial")).toBe("-1.1");
+		expect(rateToInput(0.25, "imperial")).toBe("0.55");
+		expect(rateToInput(0, "imperial")).toBe("0");
+	});
+
+	it("parses signed rates back to kg/wk; NaN → null", () => {
+		expect(rateFromInput("-0.5", "metric")).toBe(-0.5);
+		expect(rateFromInput("0", "imperial")).toBe(0);
+		expect(rateFromInput("-1", "imperial")).toBeCloseTo(-0.453592, 6);
+		expect(rateFromInput("", "imperial")).toBeNull();
+		expect(rateFromInput("abc", "metric")).toBeNull();
+	});
+
+	it("round trips within the 0.01 input rounding", () => {
+		for (const kg of [-2, -0.5, -0.25, 0, 0.25, 1, 2]) {
+			for (const units of ["metric", "imperial"] as const) {
+				const back = rateFromInput(rateToInput(kg, units), units) as number;
+				expect(Math.abs(back - kg)).toBeLessThanOrEqual(lbToKg(0.005) + 1e-12);
+			}
+		}
+	});
+
+	it("shown bound is valid: ±4.4 lb/wk stays within ±2 kg/wk, 4.5 does not", () => {
+		expect(rateLimitInput(2, "metric")).toBe(2);
+		expect(rateLimitInput(2, "imperial")).toBe(4.4);
+		expect(Math.abs(rateFromInput("4.4", "imperial") as number)).toBeLessThanOrEqual(2);
+		expect(Math.abs(rateFromInput("-4.4", "imperial") as number)).toBeLessThanOrEqual(2);
+		expect(rateFromInput("4.5", "imperial") as number).toBeGreaterThan(2);
+		expect(rateFromInput("-4.5", "imperial") as number).toBeLessThan(-2);
 	});
 });
 

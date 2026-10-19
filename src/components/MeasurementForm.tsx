@@ -262,7 +262,8 @@ export default function MeasurementForm({ units, editing, onEditDone, onSaved, l
       {open && (
         <form onSubmit={handleSubmit} noValidate className="border-t border-line p-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div>
+            {/* Full row below sm: half of a 320 px card clips the date. */}
+            <div className="col-span-2 sm:col-span-1">
               <label htmlFor="m-date" className="label">
                 Date
               </label>

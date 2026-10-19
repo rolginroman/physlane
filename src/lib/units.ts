@@ -39,6 +39,33 @@ export function formatWeightDelta(kg: number | null | undefined, units: UnitSyst
 	return `${sign}${Math.abs(v).toFixed(1)} ${units === "metric" ? "kg" : "lb"}`;
 }
 
+/** Signed weekly weight rate for cycle targets, e.g. '−0.5 kg/wk' / '−1.1 lb/wk'. Null → '—'. */
+export function formatWeightRate(kgPerWeek: number | null | undefined, units: UnitSystem): string {
+	if (kgPerWeek == null) return "—";
+	const v = units === "metric" ? kgPerWeek : kgToLb(kgPerWeek);
+	const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+	return `${sign}${Number.parseFloat(Math.abs(v).toFixed(2))} ${units === "metric" ? "kg" : "lb"}/wk`;
+}
+
+/** Weekly rate for an input field in the user's units, e.g. -0.5 kg/wk → '-0.5' / '-1.1'. */
+export function rateToInput(kgPerWeek: number, units: UnitSystem): string {
+	const v = units === "metric" ? kgPerWeek : kgToLb(kgPerWeek);
+	return String(Number.parseFloat(v.toFixed(2)));
+}
+
+/** Parse a user-entered weekly rate back to kg/wk. Sign kept; empty/NaN → null. */
+export function rateFromInput(v: string, units: UnitSystem): number | null {
+	const n = Number.parseFloat(v);
+	if (!Number.isFinite(n)) return null;
+	return units === "metric" ? n : lbToKg(n);
+}
+
+/** Rate bound in the user's units, rounded down to one decimal so the shown bound is itself valid. */
+export function rateLimitInput(maxKgPerWeek: number, units: UnitSystem): number {
+	const v = units === "metric" ? maxKgPerWeek : kgToLb(maxKgPerWeek);
+	return Math.floor(v * 10) / 10;
+}
+
 export function weightToInput(kg: number | null | undefined, units: UnitSystem): string {
 	if (kg == null) return "";
 	return units === "metric" ? kg.toFixed(1) : kgToLb(kg).toFixed(1);

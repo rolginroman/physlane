@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getActiveCycle, hasAnyCycle } from '#/server/cycles.fns'
 import {
@@ -7,7 +7,7 @@ import {
   type MeasurementDTO,
 } from '#/server/measurements.fns'
 import { getIntakeStreak, intakeRange, tdeeStatus } from '#/server/intake.fns'
-import { getViewer, saveSettings } from '#/lib/auth-guard.fns'
+import { getViewer } from '#/lib/auth-guard.fns'
 import { navyBodyFat } from '#/lib/navy-bf'
 import { haptic, hideMainButton, isTelegram, showMainButton } from '#/lib/telegram-web'
 import { useTelegramMode } from '#/lib/telegram-mode'
@@ -15,7 +15,8 @@ import MeasurementForm from '#/components/MeasurementForm'
 import HistoryTable from '#/components/HistoryTable'
 import TrendChart from '#/components/TrendChart'
 import TdeePanel from '#/components/TdeePanel'
-import { fmtLength, fmtWeight, kgToLb, type UnitSystem } from '#/lib/units'
+import PhaseLabel from '#/components/PhaseLabel'
+import { fmtLength, fmtWeight, formatWeightRate, kgToLb, type UnitSystem } from '#/lib/units'
 
 export const Route = createFileRoute('/_auth/dashboard')({
   head: () => ({ meta: [{ title: 'Dashboard · physlane' }] }),
@@ -87,65 +88,11 @@ function fmtSignedWeight(kg: number | null, units: UnitSystem): string {
   return `${sign}${Math.abs(v).toFixed(1)} ${units === 'metric' ? 'kg' : 'lb'}`
 }
 
-function fmtSignedRate(kgPerWeek: number): string {
-  const sign = kgPerWeek > 0 ? SIGN.plus : kgPerWeek < 0 ? SIGN.minus : ''
-  return `${sign}${parseFloat(Math.abs(kgPerWeek).toFixed(2))} kg/wk`
-}
-
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 bg-surface px-4 py-3">
       <p className="m-0 text-xs text-dim">{label}</p>
       <p className="num m-0 mt-1 truncate text-base font-medium">{value}</p>
-    </div>
-  )
-}
-
-/** Metric/imperial segmented control. Persists via settings, then invalidates so every formatted number flips. */
-function UnitToggle({ units }: { units: UnitSystem }) {
-  const router = useRouter()
-  const [pending, setPending] = useState(false)
-
-  async function pick(next: UnitSystem) {
-    if (next === units || pending) return
-    setPending(true)
-    try {
-      await saveSettings({ data: { unitSystem: next } })
-      await router.invalidate()
-    } catch {
-      // Stays on the current units; tapping again retries.
-    } finally {
-      setPending(false)
-    }
-  }
-
-  const options: { id: UnitSystem; label: string }[] = [
-    { id: 'metric', label: 'kg' },
-    { id: 'imperial', label: 'lb' },
-  ]
-  return (
-    <div
-      role="group"
-      aria-label="Units"
-      className="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-0.5"
-    >
-      {options.map((o) => {
-        const active = units === o.id
-        return (
-          <button
-            key={o.id}
-            type="button"
-            aria-pressed={active}
-            disabled={pending}
-            onClick={() => pick(o.id)}
-            className={`relative inline-flex h-9 items-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
-              active ? 'bg-surface2 text-text' : 'text-dim hover:text-text'
-            }`}
-          >
-            {o.label}
-          </button>
-        )
-      })}
     </div>
   )
 }
@@ -241,31 +188,25 @@ function DashboardPage() {
 
   return (
     <section className="pt-8">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* Title row, then cycle summary row; side by side from sm up. */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-x-4">
         <h1 className="m-0 text-xl font-semibold tracking-tight">Dashboard</h1>
         {cycle ? (
-          <span className="inline-flex min-h-8 flex-wrap items-center gap-2 rounded-full border border-line bg-surface px-2 py-1 text-xs text-dim">
-            <span className="rounded border border-accent px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-accent">
-              {cycle.phase.toUpperCase()}
-            </span>
+          <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-sm text-text-muted">
+            <PhaseLabel phase={cycle.phase} />
             {cycle.targetRateKgPerWeek != null && (
-              <span className="num">{fmtSignedRate(cycle.targetRateKgPerWeek)}</span>
+              <span className="num whitespace-nowrap">{formatWeightRate(cycle.targetRateKgPerWeek, units)}</span>
             )}
             {cycle.kcalTargetPerDay != null && (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="num">{cycle.kcalTargetPerDay} kcal</span>
+                <span className="num whitespace-nowrap">{cycle.kcalTargetPerDay} kcal</span>
               </>
             )}
-          </span>
+          </p>
         ) : (
-          <span className="inline-flex min-h-8 items-center rounded-full border border-line bg-surface px-3 py-1 text-xs text-dim">
-            No active cycle
-          </span>
+          <p className="m-0 text-sm text-text-muted">No active cycle</p>
         )}
-        <div className="ml-auto">
-          <UnitToggle units={units} />
-        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
