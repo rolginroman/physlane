@@ -11,6 +11,10 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+public/sitemap.xml
+public/rss.xml
+public/og/blog/
+public/og/*.png
 
 .dev.vars*
 !.dev.vars.example
