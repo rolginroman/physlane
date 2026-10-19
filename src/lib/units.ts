@@ -39,6 +39,14 @@ export function formatWeightDelta(kg: number | null | undefined, units: UnitSyst
 	return `${sign}${Math.abs(v).toFixed(1)} ${units === "metric" ? "kg" : "lb"}`;
 }
 
+/** Signed weekly weight rate for cycle targets, e.g. '−0.5 kg/wk' / '−1.1 lb/wk'. Null → '—'. */
+export function formatWeightRate(kgPerWeek: number | null | undefined, units: UnitSystem): string {
+	if (kgPerWeek == null) return "—";
+	const v = units === "metric" ? kgPerWeek : kgToLb(kgPerWeek);
+	const sign = v > 0 ? "+" : v < 0 ? "−" : "";
+	return `${sign}${Number.parseFloat(Math.abs(v).toFixed(2))} ${units === "metric" ? "kg" : "lb"}/wk`;
+}
+
 export function weightToInput(kg: number | null | undefined, units: UnitSystem): string {
 	if (kg == null) return "";
 	return units === "metric" ? kg.toFixed(1) : kgToLb(kg).toFixed(1);

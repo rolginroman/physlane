@@ -11,6 +11,7 @@ import { listMeasurements, type MeasurementDTO } from '#/server/measurements.fns
 import { getViewer } from '#/lib/auth-guard.fns'
 import {
   fmtWeight,
+  formatWeightRate,
   kgToLb,
   weightFromInput,
   type UnitSystem,
@@ -50,12 +51,6 @@ function fmtSignedKg(kg: number | null, units: UnitSystem): string {
   const v = units === 'metric' ? kg : kgToLb(kg)
   const sign = v > 0 ? SIGN.plus : v < 0 ? SIGN.minus : ''
   return `${sign}${Math.abs(v).toFixed(1)} ${units === 'metric' ? 'kg' : 'lb'}`
-}
-
-function fmtSignedRate(kgPerWeek: number | null): string {
-  if (kgPerWeek == null) return '—'
-  const sign = kgPerWeek > 0 ? SIGN.plus : kgPerWeek < 0 ? SIGN.minus : ''
-  return `${sign}${parseFloat(Math.abs(kgPerWeek).toFixed(2))} kg/wk`
 }
 
 const CURRENT_YEAR = new Date().getUTCFullYear()
@@ -164,7 +159,7 @@ function ActiveCycleCard({ cycle, units }: { cycle: CycleDTO; units: UnitSystem 
         </div>
         <div>
           <dt className="text-xs text-dim">Target rate</dt>
-          <dd className="num m-0 mt-0.5 text-sm">{fmtSignedRate(cycle.targetRateKgPerWeek)}</dd>
+          <dd className="num m-0 mt-0.5 text-sm">{formatWeightRate(cycle.targetRateKgPerWeek, units)}</dd>
         </div>
         <div>
           <dt className="text-xs text-dim">Kcal target</dt>

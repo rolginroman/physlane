@@ -4,6 +4,7 @@ import {
 	formatGirth,
 	formatGirthDelta,
 	formatWeightDelta,
+	formatWeightRate,
 	inToCm,
 	kgToLb,
 	lbToKg,
@@ -88,6 +89,14 @@ describe("formatGirth / formatGirthDelta / formatWeightDelta", () => {
 		expect(formatWeightDelta(-0.45, "metric")).toBe("−0.5 kg");
 		expect(formatWeightDelta(0.453592, "imperial")).toBe("+1.0 lb");
 		expect(formatWeightDelta(null, "imperial")).toBe("");
+	});
+
+	it("formatWeightRate converts the weekly rate and trims trailing zeros", () => {
+		expect(formatWeightRate(-0.5, "metric")).toBe("−0.5 kg/wk");
+		expect(formatWeightRate(0.25, "metric")).toBe("+0.25 kg/wk");
+		expect(formatWeightRate(-0.5, "imperial")).toBe("−1.1 lb/wk");
+		expect(formatWeightRate(0, "imperial")).toBe("0 lb/wk");
+		expect(formatWeightRate(null, "metric")).toBe("—");
 	});
 });
 
