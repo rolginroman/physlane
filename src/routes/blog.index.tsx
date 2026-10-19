@@ -30,7 +30,9 @@ function BlogIndexPage() {
           <p className="site-label">Blog</p>
           <h1 className="display-xl">Training, nutrition, and health</h1>
         </header>
-        <Listing posts={posts} />
+        <div className="article-body">
+          <Listing posts={posts} />
+        </div>
       </div>
     </SiteShell>
   )

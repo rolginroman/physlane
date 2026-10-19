@@ -29,13 +29,13 @@ export default function Listing({ posts }: { posts: BlogPost[] }) {
     <ul className="blog-listing">
       {cards.map((card) => (
         <li key={card.slug}>
-          <Link to="/blog/$slug" params={{ slug: card.slug }} className="site-card blog-listing-card">
-            <p className="site-label">{card.categoryLabel}</p>
+          <Link to="/blog/$slug" params={{ slug: card.slug }} className="blog-listing-card">
+            <p className="blog-meta caption">
+              {card.categoryLabel} · Updated{' '}
+              <time dateTime={card.updated}>{card.updated}</time>
+            </p>
             <h2 className="heading-lg">{card.title}</h2>
             <p className="body-md">{card.description}</p>
-            <p className="blog-meta caption">
-              Updated <time dateTime={card.updated}>{card.updated}</time>
-            </p>
           </Link>
         </li>
       ))}
