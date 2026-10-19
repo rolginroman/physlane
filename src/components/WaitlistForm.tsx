@@ -9,7 +9,9 @@ type State =
 
 /**
  * Landing email capture: one field, inline result, no page change.
- * Convert moment: accent submit, accent success line.
+ * Editorial restyle only: the server fn and the state machine are untouched.
+ * Renders inside the .lp namespace (landing.css), so it inherits the paper
+ * and ink palette with red as the sole accent.
  */
 export default function WaitlistForm({ source = 'landing' }: { source?: string }) {
   const [email, setEmail] = useState('')
@@ -33,7 +35,7 @@ export default function WaitlistForm({ source = 'landing' }: { source?: string }
 
   if (state.kind === 'done') {
     return (
-      <p role="status" className="m-0 min-h-11 py-3 text-sm text-accent">
+      <p role="status" className="wl-done">
         {state.again
           ? 'That address is already on the list. Nothing else to do.'
           : 'On the list. You will get the walkthrough when the first cohort reports.'}
@@ -43,8 +45,8 @@ export default function WaitlistForm({ source = 'landing' }: { source?: string }
 
   const busy = state.kind === 'busy'
   return (
-    <form onSubmit={submit} className="m-0">
-      <div className="flex flex-col gap-2 sm:flex-row">
+    <form onSubmit={submit}>
+      <div className="wl">
         <label htmlFor="waitlist-email" className="sr-only">
           Email address
         </label>
@@ -62,18 +64,17 @@ export default function WaitlistForm({ source = 'landing' }: { source?: string }
             if (state.kind === 'error') setState({ kind: 'idle' })
           }}
           disabled={busy}
-          className="input min-h-11 flex-1 sm:max-w-72"
         />
-        <button type="submit" disabled={busy} className="btn-primary min-h-11 whitespace-nowrap">
+        <button type="submit" disabled={busy} className="btn btn-ink">
           {busy ? 'Saving…' : 'Email me the walkthrough'}
         </button>
       </div>
       {state.kind === 'error' && (
-        <p role="alert" className="field-error mt-2">
+        <p role="alert" className="wl-error">
           {state.reason}
         </p>
       )}
-      <p className="hint">One email when the founding cohort reports, then silence. Your address is never shared.</p>
+      <p className="fine">Your address is never shared. One email, no follow-ups.</p>
     </form>
   )
 }

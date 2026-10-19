@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as Glp1RouteImport } from './routes/glp-1'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as TrackingRouteImport } from './routes/tracking'
 import { Route as AuthBillingRouteImport } from './routes/_auth.billing'
 import { Route as AuthCyclesRouteImport } from './routes/_auth.cycles'
 import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
@@ -35,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const Glp1Route = Glp1RouteImport.update({
   id: '/glp-1',
   path: '/glp-1',
@@ -53,6 +60,11 @@ const SignInRoute = SignInRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackingRoute = TrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthBillingRoute = AuthBillingRouteImport.update({
@@ -108,10 +120,12 @@ const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/glp-1': typeof Glp1Route
   '/guide': typeof GuideRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/tracking': typeof TrackingRoute
   '/billing': typeof AuthBillingRoute
   '/cycles': typeof AuthCyclesRoute
   '/dashboard': typeof AuthDashboardRoute
@@ -125,10 +139,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/glp-1': typeof Glp1Route
   '/guide': typeof GuideRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/tracking': typeof TrackingRoute
   '/billing': typeof AuthBillingRoute
   '/cycles': typeof AuthCyclesRoute
   '/dashboard': typeof AuthDashboardRoute
@@ -144,10 +160,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
+  '/analytics': typeof AnalyticsRoute
   '/glp-1': typeof Glp1Route
   '/guide': typeof GuideRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/tracking': typeof TrackingRoute
   '/_auth/billing': typeof AuthBillingRoute
   '/_auth/cycles': typeof AuthCyclesRoute
   '/_auth/dashboard': typeof AuthDashboardRoute
@@ -163,10 +181,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/analytics'
     | '/glp-1'
     | '/guide'
     | '/sign-in'
     | '/sign-up'
+    | '/tracking'
     | '/billing'
     | '/cycles'
     | '/dashboard'
@@ -180,10 +200,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/analytics'
     | '/glp-1'
     | '/guide'
     | '/sign-in'
     | '/sign-up'
+    | '/tracking'
     | '/billing'
     | '/cycles'
     | '/dashboard'
@@ -198,10 +220,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/analytics'
     | '/glp-1'
     | '/guide'
     | '/sign-in'
     | '/sign-up'
+    | '/tracking'
     | '/_auth/billing'
     | '/_auth/cycles'
     | '/_auth/dashboard'
@@ -217,10 +241,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  AnalyticsRoute: typeof AnalyticsRoute
   Glp1Route: typeof Glp1Route
   GuideRoute: typeof GuideRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  TrackingRoute: typeof TrackingRoute
   ShareTokenRoute: typeof ShareTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
@@ -242,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/glp-1': {
@@ -270,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracking': {
+      id: '/tracking'
+      path: '/tracking'
+      fullPath: '/tracking'
+      preLoaderRoute: typeof TrackingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/billing': {
@@ -366,10 +406,12 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  AnalyticsRoute: AnalyticsRoute,
   Glp1Route: Glp1Route,
   GuideRoute: GuideRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  TrackingRoute: TrackingRoute,
   ShareTokenRoute: ShareTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
