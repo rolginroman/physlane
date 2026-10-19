@@ -22,6 +22,30 @@ export const Route = createFileRoute('/_auth/billing')({
 
 type Interval = 'monthly' | 'yearly'
 
+const PRICING: Record<
+  Interval,
+  {
+    price: string
+    sub: string
+    checkoutLabel: string
+    flag?: string
+    effective?: string
+  }
+> = {
+  monthly: {
+    price: '$10',
+    sub: 'per month',
+    checkoutLabel: '$10 / month',
+  },
+  yearly: {
+    price: '$100',
+    sub: 'per year',
+    checkoutLabel: '$100 / year',
+    flag: '2 months free',
+    effective: '≈ $8.33/mo',
+  },
+}
+
 const PRO_FEATURES = [
   'Adaptive TDEE estimate with spread, computed from your own series',
   '4-week weight projection and on-pace / too-fast / too-slow verdicts',
@@ -56,6 +80,25 @@ function Check() {
   )
 }
 
+function ArrowRight() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      aria-hidden="true"
+      className="shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </svg>
+  )
+}
+
 function FeatureList({ items }: { items: string[] }) {
   return (
     <ul className="m-0 mt-3 list-none space-y-2 p-0">
@@ -81,7 +124,6 @@ function billingErrorCopy(err: unknown, action: string): string {
   return `Could not ${action}. Check your connection and try again.`
 }
 
-/** Interval selector in the same segmented-control vocabulary as the units toggle. */
 function IntervalPicker({
   value,
   onChange,
@@ -91,15 +133,12 @@ function IntervalPicker({
   onChange: (next: Interval) => void
   disabled: boolean
 }) {
-  const options: { id: Interval; label: string; sub: string }[] = [
-    { id: 'monthly', label: '$10', sub: 'per month' },
-    { id: 'yearly', label: '$100', sub: 'per year' },
-  ]
+  const options = (['monthly', 'yearly'] as const).map((id) => ({ id, ...PRICING[id] }))
   return (
     <div
       role="radiogroup"
       aria-label="Billing interval"
-      className="grid grid-cols-2 gap-2 sm:max-w-xs"
+      className="grid grid-cols-2 gap-2"
     >
       {options.map((o) => {
         const active = value === o.id
@@ -111,14 +150,26 @@ function IntervalPicker({
             aria-checked={active}
             disabled={disabled}
             onClick={() => onChange(o.id)}
-            className={`flex min-h-11 flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors duration-150 ease-out ${
+            className={`flex min-h-[96px] flex-col items-start rounded-xl border p-3.5 text-left transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-60 ${
               active
-                ? 'border-accent/60 bg-accent/10'
+                ? 'border-brand bg-brand-soft/50'
                 : 'border-line bg-surface hover:border-line2'
             }`}
           >
-            <span className="num text-base font-semibold">{o.label}</span>
-            <span className="text-xs text-dim">{o.sub}</span>
+            <span className="font-display text-[1.875rem] leading-none">{o.price}</span>
+            <span className="mt-1 text-xs text-dim">{o.sub}</span>
+            {o.flag ? (
+              <span className="mt-2 text-[0.625rem] font-semibold uppercase tracking-wide text-accent">
+                {o.flag}
+              </span>
+            ) : (
+              <span aria-hidden="true" className="mt-2 text-[0.625rem] text-transparent">
+                ·
+              </span>
+            )}
+            {o.effective ? (
+              <span className="num mt-0.5 text-xs text-dim">{o.effective}</span>
+            ) : null}
           </button>
         )
       })}
@@ -178,7 +229,7 @@ function BillingPage() {
       )
     : null
 
-  const priceLabel = interval === 'yearly' ? '$100 / year' : '$10 / month'
+  const priceLabel = PRICING[interval].checkoutLabel
 
   return (
     <section className="pt-8" aria-labelledby="billing-h1">
@@ -239,9 +290,9 @@ function BillingPage() {
           <FeatureList items={FREE_FEATURES} />
 
           <div className="mt-5 border-t border-line pt-4">
-            <h3 className="m-0 text-base font-semibold">
-              Pro
-              <span className="ml-2 rounded border border-line px-1 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-dim">
+            <h3 className="m-0 flex flex-wrap items-baseline gap-2">
+              <span className="font-display text-[1.375rem] leading-none">Pro</span>
+              <span className="rounded border border-accent px-1 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-accent">
                 UPGRADE
               </span>
             </h3>
@@ -254,18 +305,20 @@ function BillingPage() {
                     onChange={setInterval}
                     disabled={pending !== null}
                   />
-                  {interval === 'yearly' && (
-                    <p className="hint">Yearly works out to 2 months free.</p>
-                  )}
                   <button
                     type="button"
                     onClick={startCheckout}
                     disabled={pending !== null}
-                    className="btn-primary mt-3"
+                    className="btn-primary mt-3 inline-flex items-center gap-2"
                   >
-                    {pending === 'checkout'
-                      ? 'Opening checkout…'
-                      : `Checkout · ${priceLabel}`}
+                    {pending === 'checkout' ? (
+                      'Opening checkout…'
+                    ) : (
+                      <>
+                        Start Pro · {priceLabel}
+                        <ArrowRight />
+                      </>
+                    )}
                   </button>
                   <p className="hint">
                     Secure Stripe checkout in a new tab. Cancel anytime from this page.
