@@ -63,8 +63,6 @@ async function processEvent(event: Stripe.Event, stripe: Stripe): Promise<void> 
 			if (subscriptionId) {
 				const sub = await retrieveSubscription(stripe, subscriptionId);
 				Object.assign(patch, deriveUserPatch(sub, user));
-			} else if (user.plan !== "pro") {
-				patch.plan = "pro";
 			}
 			await applyPatch(user.id, patch);
 			return;

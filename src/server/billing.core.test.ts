@@ -45,21 +45,39 @@ describe("deriveUserPatch — activation", () => {
 describe("deriveUserPatch — demotion by status", () => {
 	for (const status of ["past_due", "unpaid"] as const) {
 		it(`demotes to free but retains stripeSubscriptionId when status is ${status}`, () => {
-			const patch = deriveUserPatch(sub({ status }), proUser());
+			const patch = deriveUserPatch(sub({ status, id: "sub_a" }), proUser("sub_a"));
 			expect(patch.plan).toBe("free");
-			expect(patch.stripeSubscriptionId).toBe("sub_test");
+			expect(patch.stripeSubscriptionId).toBeUndefined();
 		});
 	}
 
 	it("demotes to free when status is canceled", () => {
-		const patch = deriveUserPatch(sub({ status: "canceled" }), proUser());
+		const patch = deriveUserPatch(sub({ status: "canceled", id: "sub_a" }), proUser("sub_a"));
 		expect(patch.plan).toBe("free");
+	});
+});
+
+describe("deriveUserPatch — foreign subscription events", () => {
+	it("ignores canceled events for a different subscription when user is bound elsewhere", () => {
+		const patch = deriveUserPatch(sub({ id: "sub_old", status: "canceled" }), proUser("sub_cur"));
+		expect(patch).toEqual({});
+	});
+
+	it("ignores past_due events for a different subscription when user is bound elsewhere", () => {
+		const patch = deriveUserPatch(sub({ id: "sub_old", status: "past_due" }), proUser("sub_cur"));
+		expect(patch).toEqual({});
+	});
+
+	it("rebinds stripeSubscriptionId when a different subscription is active", () => {
+		const patch = deriveUserPatch(sub({ id: "sub_new", status: "active" }), proUser("sub_cur"));
+		expect(patch.stripeSubscriptionId).toBe("sub_new");
+		expect(patch.plan).toBeUndefined();
 	});
 });
 
 describe("deriveUserPatch — reorder protection (mapping boundary; handler always re-fetches)", () => {
 	it("demotes a pro user when the fetched subscription is canceled and clears sub id", () => {
-		const patch = deriveUserPatch(sub({ status: "canceled" }), proUser("sub_a"));
+		const patch = deriveUserPatch(sub({ status: "canceled", id: "sub_a" }), proUser("sub_a"));
 		expect(patch).toMatchObject({ plan: "free", stripeSubscriptionId: null });
 	});
 

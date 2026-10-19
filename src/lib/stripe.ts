@@ -11,5 +11,10 @@ export function useStripe(): Stripe | null {
 }
 
 export function stripeConfigured(): boolean {
-	return Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_MONTHLY && env.STRIPE_PRICE_YEARLY);
+	return Boolean(
+		env.STRIPE_SECRET_KEY &&
+			env.STRIPE_WEBHOOK_SECRET &&
+			env.STRIPE_PRICE_MONTHLY &&
+			env.STRIPE_PRICE_YEARLY,
+	);
 }

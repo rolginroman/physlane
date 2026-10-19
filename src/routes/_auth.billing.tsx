@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   billingStatus,
   createBillingPortal,
@@ -185,15 +185,26 @@ function BillingPage() {
   const [interval, setInterval] = useState<Interval>('yearly')
   const [pending, setPending] = useState<'checkout' | 'portal' | null>(null)
   const [error, setError] = useState<{ action: string; message: string } | null>(null)
-  const invalidated = useRef(false)
 
-  // Checkout return: refresh so a webhook already flipped plan reflects here.
+  // Checkout return: poll until webhook flips plan (or ~60s), plus immediate first refresh.
   useEffect(() => {
-    if (checkout === 'success' && !invalidated.current) {
-      invalidated.current = true
+    if (checkout !== 'success') return
+
+    void router.invalidate()
+    if (plan === 'pro') return
+
+    let ticks = 0
+    const id = window.setInterval(() => {
+      ticks += 1
+      if (ticks >= 30) {
+        clearInterval(id)
+        return
+      }
       void router.invalidate()
-    }
-  }, [checkout, router])
+    }, 2000)
+
+    return () => clearInterval(id)
+  }, [checkout, plan, router])
 
   async function startCheckout() {
     if (pending) return

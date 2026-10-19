@@ -14,6 +14,15 @@ export function deriveUserPatch(
 	},
 	user: PlanUserState,
 ): PlanUserPatch {
+	if (
+		user.stripeSubscriptionId !== null &&
+		sub.id !== user.stripeSubscriptionId &&
+		sub.status !== "active" &&
+		sub.status !== "trialing"
+	) {
+		return {};
+	}
+
 	const active = sub.status === "active" || sub.status === "trialing";
 	const targetPlan: "free" | "pro" = active ? "pro" : "free";
 	const patch: PlanUserPatch = {};

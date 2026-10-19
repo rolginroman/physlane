@@ -11,5 +11,7 @@
 # STRIPE_WEBHOOK_SECRET=
 
 # --- Public deployable config (defaults live in wrangler.jsonc vars) ---
+# Overrides production default from wrangler.jsonc so checkout redirects return to local dev.
+APP_URL=http://localhost:3000
 # STRIPE_PRICE_MONTHLY=price_...
 # STRIPE_PRICE_YEARLY=price_...
