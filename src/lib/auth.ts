@@ -17,7 +17,11 @@ export function useAuth() {
 			provider: "sqlite",
 		}),
 		secret: env.AUTH_SECRET ?? "dev-insecure-secret-change-me",
-		baseURL: env.APP_URL ?? "http://localhost:3000",
+		// Dev: follow the request's loopback host on any port, so the http origin is
+		// trusted and cookies are non-Secure (APP_URL is the prod https URL).
+		baseURL: import.meta.env.DEV
+			? { allowedHosts: ["localhost:*", "127.0.0.1:*"], protocol: "http" }
+			: (env.APP_URL ?? "http://localhost:3000"),
 		emailAndPassword: {
 			enabled: true,
 			minPasswordLength: 8,
