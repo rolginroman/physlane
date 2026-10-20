@@ -24,26 +24,31 @@
  */
 
 export type TdeeEntry = {
-	date: string; // canonical 'YYYY-MM-DD'
-	kcal: number;
-	weightKg: number | null;
+  date: string; // canonical 'YYYY-MM-DD'
+  kcal: number;
+  weightKg: number | null;
 };
 
 export type WeeklyEstimate = {
-	weekStart: string;
-	kcal: number;
+  weekStart: string;
+  kcal: number;
 };
 
 export type TdeeResult =
-	| { status: "collecting"; pairs: number; needed: 14; outliersRejected: number }
-	| {
-			status: "ready";
-			kcal: number;
-			spreadKcal: number;
-			weeklyEstimates: WeeklyEstimate[];
-			pairs: number;
-			outliersRejected: number;
-	  };
+  | {
+      status: "collecting";
+      pairs: number;
+      needed: 14;
+      outliersRejected: number;
+    }
+  | {
+      status: "ready";
+      kcal: number;
+      spreadKcal: number;
+      weeklyEstimates: WeeklyEstimate[];
+      pairs: number;
+      outliersRejected: number;
+    };
 
 const MIN_PAIRS = 14;
 const WINDOW_SPAN_DAYS = 7; // minimum boundary separation
@@ -59,12 +64,13 @@ const DAY_MS = 86_400_000;
 const utcMs = (date: string): number => Date.parse(`${date}T00:00:00Z`);
 
 /** Whole-day difference b − a for canonical date strings. */
-const dayDiff = (a: string, b: string): number => Math.round((utcMs(b) - utcMs(a)) / DAY_MS);
+const dayDiff = (a: string, b: string): number =>
+  Math.round((utcMs(b) - utcMs(a)) / DAY_MS);
 
 const median = (xs: number[]): number => {
-	const s = [...xs].sort((x, y) => x - y);
-	const mid = s.length >> 1;
-	return s.length % 2 === 1 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  const s = [...xs].sort((x, y) => x - y);
+  const mid = s.length >> 1;
+  return s.length % 2 === 1 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 };
 
 type Pair = { date: string; kcal: number; weightKg: number };
@@ -74,103 +80,129 @@ type Pair = { date: string; kcal: number; weightKg: number };
  * both adjacent day-rates are extreme (>2.5 robust σ from the median rate)
  * with OPPOSITE signs — the spike signature. Returns the count rejected.
  */
-export function rejectOutlierWeights(pairs: Pair[]): { pairs: Pair[]; rejected: number } {
-	if (pairs.length < 3) return { pairs, rejected: 0 };
-	const rates: number[] = [];
-	for (let i = 1; i < pairs.length; i++) {
-		const gap = dayDiff(pairs[i - 1].date, pairs[i].date);
-		if (gap > 0) rates.push((pairs[i].weightKg - pairs[i - 1].weightKg) / gap);
-	}
-	if (rates.length < 3) return { pairs, rejected: 0 };
-	const med = median(rates);
-	const mad = median(rates.map((r) => Math.abs(r - med)));
-	// A mostly-flat series makes MAD zero; floor σ so a lone spike is still
-	// detectable (its deviation dwarfs the floor) while quiet noise is not.
-	const sigma = Math.max(1.4826 * mad, OUTLIER_MIN_SIGMA);
-	if (!(sigma > 0)) return { pairs, rejected: 0 };
+export function rejectOutlierWeights(pairs: Pair[]): {
+  pairs: Pair[];
+  rejected: number;
+} {
+  if (pairs.length < 3) return { pairs, rejected: 0 };
+  const rates: number[] = [];
+  for (let i = 1; i < pairs.length; i++) {
+    const gap = dayDiff(pairs[i - 1].date, pairs[i].date);
+    if (gap > 0) rates.push((pairs[i].weightKg - pairs[i - 1].weightKg) / gap);
+  }
+  if (rates.length < 3) return { pairs, rejected: 0 };
+  const med = median(rates);
+  const mad = median(rates.map((r) => Math.abs(r - med)));
+  // A mostly-flat series makes MAD zero; floor σ so a lone spike is still
+  // detectable (its deviation dwarfs the floor) while quiet noise is not.
+  const sigma = Math.max(1.4826 * mad, OUTLIER_MIN_SIGMA);
+  if (!(sigma > 0)) return { pairs, rejected: 0 };
 
-	const out = pairs.map((p) => ({ ...p }));
-	let rejected = 0;
-	for (let i = 1; i < out.length - 1; i++) {
-		const gapIn = dayDiff(out[i - 1].date, out[i].date);
-		const gapOut = dayDiff(out[i].date, out[i + 1].date);
-		if (gapIn <= 0 || gapOut <= 0) continue;
-		const rIn = (out[i].weightKg - out[i - 1].weightKg) / gapIn;
-		const rOut = (out[i + 1].weightKg - out[i].weightKg) / gapOut;
-		const spikeIn = Math.abs(rIn - med) > OUTLIER_SIGMA * sigma;
-		const spikeOut = Math.abs(rOut - med) > OUTLIER_SIGMA * sigma;
-		const opposite = rIn * rOut < 0;
-		const floorHit = Math.max(Math.abs(rIn), Math.abs(rOut)) > OUTLIER_MIN_KG_PER_DAY;
-		if (spikeIn && spikeOut && opposite && floorHit) {
-			const span = dayDiff(out[i - 1].date, out[i + 1].date);
-			const t = dayDiff(out[i - 1].date, out[i].date) / span;
-			out[i].weightKg = out[i - 1].weightKg + (out[i + 1].weightKg - out[i - 1].weightKg) * t;
-			rejected++;
-			i++; // the next delta now starts from the interpolated value
-		}
-	}
-	return { pairs: out, rejected };
+  const out = pairs.map((p) => ({ ...p }));
+  let rejected = 0;
+  for (let i = 1; i < out.length - 1; i++) {
+    const gapIn = dayDiff(out[i - 1].date, out[i].date);
+    const gapOut = dayDiff(out[i].date, out[i + 1].date);
+    if (gapIn <= 0 || gapOut <= 0) continue;
+    const rIn = (out[i].weightKg - out[i - 1].weightKg) / gapIn;
+    const rOut = (out[i + 1].weightKg - out[i].weightKg) / gapOut;
+    const spikeIn = Math.abs(rIn - med) > OUTLIER_SIGMA * sigma;
+    const spikeOut = Math.abs(rOut - med) > OUTLIER_SIGMA * sigma;
+    const opposite = rIn * rOut < 0;
+    const floorHit =
+      Math.max(Math.abs(rIn), Math.abs(rOut)) > OUTLIER_MIN_KG_PER_DAY;
+    if (spikeIn && spikeOut && opposite && floorHit) {
+      const span = dayDiff(out[i - 1].date, out[i + 1].date);
+      const t = dayDiff(out[i - 1].date, out[i].date) / span;
+      out[i].weightKg =
+        out[i - 1].weightKg + (out[i + 1].weightKg - out[i - 1].weightKg) * t;
+      rejected++;
+      i++; // the next delta now starts from the interpolated value
+    }
+  }
+  return { pairs: out, rejected };
 }
 
 export function computeTdee(entries: TdeeEntry[]): TdeeResult {
-	let pairs: Pair[] = [];
-	for (const e of entries) {
-		if (e.weightKg === null || !Number.isFinite(e.weightKg)) continue;
-		if (!Number.isFinite(e.kcal)) continue;
-		pairs.push({ date: e.date, kcal: e.kcal, weightKg: e.weightKg });
-	}
+  let pairs: Pair[] = [];
+  for (const e of entries) {
+    if (e.weightKg === null || !Number.isFinite(e.weightKg)) continue;
+    if (!Number.isFinite(e.kcal)) continue;
+    pairs.push({ date: e.date, kcal: e.kcal, weightKg: e.weightKg });
+  }
 
-	const smoothedPairs = rejectOutlierWeights(pairs);
-	pairs = smoothedPairs.pairs;
-	const outliersRejected = smoothedPairs.rejected;
+  const smoothedPairs = rejectOutlierWeights(pairs);
+  pairs = smoothedPairs.pairs;
+  const outliersRejected = smoothedPairs.rejected;
 
-	if (pairs.length < MIN_PAIRS) {
-		return { status: "collecting", pairs: pairs.length, needed: MIN_PAIRS, outliersRejected };
-	}
+  if (pairs.length < MIN_PAIRS) {
+    return {
+      status: "collecting",
+      pairs: pairs.length,
+      needed: MIN_PAIRS,
+      outliersRejected,
+    };
+  }
 
-	const weekly: WeeklyEstimate[] = [];
-	let j = 1;
-	for (let i = 0; i < pairs.length; i++) {
-		if (j <= i) j = i + 1;
-		while (j < pairs.length && dayDiff(pairs[i].date, pairs[j].date) < WINDOW_SPAN_DAYS) j++;
-		if (j >= pairs.length) break;
-		const span = dayDiff(pairs[i].date, pairs[j].date);
-		if (span > WINDOW_MAX_SPAN_DAYS) continue; // gap too wide to trust
-		let kcalSum = 0;
-		let n = 0;
-		for (let k = i; k <= j; k++) {
-			kcalSum += pairs[k].kcal;
-			n++;
-		}
-		const avgKcal = kcalSum / n;
-		const deltaKgPerWeek = ((pairs[j].weightKg - pairs[i].weightKg) / span) * WINDOW_SPAN_DAYS;
-		weekly.push({ weekStart: pairs[i].date, kcal: avgKcal - deltaKgPerWeek * KCAL_PER_KG_PER_WEEK });
-	}
+  const weekly: WeeklyEstimate[] = [];
+  let j = 1;
+  for (let i = 0; i < pairs.length; i++) {
+    if (j <= i) j = i + 1;
+    while (
+      j < pairs.length &&
+      dayDiff(pairs[i].date, pairs[j].date) < WINDOW_SPAN_DAYS
+    )
+      j++;
+    if (j >= pairs.length) break;
+    const span = dayDiff(pairs[i].date, pairs[j].date);
+    if (span > WINDOW_MAX_SPAN_DAYS) continue; // gap too wide to trust
+    let kcalSum = 0;
+    let n = 0;
+    for (let k = i; k <= j; k++) {
+      kcalSum += pairs[k].kcal;
+      n++;
+    }
+    const avgKcal = kcalSum / n;
+    const deltaKgPerWeek =
+      ((pairs[j].weightKg - pairs[i].weightKg) / span) * WINDOW_SPAN_DAYS;
+    weekly.push({
+      weekStart: pairs[i].date,
+      kcal: avgKcal - deltaKgPerWeek * KCAL_PER_KG_PER_WEEK,
+    });
+  }
 
-	// Enough pairs but no boundary pair within 7–10 days — nothing to estimate.
-	if (weekly.length === 0) {
-		return { status: "collecting", pairs: pairs.length, needed: MIN_PAIRS, outliersRejected };
-	}
+  // Enough pairs but no boundary pair within 7–10 days — nothing to estimate.
+  if (weekly.length === 0) {
+    return {
+      status: "collecting",
+      pairs: pairs.length,
+      needed: MIN_PAIRS,
+      outliersRejected,
+    };
+  }
 
-	let smoothed: number | null = null;
-	for (const w of weekly) {
-		smoothed = smoothed === null ? w.kcal : EWMA_ALPHA * w.kcal + (1 - EWMA_ALPHA) * smoothed;
-	}
+  let smoothed: number | null = null;
+  for (const w of weekly) {
+    smoothed =
+      smoothed === null
+        ? w.kcal
+        : EWMA_ALPHA * w.kcal + (1 - EWMA_ALPHA) * smoothed;
+  }
 
-	const tail = weekly.slice(-SPREAD_WINDOW);
-	let min = Infinity;
-	let max = -Infinity;
-	for (const w of tail) {
-		if (w.kcal < min) min = w.kcal;
-		if (w.kcal > max) max = w.kcal;
-	}
+  const tail = weekly.slice(-SPREAD_WINDOW);
+  let min = Infinity;
+  let max = -Infinity;
+  for (const w of tail) {
+    if (w.kcal < min) min = w.kcal;
+    if (w.kcal > max) max = w.kcal;
+  }
 
-	return {
-		status: "ready",
-		kcal: Math.round(smoothed as number),
-		spreadKcal: Math.round((max - min) / 2),
-		weeklyEstimates: weekly,
-		pairs: pairs.length,
-		outliersRejected,
-	};
+  return {
+    status: "ready",
+    kcal: Math.round(smoothed as number),
+    spreadKcal: Math.round((max - min) / 2),
+    weeklyEstimates: weekly,
+    pairs: pairs.length,
+    outliersRejected,
+  };
 }

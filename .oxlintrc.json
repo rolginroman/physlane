@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "src/routeTree.gen.ts",
+    "worker-configuration.d.ts",
+    "dist/**",
+    ".wrangler/**",
+    "public/**"
+  ],
+  "plugins": ["import", "typescript"],
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "import/no-default-export": "error",
+    "import/no-relative-parent-imports": "error"
+  },
+  "overrides": [
+    {
+      "files": ["vite.config.ts", "vitest.config.ts", "drizzle.config.ts"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": ["src/**/__tests__/**"],
+      "rules": {
+        "import/no-relative-parent-imports": "off"
+      }
+    }
+  ]
+}

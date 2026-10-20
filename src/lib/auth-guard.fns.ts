@@ -1,5 +1,10 @@
-import { createServerFn } from '@tanstack/react-start'
-import { applySettings, loadSessionUser, requireUser, type SettingsPatch } from '#/server/auth.core'
+import { createServerFn } from "@tanstack/react-start";
+import {
+  applySettings,
+  loadSessionUser,
+  requireUser,
+  type SettingsPatch,
+} from "#/server/auth.core";
 
 /**
  * Client-safe bridge for route guards and onboarding mutations.
@@ -11,13 +16,13 @@ import { applySettings, loadSessionUser, requireUser, type SettingsPatch } from 
  * nothing but server fns, so the compiler strips its server imports from
  * the client bundle.
  */
-export const getViewer = createServerFn({ method: 'GET' }).handler(async () => {
-  return loadSessionUser()
-})
+export const getViewer = createServerFn({ method: "GET" }).handler(async () => {
+  return loadSessionUser();
+});
 
-export const saveSettings = createServerFn({ method: 'POST' })
+export const saveSettings = createServerFn({ method: "POST" })
   .validator((d: SettingsPatch) => d)
   .handler(async ({ data }) => {
-    const me = await requireUser()
-    return applySettings(me, data)
-  })
+    const me = await requireUser();
+    return applySettings(me, data);
+  });

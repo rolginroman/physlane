@@ -118,9 +118,7 @@
       "indexes": {
         "account_user_id_idx": {
           "name": "account_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -207,9 +205,7 @@
       "indexes": {
         "cycles_user_idx": {
           "name": "cycles_user_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -276,10 +272,7 @@
       "indexes": {
         "daily_intake_user_date_idx": {
           "name": "daily_intake_user_date_idx",
-          "columns": [
-            "user_id",
-            "date"
-          ],
+          "columns": ["user_id", "date"],
           "isUnique": true
         }
       },
@@ -401,10 +394,7 @@
       "indexes": {
         "measurements_user_taken_idx": {
           "name": "measurements_user_taken_idx",
-          "columns": [
-            "user_id",
-            "taken_at"
-          ],
+          "columns": ["user_id", "taken_at"],
           "isUnique": false
         }
       },
@@ -479,10 +469,7 @@
       "indexes": {
         "photos_user_taken_idx": {
           "name": "photos_user_taken_idx",
-          "columns": [
-            "user_id",
-            "taken_at"
-          ],
+          "columns": ["user_id", "taken_at"],
           "isUnique": false
         }
       },
@@ -726,16 +713,12 @@
       "indexes": {
         "user_email_idx": {
           "name": "user_email_idx",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         },
         "user_share_token_idx": {
           "name": "user_share_token_idx",
-          "columns": [
-            "share_token"
-          ],
+          "columns": ["share_token"],
           "isUnique": true
         }
       },
@@ -834,9 +817,7 @@
       "indexes": {
         "waitlist_email_idx": {
           "name": "waitlist_email_idx",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },

@@ -1,4 +1,5 @@
 # Physlane Design Language System v2
+
 ## Persistent Brand, UI, Illustration & Responsive Design Specification
 
 **Version:** 2.0  
@@ -18,6 +19,7 @@ Design and evolve Physlane as one coherent product. Treat this document as the p
 Do not reinvent the visual language for each new request. Extend existing patterns and tokens, and introduce new patterns only when they solve a clear product or usability problem.
 
 The design language must work consistently across:
+
 - Marketing website and landing pages.
 - Desktop and tablet layouts.
 - Mobile web experiences.
@@ -43,6 +45,7 @@ Supporting message:
 “Log your weight and daily calories. Get a personalized estimate of your actual burn rate — from your own data.”
 
 The experience should communicate:
+
 - Personal measurement over generic assumptions.
 - Simple daily inputs that lead to useful insights.
 - Transparent estimation rather than false precision.
@@ -72,12 +75,15 @@ The visual metaphor is **a refined measurement instrument art-directed like a co
 Blend three pillars:
 
 ### A. Editorial minimalism
+
 Large, expressive serif headlines; clean sans-serif interface typography; asymmetric compositions; generous whitespace; decisive hierarchy.
 
 ### B. Illustrated athletic energy
+
 Stylized adult athletes, controlled shadows, geometric shapes, cropped compositions, print-like textures, and purposeful movement.
 
 ### C. Precision analytics
+
 Clear data visualizations, considered numerical hierarchy, thin grids, well-structured dashboard cards, and restrained technical details.
 
 The illustration creates emotion and recognizability. Typography creates the editorial identity. The product UI proves the value.
@@ -87,11 +93,13 @@ Never let decoration obscure the product's actual promise or daily logging exper
 ## 2.1 Visual balance
 
 Use the following as a qualitative guide:
+
 - Editorial layout and typography: dominant.
 - Athletic illustration: distinctive supporting element.
 - Product analytics: highly visible and functional.
 
 The relative balance may change by context:
+
 - Marketing hero: illustration and headline establish the identity.
 - Product dashboard: data and controls dominate; illustration is minimal or absent.
 - Mobile logging: input speed and legibility dominate.
@@ -100,6 +108,7 @@ The relative balance may change by context:
 ## 2.2 Avoid
 
 Do not use:
+
 - Photorealistic people, stock fitness photography, or realistic 3D human renders.
 - Cute, whimsical, childish, or overly soft wellness aesthetics.
 - Excessive botanical decoration, pastel gradients, or lifestyle imagery.
@@ -124,43 +133,43 @@ Do not treat dark mode as a simple inversion of the light theme. Re-art-direct a
 
 ## 3.1 Light Editorial palette
 
-| Token | Value | Purpose |
-|---|---|---|
-| `canvas` | `#F7F4EE` | Main page background |
-| `surface` | `#FFFEFC` | Cards and primary surfaces |
-| `surface-muted` | `#EEEAE2` | Subtle alternate sections |
-| `surface-raised` | `#FFFFFF` | High-clarity overlay surfaces |
-| `ink` | `#171717` | Main text and headlines |
-| `text-secondary` | `#62615E` | Body text and descriptions |
-| `text-muted` | `#898781` | Captions and metadata |
-| `border` | `#E3DED5` | Dividers and card outlines |
-| `brand` | `#D92F28` | Primary action and brand emphasis |
-| `brand-hover` | `#B92520` | Hover and pressed states |
-| `brand-soft` | `#F5DCD7` | Subtle highlights and chart ranges |
-| `chart-grid` | `#E7E2D9` | Chart grid lines |
-| `chart-neutral` | `#777773` | Secondary data series |
-| `data-positive` | `#426C56` | Contextual positive indicators |
-| `focus-ring` | `#345B9A` | Visible keyboard focus |
+| Token            | Value     | Purpose                            |
+| ---------------- | --------- | ---------------------------------- |
+| `canvas`         | `#F7F4EE` | Main page background               |
+| `surface`        | `#FFFEFC` | Cards and primary surfaces         |
+| `surface-muted`  | `#EEEAE2` | Subtle alternate sections          |
+| `surface-raised` | `#FFFFFF` | High-clarity overlay surfaces      |
+| `ink`            | `#171717` | Main text and headlines            |
+| `text-secondary` | `#62615E` | Body text and descriptions         |
+| `text-muted`     | `#898781` | Captions and metadata              |
+| `border`         | `#E3DED5` | Dividers and card outlines         |
+| `brand`          | `#D92F28` | Primary action and brand emphasis  |
+| `brand-hover`    | `#B92520` | Hover and pressed states           |
+| `brand-soft`     | `#F5DCD7` | Subtle highlights and chart ranges |
+| `chart-grid`     | `#E7E2D9` | Chart grid lines                   |
+| `chart-neutral`  | `#777773` | Secondary data series              |
+| `data-positive`  | `#426C56` | Contextual positive indicators     |
+| `focus-ring`     | `#345B9A` | Visible keyboard focus             |
 
 ## 3.2 Dark Performance palette
 
-| Token | Value | Purpose |
-|---|---|---|
-| `canvas` | `#101112` | Main dark background |
-| `surface` | `#171819` | Cards and primary surfaces |
-| `surface-muted` | `#1E2021` | Secondary sections |
-| `surface-raised` | `#242526` | Overlays and elevated surfaces |
-| `ink` | `#F4F1EA` | Main text and headlines |
-| `text-secondary` | `#B6B3AD` | Body text and descriptions |
-| `text-muted` | `#8D8A84` | Captions and metadata |
-| `border` | `#343332` | Dividers and card outlines |
-| `brand` | `#E63A33` | Primary action and brand emphasis |
-| `brand-hover` | `#F04A42` | Hover and pressed states |
-| `brand-soft` | `#482321` | Subtle red-tinted surfaces |
-| `chart-grid` | `#343332` | Chart grid lines |
-| `chart-neutral` | `#AAA79F` | Secondary data series |
-| `data-positive` | `#8DB69A` | Contextual positive indicators |
-| `focus-ring` | `#A8C7FF` | Visible keyboard focus |
+| Token            | Value     | Purpose                           |
+| ---------------- | --------- | --------------------------------- |
+| `canvas`         | `#101112` | Main dark background              |
+| `surface`        | `#171819` | Cards and primary surfaces        |
+| `surface-muted`  | `#1E2021` | Secondary sections                |
+| `surface-raised` | `#242526` | Overlays and elevated surfaces    |
+| `ink`            | `#F4F1EA` | Main text and headlines           |
+| `text-secondary` | `#B6B3AD` | Body text and descriptions        |
+| `text-muted`     | `#8D8A84` | Captions and metadata             |
+| `border`         | `#343332` | Dividers and card outlines        |
+| `brand`          | `#E63A33` | Primary action and brand emphasis |
+| `brand-hover`    | `#F04A42` | Hover and pressed states          |
+| `brand-soft`     | `#482321` | Subtle red-tinted surfaces        |
+| `chart-grid`     | `#343332` | Chart grid lines                  |
+| `chart-neutral`  | `#AAA79F` | Secondary data series             |
+| `data-positive`  | `#8DB69A` | Contextual positive indicators    |
+| `focus-ring`     | `#A8C7FF` | Visible keyboard focus            |
 
 These values are canonical starting tokens. Validate text, button, chart, and focus contrast before production. Accessibility requirements take precedence over exact decorative color values.
 
@@ -181,6 +190,7 @@ These values are canonical starting tokens. Validate text, button, chart, and fo
 Use semantic tokens throughout the interface. Components must not contain unrelated, scattered light- and dark-mode hex values.
 
 When the product supports user-selected themes:
+
 - Support Light, Dark, and System preferences as appropriate.
 - Respect the system preference by default unless product requirements specify otherwise.
 - Persist the user's theme selection.
@@ -204,6 +214,7 @@ Preferred starting font: **Instrument Serif**.
 Alternatives: DM Serif Display or an equivalent high-quality editorial serif.
 
 Characteristics:
+
 - Large scale and confident line breaks.
 - Tight but readable leading.
 - Strong contrast between thick and thin strokes.
@@ -222,6 +233,7 @@ Do not use the display serif for all interface elements. Its scarcity is part of
 ## 4.2 Interface typography
 
 Use Inter or Manrope for:
+
 - Body copy.
 - Navigation.
 - Buttons.
@@ -235,6 +247,7 @@ Use clear, stable numeric forms for weights, calorie values, percentages, dates,
 ## 4.3 Type tokens
 
 Define reusable tokens for:
+
 - `display-xl`, `display-lg`, `display-md`
 - `heading-xl`, `heading-lg`, `heading-md`
 - `card-title`
@@ -257,6 +270,7 @@ Illustration is a core signature, not generic decoration.
 Use a **stylized editorial illustration with vector-led shapes, dimensional shading, and subtle screen-print or graphic-novel influences**.
 
 The desired result sits between flat vector art and painterly editorial illustration:
+
 - Clearly illustrated, never photographic.
 - Strong, recognizable silhouettes.
 - Intentional anatomy and simplified muscular planes.
@@ -287,6 +301,7 @@ Figures should feel confident and aspirational without pressuring users to look 
 ## 5.3 Composition
 
 For desktop marketing heroes:
+
 - Place the headline and primary actions in a relatively calm text column.
 - Anchor the illustration predominantly on the right or upper-right.
 - Allow larger figures to extend past hero boundaries where compositionally appropriate.
@@ -320,6 +335,7 @@ The dark illustration must feel like the dark-theme version of the same artwork,
 ## 5.6 Illustration consistency
 
 Document and reuse:
+
 - Contour style and weight.
 - Shadow construction.
 - Grain intensity.
@@ -340,6 +356,7 @@ Use a flexible editorial grid with deliberate asymmetry.
 ## 6.1 Desktop marketing layout
 
 At large viewport sizes, use a two-column hero:
+
 - Left: eyebrow, headline, concise proposition, primary CTA, secondary action, and compact benefits.
 - Right: athletic illustration with a floating analytics dashboard.
 - Header: wordmark, restrained navigation, and one prominent app-access action.
@@ -357,6 +374,7 @@ Use a documented scale based on a 4- or 8-point grid:
 `4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128`
 
 Create reusable tokens for:
+
 - Component gaps.
 - Card padding.
 - Section spacing.
@@ -385,6 +403,7 @@ Avoid using a card for every piece of content. Use whitespace and typography bef
 Do not simply scale down the desktop interface. The content hierarchy, illustration composition, and product interactions must adapt intentionally.
 
 Use content-driven breakpoints, starting around:
+
 - Mobile: below 640 px.
 - Tablet: 640–1023 px.
 - Desktop: 1024–1439 px.
@@ -395,6 +414,7 @@ Adjust these to the actual project and component behavior rather than treating t
 ## 7.1 Desktop
 
 Use the complete editorial hero composition:
+
 - Spacious headline column.
 - Large illustrated athletes.
 - Dashboard overlapping the illustration.
@@ -407,6 +427,7 @@ Maintain negative space around the headline and a strong visual separation betwe
 ## 7.2 Tablet
 
 Rebalance the illustration and dashboard:
+
 - Reduce headline scale and horizontal gaps.
 - Reduce figure size or crop the composition.
 - Keep enough dashboard detail to explain the product.
@@ -452,6 +473,7 @@ The illustration should set the mood without delaying access to the main action.
 Do not compress a full desktop dashboard into an unreadable miniature.
 
 Instead:
+
 - Show one primary chart or one principal metric.
 - Use a single large weight-trend visualization with a small estimate card, or a compact burn-rate card with a short trend.
 - Keep metric labels and units legible.
@@ -465,6 +487,7 @@ Treat marketing and product interaction as separate layouts within the same desi
 The application should prioritize daily logging speed and clear navigation.
 
 Use a compact navigation model, such as:
+
 - Overview.
 - Log.
 - Analytics.
@@ -475,6 +498,7 @@ Adapt labels and the number of destinations to the real information architecture
 ### Mobile Overview
 
 Show:
+
 - Estimated daily burn.
 - Current weight or recent weight trend.
 - A concise progress summary.
@@ -531,6 +555,7 @@ The application dashboard must be visually related to the marketing page while p
 ## 8.2 Core reusable components
 
 Define reusable components for:
+
 - Weight-trend chart.
 - Estimated daily burn metric.
 - Daily calorie intake.
@@ -561,6 +586,7 @@ When presenting calorie-burn estimates, explicitly distinguish estimates from di
 # 9. Components and interaction rules
 
 Build a coherent reusable system for:
+
 - Header and navigation.
 - Footer.
 - Primary and secondary buttons.
@@ -582,6 +608,7 @@ Build a coherent reusable system for:
 ## 9.1 Buttons
 
 ### Primary
+
 - Brand red background.
 - White, sufficiently contrasted label.
 - Clear text and optional arrow.
@@ -590,6 +617,7 @@ Build a coherent reusable system for:
 - Visible hover, active, focus, loading, and disabled states.
 
 ### Secondary
+
 - Transparent, canvas, or surface background.
 - Near-black or theme-appropriate text.
 - Minimal border or understated underline.
@@ -600,6 +628,7 @@ Do not use different button visual languages in separate parts of the product wi
 ## 9.2 Interaction and motion
 
 Use subtle and purposeful motion:
+
 - Short transitions.
 - Restrained chart animation.
 - Clear tab and selected states.
@@ -617,6 +646,7 @@ Every interactive control must have a meaningful action. Respect reduced-motion 
 Physlane should sound confident, knowledgeable, direct, and honest.
 
 Prefer:
+
 - Short sentences.
 - Active voice.
 - Specific explanations.
@@ -625,6 +655,7 @@ Prefer:
 - Calm, nonjudgmental descriptions of weight trends.
 
 Approved core messaging:
+
 - “Calorie apps guess. This one measures.”
 - “Your weight and daily calories. Your estimated burn rate.”
 - “Simple inputs. Real insights.”
@@ -632,6 +663,7 @@ Approved core messaging:
 - “Log. Learn. Adjust.”
 
 Avoid:
+
 - “Crush your goals.”
 - “No excuses.”
 - “Burn fat faster.”
@@ -670,6 +702,7 @@ Where aesthetics and accessibility conflict, preserve usability and improve the 
 Store reusable tokens in centralized definitions, not scattered hardcoded values.
 
 Document:
+
 - Color and semantic theme tokens.
 - Typography.
 - Font weights and line heights.
@@ -776,20 +809,20 @@ Revise any output that fails these criteria.
 
 WCAG 2.x contrast ratios of the canonical tokens from §3.1 and §3.2. AA requires 4.5:1 for normal text and 3:1 for large text (≥24px, or ≥18.66px bold) and UI components. Under §3.2, accessibility takes precedence. The adjustments below are the smallest changes that pass.
 
-| Pair | Ratio | Result | Resolution |
-|---|---|---|---|
-| Light: white on `brand` (primary button) | 4.79 | Pass | None |
-| Light: `brand` as text on `canvas` | 4.36 | Fails for small text | Use red text at display or large sizes only. Small red text uses `brand-hover` `#B92520` (5.71) |
-| Light: `text-muted` `#898781` on `canvas` | 3.27 | Fails for normal text | **`text-muted` → `#6B6964`** (4.99 on `canvas`, 4.57 on `surface-muted`) |
-| Light: `text-secondary` on `canvas` | 5.64 | Pass | None |
-| Light: `data-positive` on `canvas` | 5.45 | Pass | None |
-| Light: `focus-ring` on `canvas` | 6.15 | Pass | None |
-| Dark: white on `brand` `#E63A33` (primary button) | 4.19 | Fails | **Dark primary button label = `canvas` `#101112`** (4.52 on `brand`, 5.19 on `brand-hover`). White on `brand-hover` is only 3.64 |
-| Dark: `brand` as text on `canvas` | 4.52 | Pass | None |
-| Dark: `text-muted` on `canvas` / `surface-raised` | 5.49 / 4.46 | Borderline on raised surfaces | Do not set body-size muted text on `surface-raised` |
-| Dark: `focus-ring` on `canvas` | 11.05 | Pass | None |
-| `border`, `chart-grid` vs background (both themes) | 1.22 to 1.50 | Decorative only | Never let a border or grid line carry meaning alone, such as a target-range edge |
-| `brand` vs `data-positive` (red vs green) | 1.25 light / 1.85 dark | Nearly the same lightness | Red/green states are indistinguishable under deuteranopia. Always pair them with a sign, icon, or label (§3.3, §11) |
+| Pair                                               | Ratio                  | Result                        | Resolution                                                                                                                       |
+| -------------------------------------------------- | ---------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Light: white on `brand` (primary button)           | 4.79                   | Pass                          | None                                                                                                                             |
+| Light: `brand` as text on `canvas`                 | 4.36                   | Fails for small text          | Use red text at display or large sizes only. Small red text uses `brand-hover` `#B92520` (5.71)                                  |
+| Light: `text-muted` `#898781` on `canvas`          | 3.27                   | Fails for normal text         | **`text-muted` → `#6B6964`** (4.99 on `canvas`, 4.57 on `surface-muted`)                                                         |
+| Light: `text-secondary` on `canvas`                | 5.64                   | Pass                          | None                                                                                                                             |
+| Light: `data-positive` on `canvas`                 | 5.45                   | Pass                          | None                                                                                                                             |
+| Light: `focus-ring` on `canvas`                    | 6.15                   | Pass                          | None                                                                                                                             |
+| Dark: white on `brand` `#E63A33` (primary button)  | 4.19                   | Fails                         | **Dark primary button label = `canvas` `#101112`** (4.52 on `brand`, 5.19 on `brand-hover`). White on `brand-hover` is only 3.64 |
+| Dark: `brand` as text on `canvas`                  | 4.52                   | Pass                          | None                                                                                                                             |
+| Dark: `text-muted` on `canvas` / `surface-raised`  | 5.49 / 4.46            | Borderline on raised surfaces | Do not set body-size muted text on `surface-raised`                                                                              |
+| Dark: `focus-ring` on `canvas`                     | 11.05                  | Pass                          | None                                                                                                                             |
+| `border`, `chart-grid` vs background (both themes) | 1.22 to 1.50           | Decorative only               | Never let a border or grid line carry meaning alone, such as a target-range edge                                                 |
+| `brand` vs `data-positive` (red vs green)          | 1.25 light / 1.85 dark | Nearly the same lightness     | Red/green states are indistinguishable under deuteranopia. Always pair them with a sign, icon, or label (§3.3, §11)              |
 
 Consequence for §9.1: in Dark Performance, the primary button label is `canvas`, not white. Every other §9.1 rule stands.
 

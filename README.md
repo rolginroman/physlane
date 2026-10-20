@@ -1,6 +1,6 @@
 # physlane
 
-Adaptive TDEE and recomp tracker for lifters. Manual numbers only: weigh in, log calories, and the engine learns *your* burn rate from your own series — no food database, no integrations, under 60 seconds a day.
+Adaptive TDEE and recomp tracker for lifters. Manual numbers only: weigh in, log calories, and the engine learns _your_ burn rate from your own series — no food database, no integrations, under 60 seconds a day.
 
 **Live:** https://physlane.unpackit.top (also https://physlane.irolgin.workers.dev)
 

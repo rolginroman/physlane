@@ -1,73 +1,75 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, type FormEvent } from 'react'
-import { signUp } from '#/lib/auth-client'
-import { authErrorMessage } from '#/lib/auth-error'
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { signUp } from "#/lib/auth-client";
+import { authErrorMessage } from "#/lib/auth-error";
 
-export const Route = createFileRoute('/sign-up')({
+export const Route = createFileRoute("/sign-up")({
   head: () => ({
     meta: [
-      { title: 'Create account · physlane' },
-      { name: 'robots', content: 'noindex, follow' },
+      { title: "Create account · physlane" },
+      { name: "robots", content: "noindex, follow" },
     ],
-    links: [{ rel: 'canonical', href: 'https://physlane.unpackit.top/sign-up' }],
+    links: [
+      { rel: "canonical", href: "https://physlane.unpackit.top/sign-up" },
+    ],
   }),
   component: SignUpPage,
-})
+});
 
-type FieldErrors = { name?: string; email?: string; password?: string }
+type FieldErrors = { name?: string; email?: string; password?: string };
 
 function SignUpPage() {
-  const navigate = useNavigate()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<FieldErrors>({})
-  const [serverError, setServerError] = useState<string | null>(null)
-  const [pending, setPending] = useState(false)
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   function validateName(): string | undefined {
-    if (!name.trim()) return 'Enter your name.'
-    return undefined
+    if (!name.trim()) return "Enter your name.";
+    return undefined;
   }
 
   function validateEmail(): string | undefined {
-    const value = email.trim()
-    if (!value) return 'Enter your email address.'
+    const value = email.trim();
+    if (!value) return "Enter your email address.";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      return 'Enter a valid email address.'
+      return "Enter a valid email address.";
     }
-    return undefined
+    return undefined;
   }
 
   function validatePassword(): string | undefined {
-    if (password.length < 8) return 'Password must be at least 8 characters.'
-    return undefined
+    if (password.length < 8) return "Password must be at least 8 characters.";
+    return undefined;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+    event.preventDefault();
     const nextErrors: FieldErrors = {
       name: validateName(),
       email: validateEmail(),
       password: validatePassword(),
-    }
-    setErrors(nextErrors)
-    setServerError(null)
-    if (nextErrors.name || nextErrors.email || nextErrors.password) return
+    };
+    setErrors(nextErrors);
+    setServerError(null);
+    if (nextErrors.name || nextErrors.email || nextErrors.password) return;
 
-    setPending(true)
+    setPending(true);
     const { error } = await signUp.email({
       name: name.trim(),
       email: email.trim(),
       password,
-    })
+    });
     if (error) {
-      setServerError(authErrorMessage(error))
-      setPending(false)
-      return
+      setServerError(authErrorMessage(error));
+      setPending(false);
+      return;
     }
-    await navigate({ to: '/dashboard' })
+    await navigate({ to: "/dashboard" });
   }
 
   return (
@@ -107,7 +109,7 @@ function SignUpPage() {
                 setErrors((prev) => ({ ...prev, name: validateName() }))
               }
               aria-invalid={errors.name ? true : undefined}
-              aria-describedby={errors.name ? 'sign-up-name-error' : undefined}
+              aria-describedby={errors.name ? "sign-up-name-error" : undefined}
             />
             {errors.name && (
               <p id="sign-up-name-error" className="field-error">
@@ -133,7 +135,9 @@ function SignUpPage() {
                 setErrors((prev) => ({ ...prev, email: validateEmail() }))
               }
               aria-invalid={errors.email ? true : undefined}
-              aria-describedby={errors.email ? 'sign-up-email-error' : undefined}
+              aria-describedby={
+                errors.email ? "sign-up-email-error" : undefined
+              }
             />
             {errors.email && (
               <p id="sign-up-email-error" className="field-error">
@@ -150,27 +154,30 @@ function SignUpPage() {
               <input
                 id="sign-up-password"
                 name="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 className="input pr-12"
                 placeholder="At least 8 characters"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 onBlur={() =>
-                  setErrors((prev) => ({ ...prev, password: validatePassword() }))
+                  setErrors((prev) => ({
+                    ...prev,
+                    password: validatePassword(),
+                  }))
                 }
                 aria-invalid={errors.password ? true : undefined}
                 aria-describedby={
-                  errors.password ? 'sign-up-password-error' : undefined
+                  errors.password ? "sign-up-password-error" : undefined
                 }
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-xs font-medium text-dim hover:text-text"
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? "Hide" : "Show"}
               </button>
             </div>
             {errors.password ? (
@@ -182,13 +189,17 @@ function SignUpPage() {
             )}
           </div>
 
-          <button type="submit" disabled={pending} className="btn-primary w-full">
-            {pending ? 'Creating account…' : 'Create account'}
+          <button
+            type="submit"
+            disabled={pending}
+            className="btn-primary w-full"
+          >
+            {pending ? "Creating account…" : "Create account"}
           </button>
         </form>
 
         <p className="mt-5 mb-0 text-center text-sm text-dim">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link
             to="/sign-in"
             className="font-medium text-accent underline decoration-line underline-offset-2 hover:text-accent-dim"
@@ -198,5 +209,5 @@ function SignUpPage() {
         </p>
       </div>
     </main>
-  )
+  );
 }
