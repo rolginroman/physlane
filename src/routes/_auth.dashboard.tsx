@@ -75,7 +75,8 @@ function lastWhere(
   pred: (e: MeasurementDTO) => boolean,
 ) {
   for (let i = entries.length - 1; i >= 0; i--) {
-    if (pred(entries[i])) return entries[i];
+    const e = entries[i];
+    if (e !== undefined && pred(e)) return e;
   }
   return null;
 }

@@ -21,9 +21,11 @@ function todayIso(): string {
 
 function newestUpdated(posts: SyndicationPost[]): string {
   if (posts.length === 0) return todayIso();
+  const seed = posts[0];
+  if (seed === undefined) return todayIso();
   return posts.reduce(
     (max, p) => (p.updated > max ? p.updated : max),
-    posts[0].updated,
+    seed.updated,
   );
 }
 

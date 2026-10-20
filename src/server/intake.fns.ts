@@ -158,14 +158,12 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(
 
     // Drift detector consumes the same paired series, anchored at the newest
     // logged day; burn must be ready or there is nothing to diverge from.
+    const lastDay = ctx.entries.at(-1)?.date;
     const drift =
-      result.status === "ready" && ctx.entries.length > 0
+      result.status === "ready" && lastDay != null
         ? detectReportingDrift(
             result.weeklyEstimates,
-            driftWindows(
-              ctx.entries,
-              ctx.entries[ctx.entries.length - 1].date,
-            ) ?? [],
+            driftWindows(ctx.entries, lastDay) ?? [],
           )
         : null;
 

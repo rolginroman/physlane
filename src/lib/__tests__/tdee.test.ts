@@ -140,8 +140,8 @@ describe("computeTdee — spread & estimates", () => {
     expect(result.spreadKcal).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(result.spreadKcal)).toBe(true);
     expect(result.weeklyEstimates.length).toBeGreaterThan(0);
-    expect(result.weeklyEstimates[0].weekStart).toBe("2026-01-01");
-    expect(Number.isFinite(result.weeklyEstimates[0].kcal)).toBe(true);
+    expect(result.weeklyEstimates[0]?.weekStart).toBe("2026-01-01");
+    expect(Number.isFinite(result.weeklyEstimates[0]?.kcal)).toBe(true);
   });
 
   it("varying weekly intake yields a non-zero spread", () => {

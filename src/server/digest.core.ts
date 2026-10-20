@@ -99,11 +99,13 @@ export function buildDigestStats(input: DigestInput): DigestStats | null {
     const day = localDay(w.takenAt, timeZone);
     return day != null && day >= windowStart && day <= todayLocal;
   });
-  const weightDeltaKg =
-    windowWeights.length >= 2
-      ? windowWeights[windowWeights.length - 1].weightKg -
-        windowWeights[0].weightKg
-      : null;
+  const weightDeltaKg = (() => {
+    if (windowWeights.length < 2) return null;
+    const newest = windowWeights[windowWeights.length - 1];
+    const oldest = windowWeights[0];
+    if (newest === undefined || oldest === undefined) return null;
+    return newest.weightKg - oldest.weightKg;
+  })();
 
   if (daysLogged === 0 && weightDeltaKg === null) return null;
 

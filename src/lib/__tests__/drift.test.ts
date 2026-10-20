@@ -102,9 +102,9 @@ describe("driftWindows", () => {
     );
     expect(windows).not.toBeNull();
     expect(windows).toHaveLength(2);
-    expect(windows?.[0].avgReportedKcal).toBe(2500);
-    expect(windows?.[0].rateKgPerWeek).toBeCloseTo(0, 6);
-    expect(windows?.[1].rateKgPerWeek).toBeCloseTo(0, 6);
+    expect(windows?.[0]?.avgReportedKcal).toBe(2500);
+    expect(windows?.[0]?.rateKgPerWeek).toBeCloseTo(0, 6);
+    expect(windows?.[1]?.rateKgPerWeek).toBeCloseTo(0, 6);
   });
 
   it("normalizes weight change per-week inside each half", () => {
@@ -113,8 +113,8 @@ describe("driftWindows", () => {
       days((i) => (i < 7 ? 80 : 80 - 0.1 * (i - 7))),
       day(START, 13),
     );
-    expect(windows?.[0].rateKgPerWeek).toBeCloseTo(0, 6);
-    expect(windows?.[1].rateKgPerWeek).toBeCloseTo(-0.7, 6);
+    expect(windows?.[0]?.rateKgPerWeek).toBeCloseTo(0, 6);
+    expect(windows?.[1]?.rateKgPerWeek).toBeCloseTo(-0.7, 6);
   });
 
   it("returns null when a half lacks two weights", () => {

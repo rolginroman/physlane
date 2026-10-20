@@ -56,6 +56,12 @@ const PHASES: { id: Phase; label: string; blurb: string; rateKg: number }[] = [
   },
 ];
 
+function defaultPhase() {
+  const cut = PHASES.find((p) => p.id === "cut");
+  if (cut) return cut;
+  throw new Error("PHASES misconfigured");
+}
+
 const MAX_RATE_KG_PER_WEEK = 2;
 
 const SIGN = { minus: "−" as const, plus: "+" as const };
@@ -293,7 +299,9 @@ function NewPhaseCard({
 }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("cut");
-  const [rate, setRate] = useState(() => rateToInput(PHASES[0].rateKg, units));
+  const [rate, setRate] = useState(() =>
+    rateToInput(defaultPhase().rateKg, units),
+  );
   const [kcal, setKcal] = useState("");
   const [weight, setWeight] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});

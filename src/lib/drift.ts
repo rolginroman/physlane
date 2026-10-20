@@ -29,7 +29,15 @@ export const DRIFT_ANCHOR_SKIP = 2;
 const median = (xs: number[]): number => {
   const s = [...xs].sort((a, b) => a - b);
   const mid = s.length >> 1;
-  return s.length % 2 === 1 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  if (s.length % 2 === 1) {
+    const v = s[mid];
+    if (v === undefined) throw new Error("median: empty");
+    return v;
+  }
+  const lo = s[mid - 1];
+  const hi = s[mid];
+  if (lo === undefined || hi === undefined) throw new Error("median: empty");
+  return (lo + hi) / 2;
 };
 
 type WindowVerdict = {
@@ -57,9 +65,12 @@ export function detectReportingDrift(
   const anchor = median(weekly.slice(0, anchorCount).map((w) => w.kcal));
   if (!(anchor > 0)) return null;
 
-  const first = windowVerdict(anchor, windows[windows.length - 2]);
+  const older = windows[windows.length - 2];
+  const newer = windows[windows.length - 1];
+  if (older === undefined || newer === undefined) return null;
+  const first = windowVerdict(anchor, older);
   if (first === null) return null;
-  const second = windowVerdict(anchor, windows[windows.length - 1]);
+  const second = windowVerdict(anchor, newer);
   if (second === null || second.direction !== first.direction) return null;
   return {
     direction: second.direction,
@@ -109,6 +120,7 @@ export function driftWindows(
     if (loggedDays === 0 || weightPts.length < 2) return null;
     const first = weightPts[0];
     const last = weightPts[weightPts.length - 1];
+    if (first === undefined || last === undefined) return null;
     const span = last.offset - first.offset;
     if (span < 3) return null;
     windows.push({

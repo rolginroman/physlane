@@ -84,8 +84,8 @@ export async function getSharedCardByToken(
     takenAt: r.takenAt.toISOString(),
     weightKg: r.weightKg as number,
   }));
-  const currentWeightKg =
-    entries.length > 0 ? entries[entries.length - 1].weightKg : null;
+  const lastEntry = entries.at(-1);
+  const currentWeightKg = lastEntry ? lastEntry.weightKg : null;
   const deltaKg =
     cycleRow?.startWeightKg != null && currentWeightKg != null
       ? currentWeightKg - cycleRow.startWeightKg

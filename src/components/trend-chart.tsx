@@ -48,6 +48,22 @@ const RANGES: {
   { id: "all", label: "All", days: null, aria: "all time" },
 ];
 
+function rangeForId(id: RangeId) {
+  const found = RANGES.find((r) => r.id === id);
+  if (found) return found;
+  const fallback = RANGES.find((r) => r.id === "30d");
+  if (fallback) return fallback;
+  throw new Error("RANGES misconfigured");
+}
+
+function siteDefForId(id: SiteId) {
+  const found = SITES.find((s) => s.id === id);
+  if (found) return found;
+  const fallback = SITES.find((s) => s.id === "weight");
+  if (fallback) return fallback;
+  throw new Error("SITES misconfigured");
+}
+
 /** Chartable sites. Weight keeps its special target projection; girths have none. */
 type SiteId =
   | "weight"
@@ -210,7 +226,7 @@ export function TrendChart({
     );
   }, []);
 
-  const range = RANGES.find((r) => r.id === rangeId) ?? RANGES[1];
+  const range = rangeForId(rangeId);
 
   // Logged-point counts per site (all time) — a site needs ≥2 points to chart.
   const siteCounts = useMemo(() => {
@@ -237,7 +253,7 @@ export function TrendChart({
     return SITES.find((s) => enabled.get(s.id))?.id ?? "weight";
   }, [siteId, enabled]);
 
-  const siteDef = SITES.find((s) => s.id === site) ?? SITES[0];
+  const siteDef = siteDefForId(site);
   const isWeight = site === "weight";
   // Weight view keeps the dual render: weight plus waist once waist is chartable.
   const dualWaist = isWeight && (enabled.get("waist") ?? false);
