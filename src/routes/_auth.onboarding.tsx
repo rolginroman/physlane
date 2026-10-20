@@ -1,5 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, type FormEvent } from "react";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
 import { hasAnyCycle, saveCycle } from "#/server/cycles.fns";
 import { saveMeasurement } from "#/server/measurements.fns";
@@ -321,14 +323,12 @@ function OnboardingPage() {
                       </RadioGroupItem>
                       {selected && (
                         <div className="mt-2">
-                          <label htmlFor="onb-rate" className="label">
-                            Target rate (kg/wk)
-                          </label>
-                          <input
+                          <Label htmlFor="onb-rate">Target rate (kg/wk)</Label>
+                          <Input
                             id="onb-rate"
                             type="text"
                             inputMode="decimal"
-                            className="input num"
+                            className="num"
                             value={rate}
                             onChange={(e) => setRate(e.target.value)}
                             onBlur={() => mark("rate")}
@@ -390,14 +390,14 @@ function OnboardingPage() {
                 </RadioGroup>
               </div>
               <div>
-                <label htmlFor="onb-weight" className="label">
+                <Label htmlFor="onb-weight">
                   Current weight ({units === "metric" ? "kg" : "lb"})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="onb-weight"
                   type="text"
                   inputMode="decimal"
-                  className="input num"
+                  className="num"
                   placeholder={units === "metric" ? "72.5" : "160"}
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
@@ -421,14 +421,14 @@ function OnboardingPage() {
               </div>
 
               <div className="mt-4">
-                <label htmlFor="onb-height" className="label">
+                <Label htmlFor="onb-height">
                   Height ({units === "metric" ? "cm" : "in"})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="onb-height"
                   type="text"
                   inputMode="decimal"
-                  className="input num"
+                  className="num"
                   placeholder={units === "metric" ? "180" : "71"}
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
@@ -495,14 +495,12 @@ function OnboardingPage() {
                 .
               </p>
               <div>
-                <label htmlFor="onb-kcal" className="label">
-                  Daily kcal target
-                </label>
-                <input
+                <Label htmlFor="onb-kcal">Daily kcal target</Label>
+                <Input
                   id="onb-kcal"
                   type="text"
                   inputMode="numeric"
-                  className="input num"
+                  className="num"
                   placeholder="2000"
                   value={kcal}
                   onChange={(e) => setKcal(e.target.value)}
