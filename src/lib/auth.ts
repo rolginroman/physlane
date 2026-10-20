@@ -1,9 +1,12 @@
 import { betterAuth } from "better-auth";
+import { mcp } from "@better-auth/mcp";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { jwt } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { telegram } from "tele-better-auth";
 import { env } from "cloudflare:workers";
 import { useDb } from "#/db/client";
+import { MCP_RESOURCE } from "#/server/mcp/config";
 
 export function useAuth() {
   // Telegram auth is env-optional: without a bot token the plugin is skipped
@@ -57,6 +60,22 @@ export function useAuth() {
             }),
           ]
         : []),
+      jwt(),
+      mcp({
+        loginPage: "/sign-in",
+        consentPage: "/consent",
+        resource: MCP_RESOURCE,
+        scopes: [
+          "openid",
+          "profile",
+          "offline_access",
+          "mcp:read",
+          "mcp:write",
+        ],
+        allowDynamicClientRegistration: true,
+        allowUnauthenticatedClientRegistration: true,
+        clientRegistrationDefaultApplicationType: "infer",
+      }),
     ],
   });
 }

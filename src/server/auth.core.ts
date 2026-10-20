@@ -34,16 +34,11 @@ export type SessionUser = {
   targetPromptAppliedKcal: number | null;
 };
 
-export async function loadSessionUser(): Promise<SessionUser | null> {
-  const session = await useAuth().api.getSession({
-    headers: getRequestHeaders(),
-  });
-  if (!session?.user) return null;
-
-  const db = useDb();
+const sessionUserSelect = async () => {
   const schema = await import("#/db/schema");
-  const [row] = await db
-    .select({
+  return {
+    schema,
+    columns: {
       id: schema.user.id,
       name: schema.user.name,
       email: schema.user.email,
@@ -59,11 +54,30 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
       targetPromptLastAppliedAt: schema.user.targetPromptLastAppliedAt,
       targetPromptLastDismissedAt: schema.user.targetPromptLastDismissedAt,
       targetPromptAppliedKcal: schema.user.targetPromptAppliedKcal,
-    })
+    },
+  };
+};
+
+/** Loads any user by id (MCP tools resolve OAuth subjects this way). */
+export async function loadUserById(
+  userId: string,
+): Promise<SessionUser | null> {
+  const db = useDb();
+  const { schema, columns } = await sessionUserSelect();
+  const [row] = await db
+    .select(columns)
     .from(schema.user)
-    .where(eq(schema.user.id, session.user.id))
+    .where(eq(schema.user.id, userId))
     .limit(1);
   return (row as SessionUser) ?? null;
+}
+
+export async function loadSessionUser(): Promise<SessionUser | null> {
+  const session = await useAuth().api.getSession({
+    headers: getRequestHeaders(),
+  });
+  if (!session?.user) return null;
+  return loadUserById(session.user.id);
 }
 
 /** Throws when unauthenticated — call inside guarded handlers. */
