@@ -18,7 +18,6 @@ import { Route as GuideRouteImport } from './routes/guide'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
-import { Route as SmokeBaseuiRouteImport } from './routes/smoke-baseui'
 import { Route as TrackingRouteImport } from './routes/tracking'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
 import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
@@ -78,11 +77,6 @@ const SignInRoute = SignInRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SmokeBaseuiRoute = SmokeBaseuiRouteImport.update({
-  id: '/smoke-baseui',
-  path: '/smoke-baseui',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrackingRoute = TrackingRouteImport.update({
@@ -178,7 +172,6 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/smoke-baseui': typeof SmokeBaseuiRoute
   '/tracking': typeof TrackingRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
@@ -205,7 +198,6 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/smoke-baseui': typeof SmokeBaseuiRoute
   '/tracking': typeof TrackingRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
@@ -234,7 +226,6 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/smoke-baseui': typeof SmokeBaseuiRoute
   '/tracking': typeof TrackingRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
@@ -263,7 +254,6 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sign-in'
     | '/sign-up'
-    | '/smoke-baseui'
     | '/tracking'
     | '/.well-known/oauth-authorization-server'
     | '/.well-known/oauth-protected-resource'
@@ -290,7 +280,6 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sign-in'
     | '/sign-up'
-    | '/smoke-baseui'
     | '/tracking'
     | '/.well-known/oauth-authorization-server'
     | '/.well-known/oauth-protected-resource'
@@ -318,7 +307,6 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/sign-in'
     | '/sign-up'
-    | '/smoke-baseui'
     | '/tracking'
     | '/.well-known/oauth-authorization-server'
     | '/.well-known/oauth-protected-resource'
@@ -347,7 +335,6 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
-  SmokeBaseuiRoute: typeof SmokeBaseuiRoute
   TrackingRoute: typeof TrackingRoute
   DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
   DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
@@ -423,13 +410,6 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/smoke-baseui': {
-      id: '/smoke-baseui'
-      path: '/smoke-baseui'
-      fullPath: '/smoke-baseui'
-      preLoaderRoute: typeof SmokeBaseuiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tracking': {
@@ -590,7 +570,6 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
-  SmokeBaseuiRoute: SmokeBaseuiRoute,
   TrackingRoute: TrackingRoute,
   DotwellKnownOauthAuthorizationServerRoute:
     DotwellKnownOauthAuthorizationServerRoute,
