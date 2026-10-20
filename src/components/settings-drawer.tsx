@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "@tanstack/react-router";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "#/components/ui/sheet";
 import { signOut, useSession } from "#/lib/auth-client";
 import { getViewer, saveSettings } from "#/lib/auth-guard.fns";
 import { rotateShareLink } from "#/server/share.fns";
@@ -46,7 +52,7 @@ function downloadCsv(filename: string, csv: string) {
   URL.revokeObjectURL(url);
 }
 
-const sectionClass = "border-t border-line pt-4";
+const sectionClass = "border-t border-border pt-4";
 
 /** Device timezone, the only source of truth for reminder delivery. */
 function browserTimeZone(): string {
@@ -73,7 +79,7 @@ function tzOffsetLabel(tz: string): string {
 }
 
 const rowButton =
-  "inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60";
+  "inline-flex min-h-11 items-center rounded-lg border border-border px-3 text-sm font-medium text-secondary hover:text-foreground disabled:opacity-60";
 
 interface ViewerSettings {
   units: UnitSystem;
@@ -94,7 +100,6 @@ export function SettingsDrawer({
 }) {
   const router = useRouter();
   const { data: session } = useSession();
-  const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const [loading, setLoading] = useState(false);
@@ -166,43 +171,10 @@ export function SettingsDrawer({
 
   useEffect(() => setOrigin(window.location.origin), []);
 
-  // Scroll lock + Escape + focus while open.
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     closeRef.current?.focus();
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-      if (e.key === "Tab") trapFocus(e);
-    }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener("keydown", onKey);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-
-  /** Keep Tab inside the panel while the drawer is open. */
-  function trapFocus(e: KeyboardEvent) {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const focusable = panel.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    if (focusable.length === 0) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (!first || !last) return;
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -302,33 +274,31 @@ export function SettingsDrawer({
   const displayName = user?.name?.trim() || user?.email || "";
   const initial = displayName ? (displayName[0] ?? "").toUpperCase() : "";
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50">
-      <button
-        type="button"
-        aria-label="Close settings"
-        onClick={onClose}
-        className="absolute inset-0 h-full w-full cursor-default bg-black/50"
-      />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Settings"
-        className="absolute inset-y-0 right-0 flex w-full flex-col border-l border-line bg-bg shadow-2xl motion-safe:animate-[drawer-in_200ms_cubic-bezier(0.25,1,0.5,1)] sm:w-[24rem]"
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+    >
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        className="flex h-full w-full max-w-none flex-col gap-0 border-border bg-background p-0 shadow-2xl sm:w-[24rem] sm:max-w-[24rem]"
       >
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-line px-4">
-          <h2 className="m-0 text-base font-semibold tracking-tight">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
+          <SheetTitle className="m-0 text-base font-semibold tracking-tight">
             Settings
-          </h2>
+          </SheetTitle>
+          <SheetDescription className="sr-only">
+            Account, units, profile, reminders, sharing, and export.
+          </SheetDescription>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close settings"
-            className="inline-flex size-11 items-center justify-center rounded-md text-dim hover:text-text"
+            className="inline-flex size-11 items-center justify-center rounded-md text-secondary hover:text-foreground"
           >
             <svg
               width="18"
@@ -350,9 +320,9 @@ export function SettingsDrawer({
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {loading ? (
             <div className="space-y-3" aria-label="Loading settings">
-              <div className="h-11 animate-pulse rounded-lg bg-surface2" />
-              <div className="h-11 animate-pulse rounded-lg bg-surface2" />
-              <div className="h-11 animate-pulse rounded-lg bg-surface2" />
+              <div className="h-11 animate-pulse rounded-lg bg-muted" />
+              <div className="h-11 animate-pulse rounded-lg bg-muted" />
+              <div className="h-11 animate-pulse rounded-lg bg-muted" />
             </div>
           ) : loadError ? (
             <p role="alert" className="m-0 text-sm text-danger">
@@ -372,13 +342,13 @@ export function SettingsDrawer({
                 <div className="mt-2 flex items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface2 text-sm font-semibold text-dim"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-sm font-semibold text-secondary"
                   >
                     {initial || "·"}
                   </span>
                   <div className="min-w-0">
                     <p className="m-0 truncate text-sm">{displayName}</p>
-                    <p className="m-0 text-xs text-faint">
+                    <p className="m-0 text-xs text-muted-foreground">
                       Free plan while beta
                     </p>
                   </div>
@@ -396,7 +366,7 @@ export function SettingsDrawer({
                 <div
                   role="radiogroup"
                   aria-labelledby="set-units"
-                  className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface2 p-1"
+                  className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted p-1"
                 >
                   {(["metric", "imperial"] as const).map((u) => (
                     <button
@@ -407,8 +377,8 @@ export function SettingsDrawer({
                       onClick={() => pickUnits(u)}
                       className={`min-h-11 rounded-md px-3 text-sm font-medium ${
                         units === u
-                          ? "bg-surface text-text"
-                          : "text-dim hover:text-text"
+                          ? "bg-card text-foreground"
+                          : "text-secondary hover:text-foreground"
                       }`}
                     >
                       {u === "metric" ? "Metric (kg, cm)" : "Imperial (lb, in)"}
@@ -425,7 +395,7 @@ export function SettingsDrawer({
                 <h3 id="set-profile" className="m-0 text-sm font-semibold">
                   Profile
                 </h3>
-                <p className="m-0 mt-1 text-xs text-dim">
+                <p className="m-0 mt-1 text-xs text-secondary">
                   Height and sex tune the body fat estimate. Optional.
                 </p>
                 <div className="mt-3 grid gap-3">
@@ -466,7 +436,7 @@ export function SettingsDrawer({
                     <div
                       role="radiogroup"
                       aria-labelledby="set-sex-label"
-                      className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-surface2 p-1"
+                      className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-muted p-1"
                     >
                       {SEX_OPTIONS.map((opt) => (
                         <button
@@ -480,8 +450,8 @@ export function SettingsDrawer({
                           }}
                           className={`min-h-11 rounded-md px-2 text-sm font-medium ${
                             sexChoice === opt.value
-                              ? "bg-surface text-text"
-                              : "text-dim hover:text-text"
+                              ? "bg-card text-foreground"
+                              : "text-secondary hover:text-foreground"
                           }`}
                         >
                           {opt.label}
@@ -501,11 +471,11 @@ export function SettingsDrawer({
                   Telegram
                 </h3>
                 {telegramId ? (
-                  <p className="m-0 mt-1 text-xs text-dim">
+                  <p className="m-0 mt-1 text-xs text-secondary">
                     Linked. Quick logging and reminders are on.
                   </p>
                 ) : (
-                  <p className="m-0 mt-1 max-w-xl text-xs leading-relaxed text-dim">
+                  <p className="m-0 mt-1 max-w-xl text-xs leading-relaxed text-secondary">
                     Open physlane in Telegram and sign in; the accounts merge
                     via your email. Enables quick logging and daily reminders.
                   </p>
@@ -520,7 +490,7 @@ export function SettingsDrawer({
                 <h3 id="set-reminder" className="m-0 text-sm font-semibold">
                   Daily reminder
                 </h3>
-                <p className="m-0 mt-1 text-xs text-dim">
+                <p className="m-0 mt-1 text-xs text-secondary">
                   One Telegram nudge at your time, only on days you have not
                   logged yet.
                 </p>
@@ -552,22 +522,22 @@ export function SettingsDrawer({
                       className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-sm font-medium ${
                         reminderEnabled
                           ? "border-brand-text/60 bg-brand-text/10 text-brand-text"
-                          : "border-line text-dim hover:text-text"
+                          : "border-border text-secondary hover:text-foreground"
                       }`}
                     >
                       {reminderEnabled ? "On" : "Off"}
                     </button>
                     <div className="col-span-2 min-w-0">
                       <span className="label">Time zone</span>
-                      <p className="m-0 rounded-lg border border-line bg-surface2 px-3 py-2.5 text-sm text-dim">
+                      <p className="m-0 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-secondary">
                         {browserTz}
                         {tzOffsetLabel(browserTz) ? (
-                          <span className="text-faint">
+                          <span className="text-muted-foreground">
                             {" "}
                             · {tzOffsetLabel(browserTz)} · from this device
                           </span>
                         ) : (
-                          <span className="text-faint">
+                          <span className="text-muted-foreground">
                             {" "}
                             · from this device
                           </span>
@@ -576,7 +546,7 @@ export function SettingsDrawer({
                     </div>
                   </div>
                 ) : (
-                  <p className="m-0 mt-2 text-xs text-dim">
+                  <p className="m-0 mt-2 text-xs text-secondary">
                     Link Telegram above to get reminders.
                   </p>
                 )}
@@ -590,7 +560,7 @@ export function SettingsDrawer({
                 <h3 id="set-share" className="m-0 text-sm font-semibold">
                   Share progress
                 </h3>
-                <p className="m-0 mt-1 text-xs text-dim">
+                <p className="m-0 mt-1 text-xs text-secondary">
                   A read-only page with your numbers. No email or Telegram
                   details.
                 </p>
@@ -628,7 +598,7 @@ export function SettingsDrawer({
                         : "Create link"}
                   </button>
                   {copied && !sharePending && (
-                    <p role="status" className="m-0 text-xs text-dim">
+                    <p role="status" className="m-0 text-xs text-secondary">
                       Copied.
                     </p>
                   )}
@@ -693,7 +663,7 @@ export function SettingsDrawer({
                   {pending ? "Saving…" : "Save changes"}
                 </button>
                 {saved && !pending && (
-                  <p role="status" className="m-0 text-xs text-dim">
+                  <p role="status" className="m-0 text-xs text-secondary">
                     Saved.
                   </p>
                 )}
@@ -703,7 +673,7 @@ export function SettingsDrawer({
         </div>
 
         <div
-          className="shrink-0 border-t border-line px-4 py-3"
+          className="shrink-0 border-t border-border px-4 py-3"
           style={{
             paddingBottom: "calc(0.75rem + var(--tg-safe-bottom, 0px))",
           }}
@@ -716,7 +686,7 @@ export function SettingsDrawer({
             Sign out
           </button>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }
