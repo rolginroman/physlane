@@ -551,7 +551,7 @@ export function SettingsDrawer({
                       }}
                       className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-sm font-medium ${
                         reminderEnabled
-                          ? "border-accent/60 bg-accent/10 text-accent"
+                          ? "border-brand-text/60 bg-brand-text/10 text-brand-text"
                           : "border-line text-dim hover:text-text"
                       }`}
                     >

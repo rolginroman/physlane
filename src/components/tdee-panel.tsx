@@ -81,7 +81,9 @@ export function StreakChip({ streak }: { streak: number }) {
   return (
     <span
       className={`num inline-flex min-h-8 items-center rounded-full border px-2.5 text-xs ${
-        streak >= 7 ? "border-accent/60 text-accent" : "border-line text-dim"
+        streak >= 7
+          ? "border-brand-text/60 text-brand-text"
+          : "border-line text-dim"
       }`}
     >
       {streak > 0 ? `${streak}-day streak` : "No streak yet"}
@@ -110,12 +112,14 @@ function Switch({
       disabled={disabled}
       onClick={onToggle}
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-150 ease-out before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] ${
-        checked ? "border-accent/60 bg-accent/15" : "border-line bg-surface2"
+        checked
+          ? "border-brand-text/60 bg-brand-text/15"
+          : "border-line bg-surface2"
       } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
     >
       <span
         className={`ml-0.5 h-5 w-5 rounded-full transition-transform duration-150 ease-out ${
-          checked ? "translate-x-5 bg-accent" : "translate-x-0 bg-dim"
+          checked ? "translate-x-5 bg-brand-text" : "translate-x-0 bg-dim"
         }`}
       />
     </button>
@@ -140,7 +144,7 @@ function BandBar({ confidence, label }: { confidence: number; label: string }) {
         className="h-1.5 w-full overflow-hidden rounded-full bg-surface2"
       >
         <div
-          className="h-full rounded-full bg-accent"
+          className="h-full rounded-full bg-brand-text"
           style={{ width: `${Math.max(4, pct)}%` }}
         />
       </div>
@@ -197,7 +201,7 @@ function TargetPromptCard({
   return (
     <div
       role="status"
-      className="mt-3 rounded-lg border border-accent/50 bg-accent/5 px-3 py-2.5"
+      className="mt-3 rounded-lg border border-brand-text/50 bg-brand-text/5 px-3 py-2.5"
     >
       <p className="num m-0 text-sm text-text">
         Your logs say you burn about {fmtKcal(measuredKcal)}
@@ -272,7 +276,7 @@ function Glp1Row({ plan, onGlp1 }: { plan: "free" | "pro"; onGlp1: boolean }) {
       ) : (
         <Link
           to="/billing"
-          className="inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium text-accent hover:text-accent-dim"
+          className="inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium text-brand-text hover:text-brand-hover"
         >
           Upgrade
         </Link>
@@ -320,7 +324,7 @@ export function TdeePanel({
             className="h-1.5 w-full overflow-hidden rounded-full bg-surface2"
           >
             <div
-              className="h-full rounded-full bg-accent"
+              className="h-full rounded-full bg-brand-text"
               style={{
                 width: `${Math.max(4, Math.round((status.pairs / status.needed) * 100))}%`,
               }}

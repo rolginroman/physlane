@@ -243,7 +243,7 @@ function SignInPage() {
           No account?{" "}
           <Link
             to="/sign-up"
-            className="font-medium text-accent underline decoration-line underline-offset-2 hover:text-accent-dim"
+            className="font-medium text-brand-text underline decoration-line underline-offset-2 hover:text-brand-hover"
           >
             Create one
           </Link>

@@ -402,7 +402,7 @@ function NewPhaseCard({
               onClick={() => selectPhase(p.id)}
               className={`flex min-h-11 w-full flex-col items-start gap-1 rounded-lg border p-3 text-left ${
                 selected
-                  ? "border-accent bg-surface2"
+                  ? "border-brand-text bg-surface2"
                   : "border-line bg-surface hover:border-line2"
               }`}
             >

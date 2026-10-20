@@ -49,7 +49,7 @@ function ShareNotFound() {
         </p>
         <Link
           to="/"
-          className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-accent"
+          className="mt-3 inline-flex min-h-11 items-center text-sm font-medium text-brand-text"
         >
           Go to physlane
         </Link>
@@ -130,7 +130,7 @@ function SharePage() {
 
       <div className="card mt-4 p-4">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="rounded border border-accent px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-accent">
+          <span className="rounded border border-brand-text px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-brand-text">
             {card.cycle ? card.cycle.phase.toUpperCase() : "PROGRESS"}
           </span>
           {card.cycle && (
@@ -170,7 +170,7 @@ function SharePage() {
 
       <p className="m-0 mt-4 text-center text-xs text-dim">
         Shared from{" "}
-        <Link to="/" className="font-medium text-accent">
+        <Link to="/" className="font-medium text-brand-text">
           physlane
         </Link>
         . Read-only view.

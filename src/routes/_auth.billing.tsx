@@ -71,7 +71,7 @@ function Check() {
       width="16"
       height="16"
       aria-hidden="true"
-      className="mt-1 shrink-0 text-accent"
+      className="mt-1 shrink-0 text-brand-text"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.75"
@@ -170,7 +170,7 @@ function IntervalPicker({
             </span>
             <span className="mt-1 text-xs text-dim">{o.sub}</span>
             {o.flag ? (
-              <span className="mt-2 text-[0.625rem] font-semibold uppercase tracking-wide text-accent">
+              <span className="mt-2 text-[0.625rem] font-semibold uppercase tracking-wide text-brand-text">
                 {o.flag}
               </span>
             ) : (
@@ -274,7 +274,7 @@ function BillingPage() {
       {checkout === "success" && (
         <p
           role="status"
-          className="mt-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-sm text-text"
+          className="mt-4 rounded-lg border border-brand-text/40 bg-brand-text/10 px-3 py-2.5 text-sm text-text"
         >
           {plan === "pro"
             ? "Pro is active. Every Pro feature is unlocked."
@@ -328,7 +328,7 @@ function BillingPage() {
               <span className="font-display text-[1.375rem] leading-none">
                 Pro
               </span>
-              <span className="rounded border border-accent px-1 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-accent">
+              <span className="rounded border border-brand-text px-1 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-brand-text">
                 UPGRADE
               </span>
             </h3>
@@ -376,7 +376,7 @@ function BillingPage() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="m-0 flex items-center gap-2 text-base font-semibold">
               Current plan: Pro
-              <span className="rounded border border-accent px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-accent">
+              <span className="rounded border border-brand-text px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-brand-text">
                 ACTIVE
               </span>
             </h2>

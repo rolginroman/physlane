@@ -52,7 +52,7 @@ Keep `strict` and `noUnused*`. Enable `noUncheckedIndexedAccess`. Treat `any` as
 
 ## UI
 
-Follow [DESIGN.md](./DESIGN.md) v2 tokens only. Do not use raw hex or Tailwind palette colors in components. When touching legacy v1 dark/emerald UI, remove it in favor of v2.
+Follow [DESIGN.md](./DESIGN.md) v2 token **values**; for the merged palette set, those values live under shadcn canonical names (see `plans/shadcn-baseui-report.md` token merge table). Transitional v2 aliases (`bg-canvas`, `text-ink`, etc.) are deprecated — do not use them in new code. Do not use raw hex or Tailwind palette colors in components. When touching legacy v1 dark/emerald UI, remove it in favor of v2.
 
 ## Comments
 

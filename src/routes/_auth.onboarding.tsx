@@ -286,7 +286,7 @@ function OnboardingPage() {
                   step === i + 1
                     ? "font-medium text-text"
                     : step > i + 1
-                      ? "text-accent"
+                      ? "text-brand-text"
                       : "text-dim"
                 }
               >
@@ -298,7 +298,7 @@ function OnboardingPage() {
         </div>
         <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-line">
           <div
-            className="h-full origin-left bg-accent transition-transform duration-200 ease-out"
+            className="h-full origin-left bg-brand-text transition-transform duration-200 ease-out"
             style={{ transform: `scaleX(${step / 3})` }}
           />
         </div>
@@ -332,7 +332,7 @@ function OnboardingPage() {
                         onClick={() => selectPhase(p.id)}
                         className={`flex min-h-11 w-full flex-col items-start gap-1 rounded-lg border p-3 text-left ${
                           selected
-                            ? "border-accent bg-surface2"
+                            ? "border-brand-text bg-surface2"
                             : "border-line bg-surface hover:border-line2"
                         }`}
                       >

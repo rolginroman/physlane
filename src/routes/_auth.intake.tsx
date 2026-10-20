@@ -83,7 +83,7 @@ const CELL_VALUE: Record<string, string> = {
   off: "text-dim",
   logged: "text-text",
   missed: "text-faint",
-  pending: "text-accent",
+  pending: "text-brand-text",
 };
 
 function IntakePage() {
@@ -263,7 +263,7 @@ function IntakePage() {
             {pending ? "Saving…" : row?.kcal != null ? "Update day" : "Log day"}
           </button>
           {saved && !pending && (
-            <span role="status" className="text-sm text-accent">
+            <span role="status" className="text-sm text-brand-text">
               Saved
             </span>
           )}
@@ -301,7 +301,7 @@ function IntakePage() {
                 aria-label={label}
                 className={`flex min-h-[4.25rem] flex-col items-center justify-center gap-0.5 bg-surface px-0.5 py-2 text-center transition-colors duration-150 ease-out first:rounded-l-[11px] last:rounded-r-[11px] ${
                   d.isToday ? "bg-surface2" : ""
-                } ${isSelected ? "ring-1 ring-inset ring-accent" : "hover:bg-surface2"}`}
+                } ${isSelected ? "ring-1 ring-inset ring-brand-text" : "hover:bg-surface2"}`}
               >
                 <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-faint">
                   {weekday(d.date, "short")}

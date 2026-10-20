@@ -554,7 +554,7 @@ export function TrendChart({
           </p>
           <Link
             to="/billing"
-            className="inline-flex min-h-11 items-center rounded-md px-1 text-sm font-medium text-accent hover:text-accent-dim"
+            className="inline-flex min-h-11 items-center rounded-md px-1 text-sm font-medium text-brand-text hover:text-brand-hover"
           >
             Upgrade
           </Link>
