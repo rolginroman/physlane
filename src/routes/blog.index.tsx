@@ -1,27 +1,27 @@
-import { createFileRoute } from '@tanstack/react-router'
-import Listing from '#/components/blog/Listing'
-import SiteShell from '#/components/site/SiteShell'
-import { getAllPosts } from '#/lib/blog'
-import { ogUrl } from '#/lib/blog/og'
-import { seoHead } from '#/lib/seo'
+import { createFileRoute } from "@tanstack/react-router";
+import Listing from "#/components/blog/Listing";
+import SiteShell from "#/components/site/SiteShell";
+import { getAllPosts } from "#/lib/blog";
+import { ogUrl } from "#/lib/blog/og";
+import { seoHead } from "#/lib/seo";
 
 const DESCRIPTION =
-  'Articles on training, nutrition, and health — grounded in your own numbers, not generic advice.'
+  "Articles on training, nutrition, and health — grounded in your own numbers, not generic advice.";
 
-export const Route = createFileRoute('/blog/')({
+export const Route = createFileRoute("/blog/")({
   staticData: { appChrome: false },
   head: () =>
     seoHead({
-      title: 'Blog — training, nutrition, health · physlane',
+      title: "Blog — training, nutrition, health · physlane",
       description: DESCRIPTION,
-      path: '/blog',
-      image: ogUrl('/og.png', 'v1'),
+      path: "/blog",
+      image: ogUrl("/og.png", "v1"),
     }),
   component: BlogIndexPage,
-})
+});
 
 function BlogIndexPage() {
-  const posts = getAllPosts(import.meta.env.PROD)
+  const posts = getAllPosts(import.meta.env.PROD);
 
   return (
     <SiteShell>
@@ -35,5 +35,5 @@ function BlogIndexPage() {
         </div>
       </div>
     </SiteShell>
-  )
+  );
 }

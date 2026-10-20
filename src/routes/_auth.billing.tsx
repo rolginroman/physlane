@@ -1,64 +1,66 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   billingStatus,
   createBillingPortal,
   createCheckout,
-} from '#/server/billing.fns'
+} from "#/server/billing.fns";
 
-export const Route = createFileRoute('/_auth/billing')({
-  head: () => ({ meta: [{ title: 'Billing · physlane' }] }),
-  validateSearch: (search: Record<string, unknown>): { checkout?: 'success' | 'cancelled' } => ({
+export const Route = createFileRoute("/_auth/billing")({
+  head: () => ({ meta: [{ title: "Billing · physlane" }] }),
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { checkout?: "success" | "cancelled" } => ({
     checkout:
-      search.checkout === 'success'
-        ? ('success' as const)
-        : search.checkout === 'cancelled'
-          ? ('cancelled' as const)
+      search.checkout === "success"
+        ? ("success" as const)
+        : search.checkout === "cancelled"
+          ? ("cancelled" as const)
           : undefined,
   }),
   loader: async () => billingStatus(),
   component: BillingPage,
-})
+});
 
-type Interval = 'monthly' | 'yearly'
+type Interval = "monthly" | "yearly";
 
 const PRICING: Record<
   Interval,
   {
-    price: string
-    sub: string
-    checkoutLabel: string
-    flag?: string
-    effective?: string
+    price: string;
+    sub: string;
+    checkoutLabel: string;
+    flag?: string;
+    effective?: string;
   }
 > = {
   monthly: {
-    price: '$10',
-    sub: 'per month',
-    checkoutLabel: '$10 / month',
+    price: "$10",
+    sub: "per month",
+    checkoutLabel: "$10 / month",
   },
   yearly: {
-    price: '$100',
-    sub: 'per year',
-    checkoutLabel: '$100 / year',
-    flag: '2 months free',
-    effective: '≈ $8.33/mo',
+    price: "$100",
+    sub: "per year",
+    checkoutLabel: "$100 / year",
+    flag: "2 months free",
+    effective: "≈ $8.33/mo",
   },
-}
+};
 
 const PRO_FEATURES = [
-  'Adaptive TDEE estimate with spread, computed from your own series',
-  '4-week weight projection and on-pace / too-fast / too-slow verdicts',
-  'Unlimited history past the free 90 days',
-  'GLP-1 mode with lean-mass watch',
-]
+  "Adaptive TDEE estimate with spread, computed from your own series",
+  "4-week weight projection and on-pace / too-fast / too-slow verdicts",
+  "Unlimited history past the free 90 days",
+  "GLP-1 mode with lean-mass watch",
+];
 
 const FREE_FEATURES = [
-  'Full logging: weight, girths, daily kcal and protein',
-  'Trend charts with cycle target overlay',
-  'Cut / bulk cycles, streaks, metric and imperial units',
-  '90 days of measurement and intake history',
-]
+  "Full logging: weight, girths, daily kcal and protein",
+  "Trend charts with cycle target overlay",
+  "Cut / bulk cycles, streaks, metric and imperial units",
+  "90 days of measurement and intake history",
+];
 
 /** 16px stroke check, one icon family across the page. */
 function Check() {
@@ -77,7 +79,7 @@ function Check() {
     >
       <path d="M3 8.5 6.5 12 13 4.5" />
     </svg>
-  )
+  );
 }
 
 function ArrowRight() {
@@ -96,7 +98,7 @@ function ArrowRight() {
     >
       <path d="M3 8h10M9 4l4 4-4 4" />
     </svg>
-  )
+  );
 }
 
 function FeatureList({ items }: { items: string[] }) {
@@ -109,19 +111,19 @@ function FeatureList({ items }: { items: string[] }) {
         </li>
       ))}
     </ul>
-  )
+  );
 }
 
 /** Server-fn errors arrive as opaque messages; map what we can, generic copy for the rest. */
 function billingErrorCopy(err: unknown, action: string): string {
-  const message = err instanceof Error ? err.message : ''
-  if (message.includes('BILLING_NOT_CONFIGURED')) {
-    return `Checkout is temporarily unavailable. Billing is not configured on the server. Try again later.`
+  const message = err instanceof Error ? err.message : "";
+  if (message.includes("BILLING_NOT_CONFIGURED")) {
+    return `Checkout is temporarily unavailable. Billing is not configured on the server. Try again later.`;
   }
-  if (message.includes('NO_STRIPE_CUSTOMER')) {
-    return 'No billing profile is attached to your account yet. Contact support and we will sort it out.'
+  if (message.includes("NO_STRIPE_CUSTOMER")) {
+    return "No billing profile is attached to your account yet. Contact support and we will sort it out.";
   }
-  return `Could not ${action}. Check your connection and try again.`
+  return `Could not ${action}. Check your connection and try again.`;
 }
 
 function IntervalPicker({
@@ -129,11 +131,14 @@ function IntervalPicker({
   onChange,
   disabled,
 }: {
-  value: Interval
-  onChange: (next: Interval) => void
-  disabled: boolean
+  value: Interval;
+  onChange: (next: Interval) => void;
+  disabled: boolean;
 }) {
-  const options = (['monthly', 'yearly'] as const).map((id) => ({ id, ...PRICING[id] }))
+  const options = (["monthly", "yearly"] as const).map((id) => ({
+    id,
+    ...PRICING[id],
+  }));
   return (
     <div
       role="radiogroup"
@@ -141,7 +146,7 @@ function IntervalPicker({
       className="grid grid-cols-2 gap-2"
     >
       {options.map((o) => {
-        const active = value === o.id
+        const active = value === o.id;
         return (
           <button
             key={o.id}
@@ -152,18 +157,23 @@ function IntervalPicker({
             onClick={() => onChange(o.id)}
             className={`flex min-h-[96px] flex-col items-start rounded-xl border p-3.5 text-left transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-60 ${
               active
-                ? 'border-brand bg-brand-soft/50'
-                : 'border-line bg-surface hover:border-line2'
+                ? "border-brand bg-brand-soft/50"
+                : "border-line bg-surface hover:border-line2"
             }`}
           >
-            <span className="font-display text-[1.875rem] leading-none">{o.price}</span>
+            <span className="font-display text-[1.875rem] leading-none">
+              {o.price}
+            </span>
             <span className="mt-1 text-xs text-dim">{o.sub}</span>
             {o.flag ? (
               <span className="mt-2 text-[0.625rem] font-semibold uppercase tracking-wide text-accent">
                 {o.flag}
               </span>
             ) : (
-              <span aria-hidden="true" className="mt-2 text-[0.625rem] text-transparent">
+              <span
+                aria-hidden="true"
+                className="mt-2 text-[0.625rem] text-transparent"
+              >
                 ·
               </span>
             )}
@@ -171,76 +181,85 @@ function IntervalPicker({
               <span className="num mt-0.5 text-xs text-dim">{o.effective}</span>
             ) : null}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 function BillingPage() {
-  const { plan, configured, planCurrentPeriodEndIso } = Route.useLoaderData()
-  const checkout = Route.useSearch().checkout
-  const router = useRouter()
+  const { plan, configured, planCurrentPeriodEndIso } = Route.useLoaderData();
+  const checkout = Route.useSearch().checkout;
+  const router = useRouter();
 
-  const [interval, setInterval] = useState<Interval>('yearly')
-  const [pending, setPending] = useState<'checkout' | 'portal' | null>(null)
-  const [error, setError] = useState<{ action: string; message: string } | null>(null)
+  const [interval, setInterval] = useState<Interval>("yearly");
+  const [pending, setPending] = useState<"checkout" | "portal" | null>(null);
+  const [error, setError] = useState<{
+    action: string;
+    message: string;
+  } | null>(null);
 
   // Checkout return: poll until webhook flips plan (or ~60s), plus immediate first refresh.
   useEffect(() => {
-    if (checkout !== 'success') return
+    if (checkout !== "success") return;
 
-    void router.invalidate()
-    if (plan === 'pro') return
+    void router.invalidate();
+    if (plan === "pro") return;
 
-    let ticks = 0
+    let ticks = 0;
     const id = window.setInterval(() => {
-      ticks += 1
+      ticks += 1;
       if (ticks >= 30) {
-        clearInterval(id)
-        return
+        clearInterval(id);
+        return;
       }
-      void router.invalidate()
-    }, 2000)
+      void router.invalidate();
+    }, 2000);
 
-    return () => clearInterval(id)
-  }, [checkout, plan, router])
+    return () => clearInterval(id);
+  }, [checkout, plan, router]);
 
   async function startCheckout() {
-    if (pending) return
-    setError(null)
-    setPending('checkout')
+    if (pending) return;
+    setError(null);
+    setPending("checkout");
     try {
-      const { url } = await createCheckout({ data: { interval } })
-      if (!url) throw new Error('no checkout url')
-      window.location.assign(url)
+      const { url } = await createCheckout({ data: { interval } });
+      if (!url) throw new Error("no checkout url");
+      window.location.assign(url);
     } catch (err) {
-      setError({ action: 'start checkout', message: billingErrorCopy(err, 'start checkout') })
-      setPending(null)
+      setError({
+        action: "start checkout",
+        message: billingErrorCopy(err, "start checkout"),
+      });
+      setPending(null);
     }
   }
 
   async function openPortal() {
-    if (pending) return
-    setError(null)
-    setPending('portal')
+    if (pending) return;
+    setError(null);
+    setPending("portal");
     try {
-      const { url } = await createBillingPortal()
-      if (!url) throw new Error('no portal url')
-      window.location.assign(url)
+      const { url } = await createBillingPortal();
+      if (!url) throw new Error("no portal url");
+      window.location.assign(url);
     } catch (err) {
-      setError({ action: 'open the billing portal', message: billingErrorCopy(err, 'open the billing portal') })
-      setPending(null)
+      setError({
+        action: "open the billing portal",
+        message: billingErrorCopy(err, "open the billing portal"),
+      });
+      setPending(null);
     }
   }
 
   const renewalDate = planCurrentPeriodEndIso
-    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
+    ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
         new Date(planCurrentPeriodEndIso),
       )
-    : null
+    : null;
 
-  const priceLabel = PRICING[interval].checkoutLabel
+  const priceLabel = PRICING[interval].checkoutLabel;
 
   return (
     <section className="pt-8" aria-labelledby="billing-h1">
@@ -248,17 +267,17 @@ function BillingPage() {
         Billing
       </h1>
 
-      {checkout === 'success' && (
+      {checkout === "success" && (
         <p
           role="status"
           className="mt-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2.5 text-sm text-text"
         >
-          {plan === 'pro'
-            ? 'Pro is active. Every Pro feature is unlocked.'
-            : 'Payment received. Pro activates the moment Stripe confirms the subscription, usually within a minute. This page updates on its own.'}
+          {plan === "pro"
+            ? "Pro is active. Every Pro feature is unlocked."
+            : "Payment received. Pro activates the moment Stripe confirms the subscription, usually within a minute. This page updates on its own."}
         </p>
       )}
-      {checkout === 'cancelled' && (
+      {checkout === "cancelled" && (
         <p
           role="status"
           className="mt-4 rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-dim"
@@ -285,14 +304,14 @@ function BillingPage() {
             Online checkout is not enabled yet
           </p>
           <p className="m-0 mt-1 text-sm text-dim">
-            {plan === 'pro'
-              ? 'Card billing goes live shortly. Nothing can be charged today. Your Pro plan stays active in the meantime.'
-              : 'Card billing goes live shortly. Nothing can be charged today. Your free plan keeps working in full: logging, charts, cycles, streaks.'}
+            {plan === "pro"
+              ? "Card billing goes live shortly. Nothing can be charged today. Your Pro plan stays active in the meantime."
+              : "Card billing goes live shortly. Nothing can be charged today. Your free plan keeps working in full: logging, charts, cycles, streaks."}
           </p>
         </div>
       )}
 
-      {plan === 'free' ? (
+      {plan === "free" ? (
         <div className="card mt-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="m-0 text-base font-semibold">Current plan: Free</h2>
@@ -302,7 +321,9 @@ function BillingPage() {
 
           <div className="mt-5 border-t border-line pt-4">
             <h3 className="m-0 flex flex-wrap items-baseline gap-2">
-              <span className="font-display text-[1.375rem] leading-none">Pro</span>
+              <span className="font-display text-[1.375rem] leading-none">
+                Pro
+              </span>
               <span className="rounded border border-accent px-1 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-accent">
                 UPGRADE
               </span>
@@ -322,8 +343,8 @@ function BillingPage() {
                     disabled={pending !== null}
                     className="btn-primary mt-3 inline-flex items-center gap-2"
                   >
-                    {pending === 'checkout' ? (
-                      'Opening checkout…'
+                    {pending === "checkout" ? (
+                      "Opening checkout…"
                     ) : (
                       <>
                         Start Pro · {priceLabel}
@@ -332,14 +353,16 @@ function BillingPage() {
                     )}
                   </button>
                   <p className="hint">
-                    Secure Stripe checkout in a new tab. Cancel anytime from this page.
+                    Secure Stripe checkout in a new tab. Cancel anytime from
+                    this page.
                   </p>
                 </div>
               </>
             ) : (
               <p className="m-0 mt-2 text-sm text-dim">
-                Pro pricing will be $10 per month or $100 per year once checkout is
-                enabled. The estimate keeps building from your data in the meantime.
+                Pro pricing will be $10 per month or $100 per year once checkout
+                is enabled. The estimate keeps building from your data in the
+                meantime.
               </p>
             )}
           </div>
@@ -367,17 +390,19 @@ function BillingPage() {
                   disabled={pending !== null}
                   className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-surface2 px-4 text-sm font-semibold text-text transition-colors duration-150 ease-out hover:border-line2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {pending === 'portal' ? 'Opening portal…' : 'Manage subscription'}
+                  {pending === "portal"
+                    ? "Opening portal…"
+                    : "Manage subscription"}
                 </button>
                 <p className="hint">
-                  Update card, switch monthly or yearly, or cancel. Cancellation takes
-                  effect at the end of the paid period.
+                  Update card, switch monthly or yearly, or cancel. Cancellation
+                  takes effect at the end of the paid period.
                 </p>
               </>
             ) : (
               <p className="m-0 text-sm text-dim">
-                Subscription management is unavailable while checkout is offline. Your
-                Pro plan stays active.
+                Subscription management is unavailable while checkout is
+                offline. Your Pro plan stays active.
               </p>
             )}
           </div>
@@ -388,5 +413,5 @@ function BillingPage() {
         Only manual numbers are stored. No bank or social integrations, ever.
       </p>
     </section>
-  )
+  );
 }

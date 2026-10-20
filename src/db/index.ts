@@ -4,7 +4,7 @@ import * as schema from "./schema";
 
 /** Drizzle instance bound to the request's D1 binding (server-only module). */
 export function useDb() {
-	return drizzle(env.DB, { schema });
+  return drizzle(env.DB, { schema });
 }
 
 export { schema };

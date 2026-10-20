@@ -1,19 +1,19 @@
-import SiteShell from '#/components/site/SiteShell'
-import { getPost, type BlogPost } from '#/lib/blog'
-import Chart from './Chart'
+import SiteShell from "#/components/site/SiteShell";
+import { getPost, type BlogPost } from "#/lib/blog";
+import Chart from "./Chart";
 
-const categoryLabel: Record<BlogPost['category'], string> = {
-  training: 'Training',
-  nutrition: 'Nutrition',
-  health: 'Health',
-}
+const categoryLabel: Record<BlogPost["category"], string> = {
+  training: "Training",
+  nutrition: "Nutrition",
+  health: "Health",
+};
 
 export function resolvePost(slug: string): BlogPost | undefined {
-  return getPost(slug)
+  return getPost(slug);
 }
 
 export default function ArticleBody({ post }: { post: BlogPost }) {
-  const showPublished = post.updated !== post.published
+  const showPublished = post.updated !== post.published;
 
   return (
     <SiteShell>
@@ -26,7 +26,7 @@ export default function ArticleBody({ post }: { post: BlogPost }) {
             Updated <time dateTime={post.updated}>{post.updated}</time>
             {showPublished ? (
               <>
-                {' · Published '}
+                {" · Published "}
                 <time dateTime={post.published}>{post.published}</time>
               </>
             ) : null}
@@ -35,7 +35,7 @@ export default function ArticleBody({ post }: { post: BlogPost }) {
             <img
               className="blog-hero"
               src={post.hero}
-              alt={post.heroAlt ?? ''}
+              alt={post.heroAlt ?? ""}
               loading="eager"
               fetchPriority="high"
             />
@@ -47,5 +47,5 @@ export default function ArticleBody({ post }: { post: BlogPost }) {
         </div>
       </div>
     </SiteShell>
-  )
+  );
 }

@@ -1,66 +1,76 @@
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { HeadContent, Scripts, createRootRoute, useMatches } from '@tanstack/react-router'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import {
+  HeadContent,
+  Scripts,
+  createRootRoute,
+  useMatches,
+} from "@tanstack/react-router";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 
-import { THEME_COLORS, themeBootstrapScript } from '#/lib/theme'
-import appCss from '../styles.css?url'
+import { THEME_COLORS, themeBootstrapScript } from "#/lib/theme";
+import appCss from "../styles.css?url";
 
 // Self-hosted, declared in styles.css @font-face; preloaded so first paint rarely needs the fallback faces.
-const FONT_PRELOADS = ['/fonts/instrument-serif-latin.woff2', '/fonts/inter-latin-var.woff2']
+const FONT_PRELOADS = [
+  "/fonts/instrument-serif-latin.woff2",
+  "/fonts/inter-latin-var.woff2",
+];
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       {
-        charSet: 'utf-8',
+        charSet: "utf-8",
       },
       {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
       },
       {
-        title: 'physlane · adaptive TDEE for lifters',
+        title: "physlane · adaptive TDEE for lifters",
       },
       {
-        name: 'description',
+        name: "description",
         content:
-          'Body-recomposition tracker for lifters. Two numbers a day, adaptive TDEE from your own data.',
+          "Body-recomposition tracker for lifters. Two numbers a day, adaptive TDEE from your own data.",
       },
       {
-        name: 'color-scheme',
-        content: 'light dark',
+        name: "color-scheme",
+        content: "light dark",
       },
       {
-        name: 'theme-color',
+        name: "theme-color",
         content: THEME_COLORS.light,
       },
     ],
     links: [
       {
-        rel: 'icon',
-        type: 'image/svg+xml',
-        href: '/favicon.svg',
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "/favicon.svg",
       },
       ...FONT_PRELOADS.map((href) => ({
-        rel: 'preload',
+        rel: "preload",
         href,
-        as: 'font',
-        type: 'font/woff2',
-        crossOrigin: 'anonymous' as const,
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous" as const,
       })),
       {
-        rel: 'stylesheet',
+        rel: "stylesheet",
         href: appCss,
       },
     ],
   }),
   shellComponent: RootDocument,
-})
+});
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const appChrome = useMatches({ select: (ms) => ms.every((m) => m.staticData.appChrome !== false) })
+  const appChrome = useMatches({
+    select: (ms) => ms.every((m) => m.staticData.appChrome !== false),
+  });
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -81,11 +91,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         {import.meta.env.DEV && (
           <TanStackDevtools
             config={{
-              position: 'bottom-right',
+              position: "bottom-right",
             }}
             plugins={[
               {
-                name: 'Tanstack Router',
+                name: "Tanstack Router",
                 render: <TanStackRouterDevtoolsPanel />,
               },
             ]}
@@ -94,5 +104,5 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
-  )
+  );
 }

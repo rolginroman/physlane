@@ -1,5 +1,5 @@
-import { Link, useRouterState } from '@tanstack/react-router'
-import { useTelegramMode } from '#/lib/telegram-mode'
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useTelegramMode } from "#/lib/telegram-mode";
 
 /**
  * Route-aware footer: the landing gets the marketing footer (links, share,
@@ -7,15 +7,15 @@ import { useTelegramMode } from '#/lib/telegram-mode'
  * the marketing footer is dropped everywhere — dense shell, no nav duplication.
  */
 export default function Footer() {
-  const path = useRouterState({ select: (s) => s.location.pathname })
-  const tgMode = useTelegramMode()
-  const isLanding = path === '/'
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const tgMode = useTelegramMode();
+  const isLanding = path === "/";
 
   if (!isLanding || tgMode) {
     return (
       <footer className="px-4 py-6">
         <p className="m-0 text-center text-xs text-faint">
-          physlane · manual numbers only, no bank or social integrations ·{' '}
+          physlane · manual numbers only, no bank or social integrations ·{" "}
           <Link
             to="/billing"
             className="inline-flex items-center px-2 py-2 text-dim underline decoration-line underline-offset-2 hover:text-text"
@@ -24,11 +24,12 @@ export default function Footer() {
           </Link>
         </p>
       </footer>
-    )
+    );
   }
 
-  const shareUrl = 'https://physlane.unpackit.top/'
-  const shareText = 'physlane learns your real daily calorie burn from your own weigh-ins and food logs'
+  const shareUrl = "https://physlane.unpackit.top/";
+  const shareText =
+    "physlane learns your real daily calorie burn from your own weigh-ins and food logs";
 
   return (
     <footer className="border-t border-line px-4 py-10 sm:px-6">
@@ -36,41 +37,61 @@ export default function Footer() {
         <div>
           <p className="m-0 text-sm font-semibold text-text">physlane</p>
           <p className="m-0 mt-2 max-w-56 text-xs leading-relaxed text-dim">
-            Find your real daily calorie burn, from your own numbers. Manual entry only.
+            Find your real daily calorie burn, from your own numbers. Manual
+            entry only.
           </p>
         </div>
         <nav aria-label="Product">
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">Product</p>
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">
+            Product
+          </p>
           <ul className="m-0 mt-3 list-none space-y-2 p-0">
             <li>
-              <Link to="/sign-up" className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text">
+              <Link
+                to="/sign-up"
+                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+              >
                 Create account
               </Link>
             </li>
             <li>
-              <Link to="/sign-in" className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text">
+              <Link
+                to="/sign-in"
+                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+              >
                 Sign in
               </Link>
             </li>
             <li>
-              <Link to="/blog" className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text">
+              <Link
+                to="/blog"
+                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+              >
                 Blog
               </Link>
             </li>
             <li>
-              <a href="/#pricing" className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text">
+              <a
+                href="/#pricing"
+                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+              >
                 Pricing
               </a>
             </li>
             <li>
-              <a href="/#faq" className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text">
+              <a
+                href="/#faq"
+                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+              >
                 Questions
               </a>
             </li>
           </ul>
         </nav>
         <nav aria-label="Stance">
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">Stance</p>
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">
+            Stance
+          </p>
           <ul className="m-0 mt-3 list-none space-y-2 p-0 text-sm text-dim">
             <li>No food database, ever</li>
             <li>No bank or social integrations</li>
@@ -79,7 +100,9 @@ export default function Footer() {
           </ul>
         </nav>
         <div>
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">Share</p>
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">
+            Share
+          </p>
           <ul className="m-0 mt-3 list-none space-y-2 p-0">
             <li>
               <a
@@ -105,8 +128,10 @@ export default function Footer() {
         </div>
       </div>
       <div className="mx-auto mt-8 w-full max-w-6xl border-t border-line pt-5">
-        <p className="num m-0 text-xs text-faint">© 2026 physlane · two numbers a day</p>
+        <p className="num m-0 text-xs text-faint">
+          © 2026 physlane · two numbers a day
+        </p>
       </div>
     </footer>
-  )
+  );
 }

@@ -1,14 +1,19 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useRouterState } from '@tanstack/react-router'
-import { useTelegramMode } from '#/lib/telegram-mode'
-import ThemeSwitch from '#/components/ThemeSwitch'
-import ThemeToggleButton from '#/components/ThemeToggleButton'
-import '../../styles/site.css'
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useTelegramMode } from "#/lib/telegram-mode";
+import ThemeSwitch from "#/components/ThemeSwitch";
+import ThemeToggleButton from "#/components/ThemeToggleButton";
+import "../../styles/site.css";
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
-      <Link to="/" hash="method" activeOptions={{ exact: true, includeHash: true }} onClick={onNavigate}>
+      <Link
+        to="/"
+        hash="method"
+        activeOptions={{ exact: true, includeHash: true }}
+        onClick={onNavigate}
+      >
         Method
       </Link>
       <Link to="/analytics" onClick={onNavigate}>
@@ -20,19 +25,31 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       <Link to="/glp-1" onClick={onNavigate}>
         GLP-1
       </Link>
-      <Link to="/" hash="pricing" activeOptions={{ exact: true, includeHash: true }} onClick={onNavigate}>
+      <Link
+        to="/"
+        hash="pricing"
+        activeOptions={{ exact: true, includeHash: true }}
+        onClick={onNavigate}
+      >
         Pricing
       </Link>
     </>
-  )
+  );
 }
 
 export function Arrow() {
   return (
-    <svg className="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+    <svg
+      className="arrow"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
-  )
+  );
 }
 
 /**
@@ -41,26 +58,26 @@ export function Arrow() {
  * switch. site.css is imported here only, so it reaches public routes only.
  */
 export default function SiteShell({ children }: { children: ReactNode }) {
-  const tgMode = useTelegramMode()
-  const appHref = tgMode ? '/dashboard' : '/sign-in'
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuButton = useRef<HTMLButtonElement>(null)
-  const href = useRouterState({ select: (s) => s.location.href })
+  const tgMode = useTelegramMode();
+  const appHref = tgMode ? "/dashboard" : "/sign-in";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const href = useRouterState({ select: (s) => s.location.href });
 
-  useEffect(() => setMenuOpen(false), [href])
+  useEffect(() => setMenuOpen(false), [href]);
 
   useEffect(() => {
-    if (!menuOpen) return undefined
+    if (!menuOpen) return undefined;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      setMenuOpen(false)
-      menuButton.current?.focus()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [menuOpen])
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      menuButton.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
-  const closeMenu = () => setMenuOpen(false)
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <div className="site">
@@ -89,13 +106,24 @@ export default function SiteShell({ children }: { children: ReactNode }) {
               aria-controls="site-menu"
               onClick={() => setMenuOpen((open) => !open)}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                aria-hidden="true"
+              >
                 <path d="M4 7h16M4 12h16M4 17h16" />
               </svg>
             </button>
           </div>
         </div>
-        <nav id="site-menu" className="menu-panel" aria-label="Menu" hidden={!menuOpen}>
+        <nav
+          id="site-menu"
+          className="menu-panel"
+          aria-label="Menu"
+          hidden={!menuOpen}
+        >
           <NavLinks onNavigate={closeMenu} />
           <Link to="/sign-in" onClick={closeMenu}>
             Log in
@@ -110,10 +138,14 @@ export default function SiteShell({ children }: { children: ReactNode }) {
 
       <footer>
         <div className="wrap">
-          <p className="site-label tagline">Simple inputs. Real insights. Built on your data.</p>
+          <p className="site-label tagline">
+            Simple inputs. Real insights. Built on your data.
+          </p>
           <div className="foot">
             <div className="foot-start">
-              <span className="caption">physlane · Estimates, not medical advice.</span>
+              <span className="caption">
+                physlane · Estimates, not medical advice.
+              </span>
               <nav className="foot-links" aria-label="Footer">
                 <Link to="/guide">Guide</Link>
                 <Link to="/tracking">Tracking</Link>
@@ -124,5 +156,5 @@ export default function SiteShell({ children }: { children: ReactNode }) {
         </div>
       </footer>
     </div>
-  )
+  );
 }

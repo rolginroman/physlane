@@ -1,7 +1,7 @@
-import { Bars, TrendChart } from './charts'
+import { Bars, TrendChart } from "./charts";
 
-const DASH_BARS = [60, 85, 45, 100, 70, 55, 90]
-const TABS = ['Overview', 'Log', 'Analytics'] as const
+const DASH_BARS = [60, 85, 45, 100, 70, 55, 90];
+const TABS = ["Overview", "Log", "Analytics"] as const;
 
 /** Weight-trend card from the dashboard preview. Example values. */
 export function WeightTrendCard({ chartHeight }: { chartHeight?: number }) {
@@ -26,14 +26,18 @@ export function WeightTrendCard({ chartHeight }: { chartHeight?: number }) {
       </div>
       <TrendChart height={chartHeight} />
     </div>
-  )
+  );
 }
 
 /**
  * Example dashboard card (DESIGN.md §8.1). `tab` selects the highlighted tab
  * in the bar; the cards are the same on every tab.
  */
-export default function DashboardPreview({ tab = 'Overview' }: { tab?: (typeof TABS)[number] }) {
+export default function DashboardPreview({
+  tab = "Overview",
+}: {
+  tab?: (typeof TABS)[number];
+}) {
   return (
     <div
       className="dash"
@@ -44,7 +48,7 @@ export default function DashboardPreview({ tab = 'Overview' }: { tab?: (typeof T
         <span className="wm">physlane</span>
         <div className="tabs">
           {TABS.map((t) => (
-            <span key={t} className={t === tab ? 'on' : undefined}>
+            <span key={t} className={t === tab ? "on" : undefined}>
               {t}
             </span>
           ))}
@@ -63,7 +67,7 @@ export default function DashboardPreview({ tab = 'Overview' }: { tab?: (typeof T
               2,340<span className="unit">kcal/day</span>
             </div>
             <div className="range" aria-hidden="true">
-              <i style={{ left: '50%' }} />
+              <i style={{ left: "50%" }} />
             </div>
             <div className="range-ends caption site-num">
               <span>2,140</span>
@@ -76,10 +80,17 @@ export default function DashboardPreview({ tab = 'Overview' }: { tab?: (typeof T
               <span className="card-title">Daily calories (avg)</span>
               <span className="tag">Logged</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', marginTop: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "end",
+                justifyContent: "space-between",
+                marginTop: 12,
+              }}
+            >
               <span className="metric-md site-num">
                 1,950
-                <span className="unit" style={{ fontSize: '.6em' }}>
+                <span className="unit" style={{ fontSize: ".6em" }}>
                   kcal
                 </span>
               </span>
@@ -89,5 +100,5 @@ export default function DashboardPreview({ tab = 'Overview' }: { tab?: (typeof T
         </div>
       </div>
     </div>
-  )
+  );
 }

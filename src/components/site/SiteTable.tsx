@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from "react";
 
 /** A cell that is only a number, optionally signed and with a short unit. */
-const isNumeric = (cell: ReactNode) => typeof cell === 'string' && /^[≈±+−-]?\s?[\d.,]+(\s?[a-z%/]{1,6})?$/i.test(cell)
+const isNumeric = (cell: ReactNode) =>
+  typeof cell === "string" &&
+  /^[≈±+−-]?\s?[\d.,]+(\s?[a-z%/]{1,6})?$/i.test(cell);
 
 /** Two-or-more column spec table: hairline rules, tabular figures in numeric cells, no zebra. */
 export default function SiteTable({
@@ -9,9 +11,9 @@ export default function SiteTable({
   columns,
   rows,
 }: {
-  caption?: string
-  columns: string[]
-  rows: ReactNode[][]
+  caption?: string;
+  columns: string[];
+  rows: ReactNode[][];
 }) {
   return (
     <table className="site-table">
@@ -34,7 +36,7 @@ export default function SiteTable({
                   {cell}
                 </th>
               ) : (
-                <td key={j} className={isNumeric(cell) ? 'num' : undefined}>
+                <td key={j} className={isNumeric(cell) ? "num" : undefined}>
                   {cell}
                 </td>
               ),
@@ -43,5 +45,5 @@ export default function SiteTable({
         ))}
       </tbody>
     </table>
-  )
+  );
 }

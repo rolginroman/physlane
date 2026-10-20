@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 import {
-	applyChrome,
-	disableVerticalSwipes,
-	getWebApp,
-	isTelegram,
-	safeReady,
-} from './telegram-web'
-import { readThemePreference, resolveTheme, THEME_COLORS } from './theme'
+  applyChrome,
+  disableVerticalSwipes,
+  getWebApp,
+  isTelegram,
+  safeReady,
+} from "./telegram-web";
+import { readThemePreference, resolveTheme, THEME_COLORS } from "./theme";
 
 /**
  * True once the app has mounted inside the Telegram client.
@@ -14,9 +14,9 @@ import { readThemePreference, resolveTheme, THEME_COLORS } from './theme'
  * Telegram-only UI appears right after mount.
  */
 export function useTelegramMode(): boolean {
-	const [mode, setMode] = useState(false)
-	useEffect(() => setMode(isTelegram()), [])
-	return mode
+  const [mode, setMode] = useState(false);
+  useEffect(() => setMode(isTelegram()), []);
+  return mode;
 }
 
 /**
@@ -26,32 +26,32 @@ export function useTelegramMode(): boolean {
  * shell uses for padding. No-op outside Telegram.
  */
 export function useTelegramChrome(): void {
-	useEffect(() => {
-		const tg = getWebApp()
-		if (!tg || !isTelegram()) return
-		safeReady()
-		applyChrome(THEME_COLORS[resolveTheme(readThemePreference())])
-		disableVerticalSwipes()
+  useEffect(() => {
+    const tg = getWebApp();
+    if (!tg || !isTelegram()) return;
+    safeReady();
+    applyChrome(THEME_COLORS[resolveTheme(readThemePreference())]);
+    disableVerticalSwipes();
 
-		const publishInsets = () => {
-			const inset = tg.safeAreaInset
-			const root = document.documentElement
-			root.style.setProperty('--tg-safe-top', `${inset?.top ?? 0}px`)
-			root.style.setProperty('--tg-safe-bottom', `${inset?.bottom ?? 0}px`)
-		}
-		publishInsets()
-		// Insets change on rotation/resize; viewportChanged is the signal.
-		try {
-			tg.onEvent?.('viewportChanged', publishInsets)
-		} catch {
-			// Pre-events clients keep the mount-time insets.
-		}
-		return () => {
-			try {
-				tg.offEvent?.('viewportChanged', publishInsets)
-			} catch {
-				// Ignore.
-			}
-		}
-	}, [])
+    const publishInsets = () => {
+      const inset = tg.safeAreaInset;
+      const root = document.documentElement;
+      root.style.setProperty("--tg-safe-top", `${inset?.top ?? 0}px`);
+      root.style.setProperty("--tg-safe-bottom", `${inset?.bottom ?? 0}px`);
+    };
+    publishInsets();
+    // Insets change on rotation/resize; viewportChanged is the signal.
+    try {
+      tg.onEvent?.("viewportChanged", publishInsets);
+    } catch {
+      // Pre-events clients keep the mount-time insets.
+    }
+    return () => {
+      try {
+        tg.offEvent?.("viewportChanged", publishInsets);
+      } catch {
+        // Ignore.
+      }
+    };
+  }, []);
 }

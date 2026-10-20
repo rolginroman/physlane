@@ -1,38 +1,39 @@
-import { useRef, useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { useSession } from '#/lib/auth-client'
-import { useTelegramMode } from '#/lib/telegram-mode'
-import SettingsDrawer from '#/components/SettingsDrawer'
-import ThemeSwitch from '#/components/ThemeSwitch'
+import { useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useSession } from "#/lib/auth-client";
+import { useTelegramMode } from "#/lib/telegram-mode";
+import SettingsDrawer from "#/components/SettingsDrawer";
+import ThemeSwitch from "#/components/ThemeSwitch";
 
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/intake', label: 'Intake' },
-  { to: '/cycles', label: 'Cycles' },
-] as const
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/intake", label: "Intake" },
+  { to: "/cycles", label: "Cycles" },
+] as const;
 
 const navLinkBase =
-  'inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium sm:px-2.5'
+  "inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium sm:px-2.5";
 // Signed-in links sit in the header row from sm up; below sm they move to the
 // strip under the header (the row cannot fit them on 320-400px phones).
-const navLinkWide = 'hidden min-h-11 items-center rounded-md px-2.5 text-sm font-medium sm:inline-flex'
+const navLinkWide =
+  "hidden min-h-11 items-center rounded-md px-2.5 text-sm font-medium sm:inline-flex";
 
 export default function Header() {
-  const { data: session, isPending } = useSession()
+  const { data: session, isPending } = useSession();
   // Telegram mode: slim the header, no marketing CTAs.
-  const tgMode = useTelegramMode()
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const gearRef = useRef<HTMLButtonElement>(null)
+  const tgMode = useTelegramMode();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const gearRef = useRef<HTMLButtonElement>(null);
 
-  const user = session?.user
+  const user = session?.user;
 
   return (
     <>
       <header
         className={`sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur ${
-          tgMode ? 'min-h-14' : 'h-14'
+          tgMode ? "min-h-14" : "h-14"
         }`}
-        style={tgMode ? { paddingTop: 'var(--tg-safe-top, 0px)' } : undefined}
+        style={tgMode ? { paddingTop: "var(--tg-safe-top, 0px)" } : undefined}
       >
         <div className="mx-auto flex h-full max-w-5xl items-center gap-2 px-3 sm:gap-3 sm:px-4">
           <Link
@@ -43,7 +44,10 @@ export default function Header() {
             phys<span className="text-brand-text">lane</span>
           </Link>
 
-          <nav aria-label="App" className="ml-auto flex items-center gap-0.5 sm:gap-1">
+          <nav
+            aria-label="App"
+            className="ml-auto flex items-center gap-0.5 sm:gap-1"
+          >
             <ThemeSwitch className="mr-1 shrink-0" />
             {isPending ? null : user ? (
               <>
@@ -52,8 +56,8 @@ export default function Header() {
                     key={item.to}
                     to={item.to}
                     className={navLinkWide}
-                    activeProps={{ className: 'text-brand-text' }}
-                    inactiveProps={{ className: 'text-dim hover:text-text' }}
+                    activeProps={{ className: "text-brand-text" }}
+                    inactiveProps={{ className: "text-dim hover:text-text" }}
                   >
                     {item.label}
                   </Link>
@@ -62,8 +66,8 @@ export default function Header() {
                   <Link
                     to="/billing"
                     className={navLinkWide}
-                    activeProps={{ className: 'text-brand-text' }}
-                    inactiveProps={{ className: 'text-dim hover:text-text' }}
+                    activeProps={{ className: "text-brand-text" }}
+                    inactiveProps={{ className: "text-dim hover:text-text" }}
                   >
                     Billing
                   </Link>
@@ -89,9 +93,24 @@ export default function Header() {
                       strokeWidth="1.5"
                       strokeLinecap="round"
                     />
-                    <circle cx="6.5" cy="5" r="1.75" fill="var(--color-canvas)" />
-                    <circle cx="12" cy="9" r="1.75" fill="var(--color-canvas)" />
-                    <circle cx="5" cy="13" r="1.75" fill="var(--color-canvas)" />
+                    <circle
+                      cx="6.5"
+                      cy="5"
+                      r="1.75"
+                      fill="var(--color-canvas)"
+                    />
+                    <circle
+                      cx="12"
+                      cy="9"
+                      r="1.75"
+                      fill="var(--color-canvas)"
+                    />
+                    <circle
+                      cx="5"
+                      cy="13"
+                      r="1.75"
+                      fill="var(--color-canvas)"
+                    />
                     <circle
                       cx="6.5"
                       cy="5"
@@ -124,10 +143,15 @@ export default function Header() {
                 >
                   Sign in
                 </Link>
-                <Link to="/sign-up" className="btn-primary whitespace-nowrap px-3">
+                <Link
+                  to="/sign-up"
+                  className="btn-primary whitespace-nowrap px-3"
+                >
                   {/* Full label needs ~350px of header; narrower phones get the short one. */}
                   <span className="min-[360px]:hidden">Sign up</span>
-                  <span className="hidden min-[360px]:inline">Create account</span>
+                  <span className="hidden min-[360px]:inline">
+                    Create account
+                  </span>
                 </Link>
               </>
             )}
@@ -142,8 +166,8 @@ export default function Header() {
                 key={item.to}
                 to={item.to}
                 className={`${navLinkBase} flex-1 justify-center`}
-                activeProps={{ className: 'text-brand-text' }}
-                inactiveProps={{ className: 'text-dim hover:text-text' }}
+                activeProps={{ className: "text-brand-text" }}
+                inactiveProps={{ className: "text-dim hover:text-text" }}
               >
                 {item.label}
               </Link>
@@ -154,10 +178,10 @@ export default function Header() {
       <SettingsDrawer
         open={settingsOpen}
         onClose={() => {
-          setSettingsOpen(false)
-          gearRef.current?.focus()
+          setSettingsOpen(false);
+          gearRef.current?.focus();
         }}
       />
     </>
-  )
+  );
 }

@@ -11,13 +11,15 @@ export type { SharedCard, SharedCycle } from "./share.core";
  */
 
 export const getSharedCard = createServerFn({ method: "GET" })
-	.validator((d: { token: string }) => d)
-	.handler(async ({ data }) => {
-		return getSharedCardByToken(data.token);
-	});
+  .validator((d: { token: string }) => d)
+  .handler(async ({ data }) => {
+    return getSharedCardByToken(data.token);
+  });
 
-export const rotateShareLink = createServerFn({ method: "POST" }).handler(async () => {
-	const me = await requireUser();
-	const token = await rotateShareToken(me.id);
-	return { token };
-});
+export const rotateShareLink = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const me = await requireUser();
+    const token = await rotateShareToken(me.id);
+    return { token };
+  },
+);

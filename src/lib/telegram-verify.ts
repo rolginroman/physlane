@@ -10,23 +10,25 @@
  */
 
 /** Anything that can serve Better Auth requests (the object returned by `betterAuth()`). */
-type AuthHandler = { handler: (request: Request) => Response | Promise<Response> };
+type AuthHandler = {
+  handler: (request: Request) => Response | Promise<Response>;
+};
 
 export interface TelegramInitDataValidation {
-	valid: boolean;
-	data: unknown;
+  valid: boolean;
+  data: unknown;
 }
 
 export async function validateTelegramInitData(
-	auth: AuthHandler,
-	initData: string,
+  auth: AuthHandler,
+  initData: string,
 ): Promise<TelegramInitDataValidation> {
-	const response = await auth.handler(
-		new Request("http://localhost/api/auth/telegram/miniapp/validate", {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ initData }),
-		}),
-	);
-	return (await response.json()) as TelegramInitDataValidation;
+  const response = await auth.handler(
+    new Request("http://localhost/api/auth/telegram/miniapp/validate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ initData }),
+    }),
+  );
+  return (await response.json()) as TelegramInitDataValidation;
 }
