@@ -32,7 +32,7 @@ export function Header() {
   return (
     <>
       <header
-        className={`sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur ${
+        className={`sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur ${
           tgMode ? "min-h-14" : "h-14"
         }`}
         style={tgMode ? { paddingTop: "var(--tg-safe-top, 0px)" } : undefined}
@@ -41,7 +41,7 @@ export function Header() {
           <Link
             to="/"
             aria-label="physlane home"
-            className="shrink-0 text-base font-semibold tracking-tight text-text no-underline"
+            className="shrink-0 text-base font-semibold tracking-tight text-foreground no-underline"
           >
             phys<span className="text-brand-text">lane</span>
           </Link>
@@ -59,7 +59,9 @@ export function Header() {
                     to={item.to}
                     className={navLinkWide}
                     activeProps={{ className: "text-brand-text" }}
-                    inactiveProps={{ className: "text-dim hover:text-text" }}
+                    inactiveProps={{
+                      className: "text-secondary hover:text-foreground",
+                    }}
                   >
                     {item.label}
                   </Link>
@@ -69,7 +71,9 @@ export function Header() {
                     to="/billing"
                     className={navLinkWide}
                     activeProps={{ className: "text-brand-text" }}
-                    inactiveProps={{ className: "text-dim hover:text-text" }}
+                    inactiveProps={{
+                      className: "text-secondary hover:text-foreground",
+                    }}
                   >
                     Billing
                   </Link>
@@ -143,7 +147,7 @@ export function Header() {
               <>
                 <Link
                   to="/sign-in"
-                  className={`${navLinkBase} whitespace-nowrap text-dim hover:text-text`}
+                  className={`${navLinkBase} whitespace-nowrap text-secondary hover:text-foreground`}
                 >
                   Sign in
                 </Link>
@@ -166,7 +170,7 @@ export function Header() {
         </div>
       </header>
       {!isPending && user && (
-        <nav aria-label="Sections" className="border-b border-line sm:hidden">
+        <nav aria-label="Sections" className="border-b border-border sm:hidden">
           <div className="mx-auto flex max-w-5xl px-3">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -174,7 +178,9 @@ export function Header() {
                 to={item.to}
                 className={`${navLinkBase} flex-1 justify-center`}
                 activeProps={{ className: "text-brand-text" }}
-                inactiveProps={{ className: "text-dim hover:text-text" }}
+                inactiveProps={{
+                  className: "text-secondary hover:text-foreground",
+                }}
               >
                 {item.label}
               </Link>

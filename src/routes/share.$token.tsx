@@ -44,7 +44,7 @@ function ShareNotFound() {
         <h1 className="m-0 text-xl font-semibold tracking-tight">
           No such card
         </h1>
-        <p className="m-0 mt-1 text-sm text-dim">
+        <p className="m-0 mt-1 text-sm text-secondary">
           This share link does not exist or was revoked by its owner.
         </p>
         <Link
@@ -134,7 +134,7 @@ function SharePage() {
             {card.cycle ? card.cycle.phase.toUpperCase() : "PROGRESS"}
           </span>
           {card.cycle && (
-            <span className="text-xs text-dim">
+            <span className="text-xs text-secondary">
               {fmtDate(card.cycle.startDate)} –{" "}
               {card.cycle.endDate ? fmtDate(card.cycle.endDate) : "now"}
             </span>
@@ -142,13 +142,13 @@ function SharePage() {
         </div>
         <dl className="m-0 mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
           <div>
-            <dt className="text-xs text-dim">Current weight</dt>
+            <dt className="text-xs text-secondary">Current weight</dt>
             <dd className="num m-0 mt-0.5 text-sm">
               {fmtWeight(card.currentWeightKg, units)}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-dim">Since cycle start</dt>
+            <dt className="text-xs text-secondary">Since cycle start</dt>
             <dd className="num m-0 mt-0.5 text-sm">
               {card.deltaKg != null
                 ? formatWeightDelta(card.deltaKg, units)
@@ -157,7 +157,7 @@ function SharePage() {
           </div>
           {card.cycle?.startWeightKg != null && (
             <div>
-              <dt className="text-xs text-dim">Start weight</dt>
+              <dt className="text-xs text-secondary">Start weight</dt>
               <dd className="num m-0 mt-0.5 text-sm">
                 {fmtWeight(card.cycle.startWeightKg, units)}
               </dd>
@@ -168,7 +168,7 @@ function SharePage() {
 
       <TrendChart entries={entries} cycle={cycle} units={units} plan="pro" />
 
-      <p className="m-0 mt-4 text-center text-xs text-dim">
+      <p className="m-0 mt-4 text-center text-xs text-secondary">
         Shared from{" "}
         <Link to="/" className="font-medium text-brand-text">
           physlane
