@@ -27,6 +27,8 @@ describe("buildSitemapXml", () => {
     const xml = buildSitemapXml([postA, postB]);
     expect(xml).toContain(`<loc>${SITE_URL}/</loc>`);
     expect(xml).toContain(`<loc>${SITE_URL}/blog</loc>`);
+    expect(xml).toContain(`<loc>${SITE_URL}/privacy</loc>`);
+    expect(xml).toContain(`<loc>${SITE_URL}/terms</loc>`);
     expect(xml).toContain(`<loc>${SITE_URL}/blog/what-is-tdee</loc>`);
     expect(xml).toContain(`<loc>${SITE_URL}/blog/macros-basics</loc>`);
 

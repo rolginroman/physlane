@@ -238,6 +238,24 @@ function SignInPage() {
           </Button>
         </form>
 
+        <p className="mt-4 mb-0 text-center text-xs text-muted-foreground">
+          By continuing you agree to the{" "}
+          <Link
+            to="/terms"
+            className="font-medium text-brand-text underline decoration-border underline-offset-2 hover:text-brand-hover"
+          >
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link
+            to="/privacy"
+            className="font-medium text-brand-text underline decoration-border underline-offset-2 hover:text-brand-hover"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
+
         <p className="mt-5 mb-0 text-center text-sm text-muted-foreground">
           No account?{" "}
           <Link

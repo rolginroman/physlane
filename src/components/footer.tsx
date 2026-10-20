@@ -22,6 +22,20 @@ export function Footer() {
           >
             Pricing
           </Link>
+          {" · "}
+          <Link
+            to="/privacy"
+            className="inline-flex items-center px-2 py-2 text-muted-foreground underline decoration-border underline-offset-2 hover:text-foreground"
+          >
+            Privacy
+          </Link>
+          {" · "}
+          <Link
+            to="/terms"
+            className="inline-flex items-center px-2 py-2 text-muted-foreground underline decoration-border underline-offset-2 hover:text-foreground"
+          >
+            Terms
+          </Link>
         </p>
       </footer>
     );
@@ -85,6 +99,22 @@ export function Footer() {
               >
                 Questions
               </a>
+            </li>
+            <li>
+              <Link
+                to="/privacy"
+                className="inline-flex min-h-8 items-center text-sm text-muted-foreground no-underline hover:text-foreground"
+              >
+                Privacy
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/terms"
+                className="inline-flex min-h-8 items-center text-sm text-muted-foreground no-underline hover:text-foreground"
+              >
+                Terms
+              </Link>
             </li>
           </ul>
         </nav>
