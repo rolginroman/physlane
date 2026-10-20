@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Arrow, SiteShell } from "../components/site/site-shell";
-import { ArtImage, Closer } from "../components/site/sections";
+import { Arrow, SiteShell } from "#/components/site/site-shell";
+import { ArtImage, Closer } from "#/components/site/sections";
 
 const SITE_URL = "https://physlane.unpackit.top";
 const TITLE =

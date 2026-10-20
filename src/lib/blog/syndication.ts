@@ -1,4 +1,4 @@
-import { SITE_URL } from "../seo";
+import { SITE_URL } from "#/lib/seo";
 
 export interface SyndicationPost {
   slug: string;

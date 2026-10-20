@@ -1,4 +1,4 @@
-import { SITE_URL } from "../seo";
+import { SITE_URL } from "#/lib/seo";
 
 export function shortHash(input: string): string {
   let hash = 0x811c9dc5;

@@ -1,19 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Arrow, SiteShell } from "../components/site/site-shell";
-import { Bars, ConvergeFigure, SparkChart } from "../components/site/charts";
-import { DashboardPreview } from "../components/site/dashboard-preview";
+import { Arrow, SiteShell } from "#/components/site/site-shell";
+import { Bars, ConvergeFigure, SparkChart } from "#/components/site/charts";
+import { DashboardPreview } from "#/components/site/dashboard-preview";
 import {
   AdjustIcon,
   LearnIcon,
   LogIcon,
   TrendIcon,
-} from "../components/site/icons";
+} from "#/components/site/icons";
 import {
   ART_PANEL_SIZES,
   ArtImage,
   Closer,
   Steps,
-} from "../components/site/sections";
+} from "#/components/site/sections";
 
 const SITE_URL = "https://physlane.unpackit.top";
 const SITE_NAME = "physlane";

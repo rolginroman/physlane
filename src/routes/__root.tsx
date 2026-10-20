@@ -6,11 +6,11 @@ import {
   createRootRoute,
   useMatches,
 } from "@tanstack/react-router";
-import { Footer } from "../components/footer";
-import { Header } from "../components/header";
+import { Footer } from "#/components/footer";
+import { Header } from "#/components/header";
 
 import { THEME_COLORS, themeBootstrapScript } from "#/lib/theme";
-import appCss from "../styles.css?url";
+import appCss from "#/styles.css?url";
 
 // Self-hosted, declared in styles.css @font-face; preloaded so first paint rarely needs the fallback faces.
 const FONT_PRELOADS = [

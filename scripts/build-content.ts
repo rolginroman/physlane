@@ -1,11 +1,11 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseBlogFile } from "../src/lib/blog/schema";
+import { parseBlogFile } from "#/lib/blog/schema";
 import {
   buildRssXml,
   buildSitemapXml,
   type SyndicationPost,
-} from "../src/lib/blog/syndication";
+} from "#/lib/blog/syndication";
 
 const contentDir = join(import.meta.dirname, "../content/blog");
 const publicDir = join(import.meta.dirname, "../public");

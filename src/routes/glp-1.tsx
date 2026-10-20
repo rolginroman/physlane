@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Arrow, SiteShell } from "../components/site/site-shell";
-import { WeightTrendCard } from "../components/site/dashboard-preview";
-import { LearnIcon, TapeIcon, TrendIcon } from "../components/site/icons";
+import { Arrow, SiteShell } from "#/components/site/site-shell";
+import { WeightTrendCard } from "#/components/site/dashboard-preview";
+import { LearnIcon, TapeIcon, TrendIcon } from "#/components/site/icons";
 import {
   ART_PANEL_SIZES,
   ArtImage,
@@ -9,8 +9,8 @@ import {
   Facts,
   PageHero,
   Steps,
-} from "../components/site/sections";
-import { SiteTable } from "../components/site/site-table";
+} from "#/components/site/sections";
+import { SiteTable } from "#/components/site/site-table";
 import { useTelegramMode } from "#/lib/telegram-mode";
 
 const SITE_URL = "https://physlane.unpackit.top";

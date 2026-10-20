@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SITE_URL } from "../seo";
+import { SITE_URL } from "#/lib/seo";
 import {
   buildRssXml,
   buildSitemapXml,
