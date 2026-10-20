@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
@@ -22,6 +23,21 @@ import {
   PROJECTION_WEEKS,
   type PaceVerdict,
 } from "#/lib/projection";
+
+const GetOrCreateIntakeInputSchema = z.object({
+  date: z.string(),
+});
+
+const UpsertIntakeInputSchema = z.object({
+  date: z.string(),
+  kcal: z.number(),
+  proteinG: z.number().nullable().optional(),
+});
+
+const IntakeRangeInputSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+});
 
 const FREE_HISTORY_DAYS = 90;
 const PROJECTION_INTAKE_DAYS = 7; // "current intake" = avg of the last 7 logged days
@@ -59,7 +75,7 @@ const toDate = (d: Date): string => d.toISOString().slice(0, 10);
 
 /** Existing row for the date, or a transient default — nothing is inserted here. */
 export const getOrCreateIntake = createServerFn({ method: "GET" })
-  .validator((d: { date: string }) => d)
+  .validator((d) => GetOrCreateIntakeInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     if (!isValidIntakeDate(data.date)) throw appError("INVALID_DATE");
@@ -78,7 +94,7 @@ export const getOrCreateIntake = createServerFn({ method: "GET" })
 
 /** Insert-or-update the user's row for a date (I5: one row per user-date, idempotent). */
 export const upsertIntake = createServerFn({ method: "POST" })
-  .validator((d: { date: string; kcal: number; proteinG?: number | null }) => d)
+  .validator((d) => UpsertIntakeInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     const v = validateIntake(data);
@@ -103,7 +119,7 @@ export const upsertIntake = createServerFn({ method: "POST" })
 
 /** Intake history ascending. Free plan: `from` clamped to 90 days back (F12). */
 export const intakeRange = createServerFn({ method: "GET" })
-  .validator((d: { from: string; to: string }) => d)
+  .validator((d) => IntakeRangeInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     if (!isValidIntakeDate(data.from) || !isValidIntakeDate(data.to))

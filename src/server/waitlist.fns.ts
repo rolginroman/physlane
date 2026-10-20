@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
@@ -10,23 +11,27 @@ export type JoinWaitlistResult =
   | { status: "already" }
   | { status: "error"; reason: string };
 
+const JoinWaitlistInputSchema = z.object({
+  email: z.string(),
+  source: z
+    .preprocess(
+      (v) => (typeof v === "string" ? v.slice(0, 64) : null),
+      z.string().max(64).nullable(),
+    )
+    .optional(),
+});
+
 /**
  * Landing email capture. Unauthenticated by design: one row per address,
  * duplicate inserts resolve to a friendly "already on the list".
  */
 export const joinWaitlist = createServerFn({ method: "POST" })
-  .validator((input: unknown) => {
-    if (
-      typeof input !== "object" ||
-      input === null ||
-      typeof (input as { email?: unknown }).email !== "string"
-    ) {
-      throw appError("EMAIL_REQUIRED");
-    }
-    const source = (input as { source?: unknown }).source;
+  .validator((input) => {
+    const parsed = JoinWaitlistInputSchema.safeParse(input);
+    if (!parsed.success) throw appError("EMAIL_REQUIRED");
     return {
-      email: (input as { email: string }).email,
-      source: typeof source === "string" ? source.slice(0, 64) : null,
+      email: parsed.data.email,
+      source: parsed.data.source ?? null,
     };
   })
   .handler(async ({ data }): Promise<JoinWaitlistResult> => {

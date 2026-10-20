@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { getSharedCardByToken, rotateShareToken } from "./share.core";
 import { requireUser } from "./auth.fns";
+
+const GetSharedCardInputSchema = z.object({
+  token: z.string(),
+});
 
 export type { SharedCard, SharedCycle } from "./share.core";
 
@@ -11,7 +16,7 @@ export type { SharedCard, SharedCycle } from "./share.core";
  */
 
 export const getSharedCard = createServerFn({ method: "GET" })
-  .validator((d: { token: string }) => d)
+  .validator((d) => GetSharedCardInputSchema.parse(d))
   .handler(async ({ data }) => {
     return getSharedCardByToken(data.token);
   });

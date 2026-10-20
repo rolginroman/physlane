@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import { useDb } from "#/db/client";
 import { appError } from "#/lib/app-error";
 import { useAuth } from "#/lib/auth";
@@ -72,18 +73,16 @@ export async function requireUser(): Promise<SessionUser> {
   return me;
 }
 
-export type SettingsPatch = {
-  unitSystem?: "metric" | "imperial";
-  onGlp1?: boolean;
-  /** null clears the stored height */
-  heightCm?: number | null;
-  /** null clears the stored sex */
-  sex?: "male" | "female" | null;
-  /** local 'hh:mm'; invalid strings and null clear it */
-  reminderTime?: string | null;
-  /** IANA zone the hh:mm is local to; invalid strings and null clear it */
-  reminderTz?: string | null;
-};
+export const SettingsPatchSchema = z.object({
+  unitSystem: z.enum(["metric", "imperial"]).optional(),
+  onGlp1: z.boolean().optional(),
+  heightCm: z.number().nullable().optional(),
+  sex: z.enum(["male", "female"]).nullable().optional(),
+  reminderTime: z.string().nullable().optional(),
+  reminderTz: z.string().nullable().optional(),
+});
+
+export type SettingsPatch = z.infer<typeof SettingsPatchSchema>;
 
 export async function applySettings(
   me: SessionUser,

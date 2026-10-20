@@ -17,7 +17,7 @@ import {
   intakeWeekCopy,
   type Phase,
 } from "#/lib/adherence";
-import type { AppErrorCode } from "#/lib/app-error";
+import { isAppErrorCode } from "#/lib/app-error";
 import {
   KCAL_MAX,
   KCAL_MIN,
@@ -63,14 +63,16 @@ const INTAKE_SAVE_FALLBACK = "Could not save. Check the numbers and try again.";
 
 function intakeSaveErrorCopy(err: unknown): string {
   const message = err instanceof Error ? err.message : "";
-  const code = message as AppErrorCode;
-  if (code === "INVALID_KCAL") {
+  if (!isAppErrorCode(message)) {
+    return INTAKE_SAVE_FALLBACK;
+  }
+  if (message === "INVALID_KCAL") {
     return "Enter calories as a whole number from 0 to 20000.";
   }
-  if (code === "INVALID_PROTEIN") {
+  if (message === "INVALID_PROTEIN") {
     return "Enter protein as whole grams, from 0 to 600.";
   }
-  if (code === "INVALID_DATE") {
+  if (message === "INVALID_DATE") {
     return INTAKE_SAVE_FALLBACK;
   }
   return INTAKE_SAVE_FALLBACK;

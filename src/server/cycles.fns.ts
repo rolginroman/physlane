@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
@@ -15,16 +16,22 @@ export type CycleDTO = {
   notes: string | null;
 };
 
-type CycleInput = {
-  id?: string;
-  phase: "cut" | "bulk" | "maintain";
-  startDate: string;
-  endDate?: string | null;
-  startWeightKg?: number | null;
-  targetRateKgPerWeek?: number | null;
-  kcalTargetPerDay?: number | null;
-  notes?: string | null;
-};
+const CyclePhaseSchema = z.enum(["cut", "bulk", "maintain"]);
+
+const SaveCycleInputSchema = z.object({
+  id: z.string().optional(),
+  phase: CyclePhaseSchema,
+  startDate: z.string(),
+  endDate: z.string().nullable().optional(),
+  startWeightKg: z.number().nullable().optional(),
+  targetRateKgPerWeek: z.number().nullable().optional(),
+  kcalTargetPerDay: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+const EndActiveCycleInputSchema = z.object({
+  id: z.string(),
+});
 
 const toCycleDTO = (c: schema.Cycle): CycleDTO => ({
   id: c.id,
@@ -79,7 +86,7 @@ export const hasAnyCycle = createServerFn({ method: "GET" }).handler(
 );
 
 export const saveCycle = createServerFn({ method: "POST" })
-  .validator((d: CycleInput) => d)
+  .validator((d) => SaveCycleInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     const db = useDb();
@@ -122,7 +129,7 @@ export const saveCycle = createServerFn({ method: "POST" })
   });
 
 export const endActiveCycle = createServerFn({ method: "POST" })
-  .validator((d: { id: string }) => d)
+  .validator((d) => EndActiveCycleInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     await useDb()

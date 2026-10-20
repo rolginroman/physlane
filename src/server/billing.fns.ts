@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { useDb } from "#/db/client";
@@ -6,6 +7,10 @@ import * as schema from "#/db/schema";
 import { requireUser } from "./auth.fns";
 import { appError } from "#/lib/app-error";
 import { useStripe, stripeConfigured } from "#/lib/stripe";
+
+const CreateCheckoutInputSchema = z.object({
+  interval: z.enum(["monthly", "yearly"]),
+});
 
 export const billingStatus = createServerFn({ method: "GET" }).handler(
   async () => {
@@ -28,7 +33,7 @@ export const billingStatus = createServerFn({ method: "GET" }).handler(
 );
 
 export const createCheckout = createServerFn({ method: "POST" })
-  .validator((d: { interval: "monthly" | "yearly" }) => d)
+  .validator((d) => CreateCheckoutInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     const stripe = useStripe();
