@@ -8,6 +8,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { authClient, signIn } from "#/lib/auth-client";
 import { authErrorMessage } from "#/lib/auth-error";
 import { getWebApp } from "#/lib/telegram-web";
+import { signInEmailWithOAuthContinuation } from "./-oauth-flow-client";
+import { hasOAuthContinuation } from "./-oauth-signed-query";
 
 export const Route = createFileRoute("/sign-in")({
   head: () => ({
@@ -103,7 +105,36 @@ function SignInPage() {
     if (nextErrors.email || nextErrors.password) return;
 
     setPending(true);
-    const { error } = await signIn.email({ email: email.trim(), password });
+    const trimmedEmail = email.trim();
+    if (hasOAuthContinuation(window.location.search)) {
+      const result = await signInEmailWithOAuthContinuation(
+        trimmedEmail,
+        password,
+      );
+      if (!result.ok) {
+        setServerError(
+          authErrorMessage({
+            code:
+              typeof result.body.code === "string"
+                ? result.body.code
+                : undefined,
+            message:
+              typeof result.body.message === "string"
+                ? result.body.message
+                : undefined,
+          }),
+        );
+        setPending(false);
+        return;
+      }
+      if (result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+        return;
+      }
+      await navigate({ to: "/dashboard" });
+      return;
+    }
+    const { error } = await signIn.email({ email: trimmedEmail, password });
     if (error) {
       setServerError(authErrorMessage(error));
       setPending(false);
