@@ -134,13 +134,20 @@ export function ThemeSwitch({
 
   // Below sm the pill collapses to one button that cycles the same three
   // options, so the header fits 320px phones with a 44px tap target.
-  const current = OPTIONS.findIndex((o) => o.value === preference);
-  const next = OPTIONS[(current + 1) % OPTIONS.length];
+  const currentIdx = Math.max(
+    0,
+    OPTIONS.findIndex((o) => o.value === preference),
+  );
+  const current = OPTIONS[currentIdx];
+  const next = OPTIONS[(currentIdx + 1) % OPTIONS.length];
+  if (current === undefined || next === undefined) {
+    throw new Error("theme OPTIONS misconfigured");
+  }
   return (
     <>
       <button
         type="button"
-        aria-label={`Color theme: ${OPTIONS[current].label}. Switch to ${next.label}`}
+        aria-label={`Color theme: ${current.label}. Switch to ${next.label}`}
         onClick={() => setThemePreference(next.value)}
         className={`inline-flex size-11 items-center justify-center rounded-full text-dim hover:text-text sm:hidden ${className}`}
       >

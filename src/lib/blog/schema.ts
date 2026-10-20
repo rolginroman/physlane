@@ -23,6 +23,9 @@ export function parseBlogFile(raw: string, filename: string): BlogFrontmatter {
     throw new Error(`${prefix}missing YAML frontmatter`);
   }
   const yaml = match[1];
+  if (yaml === undefined) {
+    throw new Error(`${prefix}missing YAML frontmatter body`);
+  }
   const lines = yaml.split(/\r?\n/);
   const data: Record<string, unknown> = {};
   for (const line of lines) {

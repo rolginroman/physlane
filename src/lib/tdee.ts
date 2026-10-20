@@ -70,7 +70,15 @@ const dayDiff = (a: string, b: string): number =>
 const median = (xs: number[]): number => {
   const s = [...xs].sort((x, y) => x - y);
   const mid = s.length >> 1;
-  return s.length % 2 === 1 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  if (s.length % 2 === 1) {
+    const v = s[mid];
+    if (v === undefined) throw new Error("median: empty");
+    return v;
+  }
+  const lo = s[mid - 1];
+  const hi = s[mid];
+  if (lo === undefined || hi === undefined) throw new Error("median: empty");
+  return (lo + hi) / 2;
 };
 
 type Pair = { date: string; kcal: number; weightKg: number };
@@ -87,8 +95,11 @@ export function rejectOutlierWeights(pairs: Pair[]): {
   if (pairs.length < 3) return { pairs, rejected: 0 };
   const rates: number[] = [];
   for (let i = 1; i < pairs.length; i++) {
-    const gap = dayDiff(pairs[i - 1].date, pairs[i].date);
-    if (gap > 0) rates.push((pairs[i].weightKg - pairs[i - 1].weightKg) / gap);
+    const prev = pairs[i - 1];
+    const cur = pairs[i];
+    if (prev === undefined || cur === undefined) continue;
+    const gap = dayDiff(prev.date, cur.date);
+    if (gap > 0) rates.push((cur.weightKg - prev.weightKg) / gap);
   }
   if (rates.length < 3) return { pairs, rejected: 0 };
   const med = median(rates);
@@ -101,21 +112,24 @@ export function rejectOutlierWeights(pairs: Pair[]): {
   const out = pairs.map((p) => ({ ...p }));
   let rejected = 0;
   for (let i = 1; i < out.length - 1; i++) {
-    const gapIn = dayDiff(out[i - 1].date, out[i].date);
-    const gapOut = dayDiff(out[i].date, out[i + 1].date);
+    const prev = out[i - 1];
+    const cur = out[i];
+    const next = out[i + 1];
+    if (prev === undefined || cur === undefined || next === undefined) continue;
+    const gapIn = dayDiff(prev.date, cur.date);
+    const gapOut = dayDiff(cur.date, next.date);
     if (gapIn <= 0 || gapOut <= 0) continue;
-    const rIn = (out[i].weightKg - out[i - 1].weightKg) / gapIn;
-    const rOut = (out[i + 1].weightKg - out[i].weightKg) / gapOut;
+    const rIn = (cur.weightKg - prev.weightKg) / gapIn;
+    const rOut = (next.weightKg - cur.weightKg) / gapOut;
     const spikeIn = Math.abs(rIn - med) > OUTLIER_SIGMA * sigma;
     const spikeOut = Math.abs(rOut - med) > OUTLIER_SIGMA * sigma;
     const opposite = rIn * rOut < 0;
     const floorHit =
       Math.max(Math.abs(rIn), Math.abs(rOut)) > OUTLIER_MIN_KG_PER_DAY;
     if (spikeIn && spikeOut && opposite && floorHit) {
-      const span = dayDiff(out[i - 1].date, out[i + 1].date);
-      const t = dayDiff(out[i - 1].date, out[i].date) / span;
-      out[i].weightKg =
-        out[i - 1].weightKg + (out[i + 1].weightKg - out[i - 1].weightKg) * t;
+      const span = dayDiff(prev.date, next.date);
+      const t = dayDiff(prev.date, cur.date) / span;
+      cur.weightKg = prev.weightKg + (next.weightKg - prev.weightKg) * t;
       rejected++;
       i++; // the next delta now starts from the interpolated value
     }
@@ -147,26 +161,33 @@ export function computeTdee(entries: TdeeEntry[]): TdeeResult {
   const weekly: WeeklyEstimate[] = [];
   let j = 1;
   for (let i = 0; i < pairs.length; i++) {
+    const pairStart = pairs[i];
+    if (pairStart === undefined) continue;
     if (j <= i) j = i + 1;
-    while (
-      j < pairs.length &&
-      dayDiff(pairs[i].date, pairs[j].date) < WINDOW_SPAN_DAYS
-    )
+    while (j < pairs.length) {
+      const pairJ = pairs[j];
+      if (pairJ === undefined) break;
+      if (dayDiff(pairStart.date, pairJ.date) >= WINDOW_SPAN_DAYS) break;
       j++;
+    }
     if (j >= pairs.length) break;
-    const span = dayDiff(pairs[i].date, pairs[j].date);
+    const pairEnd = pairs[j];
+    if (pairEnd === undefined) break;
+    const span = dayDiff(pairStart.date, pairEnd.date);
     if (span > WINDOW_MAX_SPAN_DAYS) continue; // gap too wide to trust
     let kcalSum = 0;
     let n = 0;
     for (let k = i; k <= j; k++) {
-      kcalSum += pairs[k].kcal;
+      const pk = pairs[k];
+      if (pk === undefined) continue;
+      kcalSum += pk.kcal;
       n++;
     }
     const avgKcal = kcalSum / n;
     const deltaKgPerWeek =
-      ((pairs[j].weightKg - pairs[i].weightKg) / span) * WINDOW_SPAN_DAYS;
+      ((pairEnd.weightKg - pairStart.weightKg) / span) * WINDOW_SPAN_DAYS;
     weekly.push({
-      weekStart: pairs[i].date,
+      weekStart: pairStart.date,
       kcal: avgKcal - deltaKgPerWeek * KCAL_PER_KG_PER_WEEK,
     });
   }

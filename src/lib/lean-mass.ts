@@ -38,13 +38,13 @@ function rateFor<T extends RateSample>(
   const latestMs = Date.parse(latest.takenAt);
   const cutoff = latestMs - WEEK_MS;
   for (let i = withVal.length - 2; i >= 0; i--) {
-    const refMs = Date.parse(withVal[i].takenAt);
+    const ref = withVal[i];
+    if (ref === undefined) continue;
+    const refMs = Date.parse(ref.takenAt);
     if (refMs <= cutoff) {
       const spanDays = (latestMs - refMs) / DAY_MS;
       return (
-        (((pick(latest) as number) - (pick(withVal[i] as T) as number)) /
-          spanDays) *
-        7
+        (((pick(latest) as number) - (pick(ref as T) as number)) / spanDays) * 7
       );
     }
   }

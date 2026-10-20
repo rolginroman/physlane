@@ -3,7 +3,7 @@ import {
   applySettings,
   loadSessionUser,
   requireUser,
-  type SettingsPatch,
+  SettingsPatchSchema,
 } from "#/server/auth.core";
 
 /**
@@ -21,7 +21,7 @@ export const getViewer = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const saveSettings = createServerFn({ method: "POST" })
-  .validator((d: SettingsPatch) => d)
+  .validator((d) => SettingsPatchSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     return applySettings(me, data);

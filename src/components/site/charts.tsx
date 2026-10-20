@@ -151,7 +151,9 @@ export function SparkChart() {
     (i * 196) / (n - 1) + 2,
     4 + ((80.8 - v) / 2.6) * 40,
   ]);
-  const [lx, ly] = pts[n - 1];
+  const lastPt = pts[n - 1];
+  if (lastPt === undefined) throw new Error("SparkChart: no points");
+  const [lx, ly] = lastPt;
   return (
     <svg className="chart" viewBox="0 0 200 48" aria-hidden="true">
       <polyline

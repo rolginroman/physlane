@@ -95,7 +95,7 @@ describe("buildStrip", () => {
       targetKcalPerDay: 2500,
       phase: "cut",
     });
-    expect(strip[6].state).toBe("pending");
+    expect(strip.at(6)?.state).toBe("pending");
   });
 
   it("cut: over target by >10% is off, within tolerance is hit", () => {

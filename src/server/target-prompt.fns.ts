@@ -2,9 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, eq, isNull } from "drizzle-orm";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
-import { requireUser } from "./auth.fns";
+import { requireProPlan, requireUser } from "#/server/auth.core";
 import { computeTdee } from "#/lib/tdee";
 import { normalizeTargetKcal } from "#/lib/kcal-start";
+import { appError } from "#/lib/app-error";
 import { loadIntakeContext } from "./intake.core";
 
 /**
@@ -18,11 +19,11 @@ import { loadIntakeContext } from "./intake.core";
 export const applyMeasuredTarget = createServerFn({ method: "POST" }).handler(
   async () => {
     const me = await requireUser();
-    if (me.plan !== "pro") throw new Error("PRO_REQUIRED");
+    requireProPlan(me);
 
     const ctx = await loadIntakeContext(me.id);
     const result = computeTdee(ctx.entries);
-    if (result.status !== "ready") throw new Error("NOT_READY");
+    if (result.status !== "ready") throw appError("NOT_READY");
 
     const target = normalizeTargetKcal(result.kcal);
     const now = new Date();
@@ -52,7 +53,7 @@ export const applyMeasuredTarget = createServerFn({ method: "POST" }).handler(
 export const dismissTargetPrompt = createServerFn({ method: "POST" }).handler(
   async () => {
     const me = await requireUser();
-    if (me.plan !== "pro") throw new Error("PRO_REQUIRED");
+    requireProPlan(me);
     const now = new Date();
     await useDb()
       .update(schema.user)

@@ -17,6 +17,7 @@ import {
   intakeWeekCopy,
   type Phase,
 } from "#/lib/adherence";
+import { isAppErrorCode } from "#/lib/app-error";
 import {
   KCAL_MAX,
   KCAL_MIN,
@@ -57,6 +58,25 @@ const monthDay = (date: string) =>
     day: "numeric",
     timeZone: "UTC",
   }).format(Date.parse(`${date}T00:00:00Z`));
+
+const INTAKE_SAVE_FALLBACK = "Could not save. Check the numbers and try again.";
+
+function intakeSaveErrorCopy(err: unknown): string {
+  const message = err instanceof Error ? err.message : "";
+  if (!isAppErrorCode(message)) {
+    return INTAKE_SAVE_FALLBACK;
+  }
+  if (message === "INVALID_KCAL") {
+    return "Enter calories as a whole number from 0 to 20000.";
+  }
+  if (message === "INVALID_PROTEIN") {
+    return "Enter protein as whole grams, from 0 to 600.";
+  }
+  if (message === "INVALID_DATE") {
+    return INTAKE_SAVE_FALLBACK;
+  }
+  return INTAKE_SAVE_FALLBACK;
+}
 
 const CELL_VALUE: Record<string, string> = {
   hit: "text-text",
@@ -149,8 +169,8 @@ function IntakePage() {
       if (savedTimer.current != null) window.clearTimeout(savedTimer.current);
       savedTimer.current = window.setTimeout(() => setSaved(false), 2000);
       void router.invalidate();
-    } catch {
-      setServerError("Could not save. Check the numbers and try again.");
+    } catch (err) {
+      setServerError(intakeSaveErrorCopy(err));
     } finally {
       setPending(false);
     }

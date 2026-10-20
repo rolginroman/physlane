@@ -57,6 +57,14 @@ const PHASES: {
   },
 ];
 
+function phaseForId(id: Phase) {
+  const found = PHASES.find((p) => p.id === id);
+  if (found) return found;
+  const fallback = PHASES.find((p) => p.id === "cut");
+  if (fallback) return fallback;
+  throw new Error("PHASES misconfigured");
+}
+
 const STEP_TITLES = ["Set your goal", "Your body", "Daily kcal target"];
 const STEP_LABELS = ["Goal", "Body", "Target"];
 
@@ -224,7 +232,7 @@ function OnboardingPage() {
     }
   }
 
-  const activePhase = PHASES.find((p) => p.id === phase) ?? PHASES[0];
+  const activePhase = phaseForId(phase);
 
   // Day-one target suggestion from steps 1-2 (population heuristic, see /guide).
   const parsedRate = Number.parseFloat(rate);

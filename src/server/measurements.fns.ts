@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { and, asc, desc, eq, gte } from "drizzle-orm";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
@@ -22,21 +23,25 @@ export type MeasurementDTO = {
   notes: string | null;
 };
 
-type MeasurementInput = {
-  id?: string;
-  takenAt: string; // ISO date
-  weightKg?: number | null;
-  neckCm?: number | null;
-  chestCm?: number | null;
-  waistCm?: number | null;
-  hipsCm?: number | null;
-  armLeftCm?: number | null;
-  armRightCm?: number | null;
-  thighLeftCm?: number | null;
-  thighRightCm?: number | null;
-  calfCm?: number | null;
-  notes?: string | null;
-};
+const SaveMeasurementInputSchema = z.object({
+  id: z.string().optional(),
+  takenAt: z.string(),
+  weightKg: z.number().nullable().optional(),
+  neckCm: z.number().nullable().optional(),
+  chestCm: z.number().nullable().optional(),
+  waistCm: z.number().nullable().optional(),
+  hipsCm: z.number().nullable().optional(),
+  armLeftCm: z.number().nullable().optional(),
+  armRightCm: z.number().nullable().optional(),
+  thighLeftCm: z.number().nullable().optional(),
+  thighRightCm: z.number().nullable().optional(),
+  calfCm: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+const DeleteMeasurementInputSchema = z.object({
+  id: z.string(),
+});
 
 const toDTO = (m: schema.Measurement): MeasurementDTO => ({
   id: m.id,
@@ -83,7 +88,7 @@ export const listMeasurements = createServerFn({ method: "GET" }).handler(
 );
 
 export const saveMeasurement = createServerFn({ method: "POST" })
-  .validator((d: MeasurementInput) => d)
+  .validator((d) => SaveMeasurementInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     const db = useDb();
@@ -121,7 +126,7 @@ export const saveMeasurement = createServerFn({ method: "POST" })
   });
 
 export const deleteMeasurement = createServerFn({ method: "POST" })
-  .validator((d: { id: string }) => d)
+  .validator((d) => DeleteMeasurementInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
     await useDb()

@@ -175,8 +175,7 @@ async function runReminderBatch(
       todayLocal,
     );
     const series = weightsByUser.get(u.id) ?? [];
-    const latestWeightKg =
-      series.length > 0 ? series[series.length - 1].weightKg : null;
+    const latestWeightKg = series.at(-1)?.weightKg ?? null;
 
     // Weekly digest first (G2.3): anchor-weekday cadence, 168h dedupe via
     // lastDigestAt, fires inside the reminder's own 10-minute bucket. On

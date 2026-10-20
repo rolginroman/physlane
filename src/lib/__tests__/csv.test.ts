@@ -80,7 +80,7 @@ describe("buildMeasurementsCsv", () => {
 
   it("empty notes → empty trailing cell", () => {
     const out = buildMeasurementsCsv([row({ notes: null })]);
-    expect(out.split("\n")[1].endsWith(",")).toBe(true);
+    expect(out.split("\n")[1]?.endsWith(",")).toBe(true);
   });
 
   it("rows keep input order", () => {
@@ -89,8 +89,8 @@ describe("buildMeasurementsCsv", () => {
       row({ takenAtIso: "2026-02-01T00:00:00.000Z", weightKg: 79 }),
     ]);
     const lines = out.split("\n");
-    expect(lines[1].startsWith("2026-01-01")).toBe(true);
-    expect(lines[2].startsWith("2026-02-01")).toBe(true);
+    expect(lines[1]?.startsWith("2026-01-01")).toBe(true);
+    expect(lines[2]?.startsWith("2026-02-01")).toBe(true);
   });
 });
 
