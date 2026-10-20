@@ -55,10 +55,10 @@ function TermsPage() {
 
           <h2>Eligibility</h2>
           <p>
-            You must be at least 16 and able to enter a binding contract where
-            you live. physlane is not for people with eating disorders or anyone
-            who should be under professional care for weight or nutrition —
-            please seek qualified help instead.
+            physlane is not for people who are pregnant, under 18, or living
+            with an eating disorder. If that describes you, please consult a
+            clinician instead of using the service. You must be able to enter a
+            binding contract where you live.
           </p>
 
           <h2>Accounts</h2>
@@ -96,10 +96,11 @@ function TermsPage() {
 
           <h2>Health disclaimer</h2>
           <p>
-            physlane is informational only. It is not medical advice, diagnosis,
-            or treatment. TDEE and other numbers are statistical estimates, not
-            prescriptions. Consult a qualified professional for health
-            decisions, including eating disorders.
+            physlane is informational only. Trend verdicts and calorie
+            suggestions or targets are specific statistical trend analysis of
+            your own entries — not medical advice, diagnosis, or treatment. TDEE
+            and other numbers are statistical estimates, not prescriptions.
+            Consult a qualified professional for health decisions.
           </p>
 
           <h2>MCP and LLM integrations</h2>

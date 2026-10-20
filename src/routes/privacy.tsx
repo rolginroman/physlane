@@ -109,10 +109,11 @@ function PrivacyPage() {
             <li>
               <strong>Health and body data (explicit consent):</strong> you
               choose to enter weight, measurements, intake, cycles, and photos.
-              Under GDPR this is special-category data (Article 9). You may
-              withdraw consent by stopping use of those features or by
-              contacting us; withdrawal does not affect processing that was
-              lawful before withdrawal.
+              Under GDPR this is special-category data (Article 9). We collect
+              consent with an unticked box you tick at sign-up before any health
+              data is stored. You may withdraw consent anytime by deleting
+              entries in the app or contacting us; withdrawal does not affect
+              processing that was lawful before withdrawal.
             </li>
             <li>
               <strong>Security (legitimate interest):</strong> sessions, IP, and
@@ -215,7 +216,7 @@ function PrivacyPage() {
 
           <h2>Children</h2>
           <p>
-            physlane is not for anyone under 16. We do not knowingly collect
+            physlane is not for anyone under 18. We do not knowingly collect
             data from children.
           </p>
 
