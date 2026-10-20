@@ -18,6 +18,7 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "vitest run",
+    "e2e": "pnpm --filter @physlane/e2e test",
     "db:generate": "drizzle-kit generate",
     "stripe:fixtures": "stripe fixtures stripe/fixtures.json"
   },
