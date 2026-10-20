@@ -7,23 +7,15 @@ import { requireUser } from "./auth.fns";
 import { computeTdee } from "#/lib/tdee";
 import { shapeTdeeStatus } from "#/lib/band";
 import {
+  buildIntakeProjection,
+  freeHistoryFloor,
   loadActiveCycle,
   loadIntakeContext,
-  type ActiveCycleRow,
-  type IntakeContext,
 } from "./intake.core";
 import { appError } from "#/lib/app-error";
 import { isValidIntakeDate, validateIntake } from "#/lib/intake-logic";
-import { intakeStreak, type Phase } from "#/lib/adherence";
+import { intakeStreak } from "#/lib/adherence";
 import { detectReportingDrift, driftWindows } from "#/lib/drift";
-import { weeklyRates } from "#/lib/lean-mass";
-import {
-  paceVerdict,
-  projectWeight,
-  PROJECTION_WEEKS,
-  type PaceVerdict,
-} from "#/lib/projection";
-
 const GetOrCreateIntakeInputSchema = z.object({
   date: z.string(),
 });
@@ -39,26 +31,12 @@ const IntakeRangeInputSchema = z.object({
   to: z.string(),
 });
 
-const FREE_HISTORY_DAYS = 90;
-const PROJECTION_INTAKE_DAYS = 7; // "current intake" = avg of the last 7 logged days
+export type { ProjectionDTO } from "./intake.core";
 
 export type DailyIntakeDTO = {
   date: string; // canonical 'YYYY-MM-DD'
   kcal: number | null;
   proteinG: number | null;
-};
-
-/** F11 projection + verdict (Pro only). All math lives in #/lib/projection. */
-export type ProjectionDTO = {
-  currentWeightKg: number;
-  avgIntakeKcal: number;
-  impliedRateKgPerWeek: number;
-  projectedDeltaKg4w: number;
-  projectedWeightKg4w: number;
-  observedRateKgPerWeek: number | null;
-  targetRateKgPerWeek: number | null;
-  phase: Phase | null;
-  verdict: PaceVerdict | null;
 };
 
 export type TdeeStatusResult = import("#/lib/band").TdeeStatusPayload;
@@ -124,12 +102,7 @@ export const intakeRange = createServerFn({ method: "GET" })
     const me = await requireUser();
     if (!isValidIntakeDate(data.from) || !isValidIntakeDate(data.to))
       throw appError("INVALID_DATE");
-    // Canonical dates sort lexicographically, so clamping is max(from, now-90d).
-    const freeFloor = toDate(
-      new Date(Date.now() - FREE_HISTORY_DAYS * 86_400_000),
-    );
-    const from =
-      me.plan === "pro" || data.from > freeFloor ? data.from : freeFloor;
+    const from = freeHistoryFloor({ plan: me.plan, from: data.from });
     const rows = await useDb()
       .select()
       .from(schema.dailyIntake)
@@ -169,7 +142,12 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(
 
     const projection =
       me.plan === "pro" && result.status === "ready"
-        ? buildProjection(ctx, result.kcal, activeCycle)
+        ? buildIntakeProjection({
+            intakeRows: ctx.intakeRows,
+            measurementRows: ctx.measurementRows,
+            tdeeKcal: result.kcal,
+            activeCycle,
+          })
         : null;
 
     return shapeTdeeStatus(result, {
@@ -188,76 +166,6 @@ export const tdeeStatus = createServerFn({ method: "GET" }).handler(
     });
   },
 );
-
-/**
- * F11 (Pro): 4-week weight projection at current intake plus the
- * observed-trend-vs-target verdict. Composes the rows tdeeStatus already
- * fetched; the active cycle is passed in.
- */
-function buildProjection(
-  ctx: IntakeContext,
-  tdeeKcal: number,
-  activeCycle: ActiveCycleRow,
-): ProjectionDTO | null {
-  const { intakeRows, measurementRows } = ctx;
-
-  // "Current intake": average of the last 7 logged days.
-  const loggedKcal = intakeRows
-    .filter((r) => r.kcal != null)
-    .slice(-PROJECTION_INTAKE_DAYS)
-    .map((r) => r.kcal as number);
-  const avgIntakeKcal =
-    loggedKcal.length > 0
-      ? Math.round(loggedKcal.reduce((s, k) => s + k, 0) / loggedKcal.length)
-      : null;
-
-  // Latest weight in the series (rows are ascending).
-  let currentWeightKg: number | null = null;
-  for (const m of measurementRows) {
-    if (m.weightKg !== null) currentWeightKg = m.weightKg;
-  }
-
-  const observedRateKgPerWeek = weeklyRates(
-    measurementRows.map((m) => ({
-      takenAt: m.takenAt.toISOString(),
-      weightKg: m.weightKg,
-      waistCm: null,
-    })),
-  ).weightKgPerWeek;
-
-  if (avgIntakeKcal === null || currentWeightKg === null) return null;
-  const proj = projectWeight({
-    currentWeightKg,
-    avgIntakeKcal,
-    tdeeKcal,
-    weeks: PROJECTION_WEEKS,
-  });
-  if (proj === null) return null;
-
-  const targetRateKgPerWeek = activeCycle?.targetRateKgPerWeek ?? null;
-  // Verdict the observed trend when measurable, else the intake-implied rate.
-  const verdictRateKgPerWeek =
-    observedRateKgPerWeek ?? proj.impliedRateKgPerWeek;
-  const verdict =
-    targetRateKgPerWeek != null
-      ? paceVerdict({
-          actualRateKgPerWeek: verdictRateKgPerWeek,
-          targetRateKgPerWeek,
-        })
-      : null;
-
-  return {
-    currentWeightKg,
-    avgIntakeKcal,
-    impliedRateKgPerWeek: proj.impliedRateKgPerWeek,
-    projectedDeltaKg4w: proj.projectedDeltaKg,
-    projectedWeightKg4w: proj.projectedWeightKg,
-    observedRateKgPerWeek,
-    targetRateKgPerWeek,
-    phase: activeCycle?.phase ?? null,
-    verdict,
-  };
-}
 
 /**
  * Consecutive-day intake logging streak (F17), ending today. An unlogged

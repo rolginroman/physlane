@@ -73,6 +73,11 @@ export async function requireUser(): Promise<SessionUser> {
   return me;
 }
 
+/** Throws when the session user is not on Pro. */
+export function requireProPlan(me: SessionUser): void {
+  if (me.plan !== "pro") throw appError("PRO_REQUIRED");
+}
+
 export const SettingsPatchSchema = z.object({
   unitSystem: z.enum(["metric", "imperial"]).optional(),
   onGlp1: z.boolean().optional(),
