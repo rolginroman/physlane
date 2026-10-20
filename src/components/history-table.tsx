@@ -15,6 +15,14 @@ import {
   type MeasurementField,
   type UnitSystem,
 } from "#/lib/units";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "#/components/ui/table";
 
 const DETAIL_FIELDS = [
   "neckCm",
@@ -74,7 +82,7 @@ function deltaVs(
 function Delta({ value }: { value: string }) {
   if (!value) return null;
   return (
-    <span className="ml-1.5 whitespace-nowrap text-[0.6875rem] text-dim">
+    <span className="ml-1.5 whitespace-nowrap text-[0.6875rem] text-secondary">
       {value}
     </span>
   );
@@ -91,7 +99,7 @@ function ConfirmDelete({
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <p className="m-0 text-sm text-text">Delete this entry?</p>
+      <p className="m-0 text-sm text-foreground">Delete this entry?</p>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -105,7 +113,7 @@ function ConfirmDelete({
           type="button"
           onClick={onKeep}
           disabled={deleting}
-          className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-medium text-dim hover:text-text"
+          className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary hover:text-foreground"
         >
           Keep
         </button>
@@ -137,7 +145,7 @@ function RowActions({
           onClick={onToggle}
           aria-expanded={isOpen}
           aria-label={isOpen ? "Hide extra fields" : "Show extra fields"}
-          className="inline-flex min-h-11 items-center rounded-md px-2 text-dim hover:text-text"
+          className="inline-flex min-h-11 items-center rounded-md px-2 text-secondary hover:text-foreground"
         >
           <svg
             viewBox="0 0 16 16"
@@ -158,14 +166,14 @@ function RowActions({
       <button
         type="button"
         onClick={onEdit}
-        className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-dim hover:text-text"
+        className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-secondary hover:text-foreground"
       >
         Edit
       </button>
       <button
         type="button"
         onClick={onDelete}
-        className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-dim hover:text-danger"
+        className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-secondary hover:text-danger"
       >
         Delete
       </button>
@@ -187,7 +195,7 @@ function DetailFields({
       <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
         {DETAIL_FIELDS.filter((f) => entry[f] != null).map((f) => (
           <div key={f}>
-            <dt className="text-xs text-dim">{FIELD_LABELS[f]}</dt>
+            <dt className="text-xs text-secondary">{FIELD_LABELS[f]}</dt>
             <dd className="num m-0 text-sm">
               {fmtLength(entry[f] as number, units)}
               <Delta value={deltaVs(entry, prev, f, units)} />
@@ -196,7 +204,7 @@ function DetailFields({
         ))}
       </dl>
       {entry.notes && (
-        <p className="m-0 mt-2 text-sm text-dim">Notes: {entry.notes}</p>
+        <p className="m-0 mt-2 text-sm text-secondary">Notes: {entry.notes}</p>
       )}
     </>
   );
@@ -225,7 +233,7 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
   if (entries.length === 0) {
     return (
       <div className="card mt-4 px-4 py-10 text-center">
-        <p className="m-0 text-sm text-dim">
+        <p className="m-0 text-sm text-secondary">
           No measurements yet. Log your first weigh-in above.
         </p>
       </div>
@@ -261,7 +269,10 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
           const prev = entries[index + 1];
           const row = rowProps(entry);
           return (
-            <li key={entry.id} className="border-b border-line last:border-b-0">
+            <li
+              key={entry.id}
+              className="border-b border-border last:border-b-0"
+            >
               {confirming === entry.id ? (
                 <div className="bg-danger/5 px-3 py-2">
                   <ConfirmDelete {...confirmProps(entry)} />
@@ -269,14 +280,14 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
               ) : (
                 <>
                   <div className="flex items-center justify-between gap-2 pl-3 pr-1">
-                    <span className="whitespace-nowrap text-xs text-dim">
+                    <span className="whitespace-nowrap text-xs text-secondary">
                       {fmtDate(entry.takenAt)}
                     </span>
                     <RowActions {...row} />
                   </div>
                   <dl className="m-0 grid grid-cols-2 gap-x-4 px-3 pb-3">
                     <div>
-                      <dt className="text-xs text-dim">Weight</dt>
+                      <dt className="text-xs text-secondary">Weight</dt>
                       <dd className="num m-0 text-sm">
                         {fmtWeight(entry.weightKg, units)}
                         <Delta
@@ -285,7 +296,7 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-dim">Waist</dt>
+                      <dt className="text-xs text-secondary">Waist</dt>
                       <dd className="num m-0 text-sm">
                         {fmtLength(entry.waistCm, units)}
                         <Delta value={deltaVs(entry, prev, "waistCm", units)} />
@@ -293,7 +304,7 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
                     </div>
                   </dl>
                   {row.isOpen && (
-                    <div className="border-t border-line bg-surface2/40 px-3 py-3">
+                    <div className="border-t border-border bg-muted/40 px-3 py-3">
                       <DetailFields entry={entry} prev={prev} units={units} />
                     </div>
                   )}
@@ -304,76 +315,84 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
         })}
       </ul>
 
-      <table className="hidden w-full border-collapse text-sm sm:table">
-        <thead>
-          <tr className="border-b border-line text-left text-xs text-dim">
-            <th scope="col" className="px-3 py-2 font-medium">
-              Date
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              Weight ({weightUnit})
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              Waist ({lengthUnit})
-            </th>
-            <th scope="col" className="px-2 py-2 text-right font-medium">
-              <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry, index) => {
-            const prev = entries[index + 1];
-            if (confirming === entry.id) {
+      <div className="hidden sm:block">
+        <Table className="border-collapse">
+          <TableHeader>
+            <TableRow className="border-border text-left text-xs text-secondary hover:bg-transparent">
+              <TableHead scope="col" className="px-3 py-2 font-medium">
+                Date
+              </TableHead>
+              <TableHead scope="col" className="px-3 py-2 font-medium">
+                Weight ({weightUnit})
+              </TableHead>
+              <TableHead scope="col" className="px-3 py-2 font-medium">
+                Waist ({lengthUnit})
+              </TableHead>
+              <TableHead
+                scope="col"
+                className="px-2 py-2 text-right font-medium"
+              >
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entries.map((entry, index) => {
+              const prev = entries[index + 1];
+              if (confirming === entry.id) {
+                return (
+                  <TableRow
+                    key={entry.id}
+                    className="border-border bg-danger/5 hover:bg-danger/5"
+                  >
+                    <TableCell colSpan={4} className="px-3 py-2">
+                      <ConfirmDelete {...confirmProps(entry)} />
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+
+              const row = rowProps(entry);
+
               return (
-                <tr key={entry.id} className="border-b border-line bg-danger/5">
-                  <td colSpan={4} className="px-3 py-2">
-                    <ConfirmDelete {...confirmProps(entry)} />
-                  </td>
-                </tr>
+                <Fragment key={entry.id}>
+                  <TableRow className="border-border">
+                    <TableCell className="h-10 px-3 text-xs text-secondary">
+                      {fmtDate(entry.takenAt)}
+                    </TableCell>
+                    <TableCell className="num h-10 px-3">
+                      {entry.weightKg != null
+                        ? units === "metric"
+                          ? entry.weightKg.toFixed(1)
+                          : kgToLb(entry.weightKg).toFixed(1)
+                        : "—"}
+                      <Delta value={deltaVs(entry, prev, "weightKg", units)} />
+                    </TableCell>
+                    <TableCell className="num h-10 px-3">
+                      {entry.waistCm != null
+                        ? units === "metric"
+                          ? entry.waistCm.toFixed(1)
+                          : cmToIn(entry.waistCm).toFixed(1)
+                        : "—"}
+                      <Delta value={deltaVs(entry, prev, "waistCm", units)} />
+                    </TableCell>
+                    <TableCell className="h-10 px-2 text-right">
+                      <RowActions {...row} className="-my-1" />
+                    </TableCell>
+                  </TableRow>
+                  {row.isOpen && (
+                    <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+                      <TableCell colSpan={4} className="px-3 py-3">
+                        <DetailFields entry={entry} prev={prev} units={units} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
               );
-            }
-
-            const row = rowProps(entry);
-
-            return (
-              <Fragment key={entry.id}>
-                <tr className="border-b border-line">
-                  <td className="h-10 whitespace-nowrap px-3 text-xs text-dim">
-                    {fmtDate(entry.takenAt)}
-                  </td>
-                  <td className="num h-10 whitespace-nowrap px-3">
-                    {entry.weightKg != null
-                      ? units === "metric"
-                        ? entry.weightKg.toFixed(1)
-                        : kgToLb(entry.weightKg).toFixed(1)
-                      : "—"}
-                    <Delta value={deltaVs(entry, prev, "weightKg", units)} />
-                  </td>
-                  <td className="num h-10 whitespace-nowrap px-3">
-                    {entry.waistCm != null
-                      ? units === "metric"
-                        ? entry.waistCm.toFixed(1)
-                        : cmToIn(entry.waistCm).toFixed(1)
-                      : "—"}
-                    <Delta value={deltaVs(entry, prev, "waistCm", units)} />
-                  </td>
-                  <td className="h-10 whitespace-nowrap px-2 text-right">
-                    <RowActions {...row} className="-my-1" />
-                  </td>
-                </tr>
-                {row.isOpen && (
-                  <tr className="border-b border-line bg-surface2/40">
-                    <td colSpan={4} className="px-3 py-3">
-                      <DetailFields entry={entry} prev={prev} units={units} />
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
