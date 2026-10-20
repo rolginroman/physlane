@@ -81,7 +81,7 @@ function SignUpPage() {
         <h1 className="m-0 text-lg font-semibold tracking-tight">
           Create account
         </h1>
-        <p className="mt-1 mb-6 text-sm text-secondary">
+        <p className="mt-1 mb-6 text-sm text-muted-foreground">
           Your first log takes under two minutes.
         </p>
 
@@ -194,7 +194,7 @@ function SignUpPage() {
           </Button>
         </form>
 
-        <p className="mt-5 mb-0 text-center text-sm text-secondary">
+        <p className="mt-5 mb-0 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
             to="/sign-in"

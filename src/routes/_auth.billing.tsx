@@ -110,7 +110,7 @@ function FeatureList({ items }: { items: string[] }) {
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2.5">
           <Check />
-          <span className="text-sm text-secondary">{item}</span>
+          <span className="text-sm text-muted-foreground">{item}</span>
         </li>
       ))}
     </ul>
@@ -169,7 +169,7 @@ function IntervalPicker({
             <span className="font-display text-[1.875rem] leading-none">
               {o.price}
             </span>
-            <span className="mt-1 text-xs text-secondary">{o.sub}</span>
+            <span className="mt-1 text-xs text-muted-foreground">{o.sub}</span>
             {o.flag ? (
               <span className="mt-2 text-[0.625rem] font-semibold uppercase tracking-wide text-brand-text">
                 {o.flag}
@@ -183,7 +183,7 @@ function IntervalPicker({
               </span>
             )}
             {o.effective ? (
-              <span className="num mt-0.5 text-xs text-secondary">
+              <span className="num mt-0.5 text-xs text-muted-foreground">
                 {o.effective}
               </span>
             ) : null}
@@ -287,7 +287,7 @@ function BillingPage() {
       {checkout === "cancelled" && (
         <p
           role="status"
-          className="mt-4 rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-secondary"
+          className="mt-4 rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-muted-foreground"
         >
           Checkout cancelled. Nothing was charged.
         </p>
@@ -310,7 +310,7 @@ function BillingPage() {
           <p className="m-0 text-sm font-medium text-foreground">
             Online checkout is not enabled yet
           </p>
-          <p className="m-0 mt-1 text-sm text-secondary">
+          <p className="m-0 mt-1 text-sm text-muted-foreground">
             {plan === "pro"
               ? "Card billing goes live shortly. Nothing can be charged today. Your Pro plan stays active in the meantime."
               : "Card billing goes live shortly. Nothing can be charged today. Your free plan keeps working in full: logging, charts, cycles, streaks."}
@@ -322,7 +322,7 @@ function BillingPage() {
         <div className="card mt-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="m-0 text-base font-semibold">Current plan: Free</h2>
-            <p className="num m-0 text-sm text-secondary">$0</p>
+            <p className="num m-0 text-sm text-muted-foreground">$0</p>
           </div>
           <FeatureList items={FREE_FEATURES} />
 
@@ -366,7 +366,7 @@ function BillingPage() {
                 </div>
               </>
             ) : (
-              <p className="m-0 mt-2 text-sm text-secondary">
+              <p className="m-0 mt-2 text-sm text-muted-foreground">
                 Pro pricing will be $10 per month or $100 per year once checkout
                 is enabled. The estimate keeps building from your data in the
                 meantime.
@@ -384,7 +384,7 @@ function BillingPage() {
               </span>
             </h2>
             {renewalDate && (
-              <p className="num m-0 text-sm text-secondary">
+              <p className="num m-0 text-sm text-muted-foreground">
                 Renews {renewalDate}
               </p>
             )}
@@ -410,7 +410,7 @@ function BillingPage() {
                 </p>
               </>
             ) : (
-              <p className="m-0 text-sm text-secondary">
+              <p className="m-0 text-sm text-muted-foreground">
                 Subscription management is unavailable while checkout is
                 offline. Your Pro plan stays active.
               </p>

@@ -83,7 +83,7 @@ function deltaVs(
 function Delta({ value }: { value: string }) {
   if (!value) return null;
   return (
-    <span className="ml-1.5 whitespace-nowrap text-[0.6875rem] text-secondary">
+    <span className="ml-1.5 whitespace-nowrap text-[0.6875rem] text-muted-foreground">
       {value}
     </span>
   );
@@ -116,7 +116,7 @@ function ConfirmDelete({
           variant="outline"
           onClick={onKeep}
           disabled={deleting}
-          className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
+          className="min-h-11 px-4 font-medium text-muted-foreground hover:text-foreground"
         >
           Keep
         </Button>
@@ -148,7 +148,7 @@ function RowActions({
           onClick={onToggle}
           aria-expanded={isOpen}
           aria-label={isOpen ? "Hide extra fields" : "Show extra fields"}
-          className="inline-flex min-h-11 items-center rounded-md px-2 text-secondary hover:text-foreground"
+          className="inline-flex min-h-11 items-center rounded-md px-2 text-muted-foreground hover:text-foreground"
         >
           <svg
             viewBox="0 0 16 16"
@@ -200,7 +200,7 @@ function DetailFields({
       <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
         {DETAIL_FIELDS.filter((f) => entry[f] != null).map((f) => (
           <div key={f}>
-            <dt className="text-xs text-secondary">{FIELD_LABELS[f]}</dt>
+            <dt className="text-xs text-muted-foreground">{FIELD_LABELS[f]}</dt>
             <dd className="num m-0 text-sm">
               {fmtLength(entry[f] as number, units)}
               <Delta value={deltaVs(entry, prev, f, units)} />
@@ -209,7 +209,9 @@ function DetailFields({
         ))}
       </dl>
       {entry.notes && (
-        <p className="m-0 mt-2 text-sm text-secondary">Notes: {entry.notes}</p>
+        <p className="m-0 mt-2 text-sm text-muted-foreground">
+          Notes: {entry.notes}
+        </p>
       )}
     </>
   );
@@ -238,7 +240,7 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
   if (entries.length === 0) {
     return (
       <div className="card mt-4 px-4 py-10 text-center">
-        <p className="m-0 text-sm text-secondary">
+        <p className="m-0 text-sm text-muted-foreground">
           No measurements yet. Log your first weigh-in above.
         </p>
       </div>
@@ -285,14 +287,14 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
               ) : (
                 <>
                   <div className="flex items-center justify-between gap-2 pl-3 pr-1">
-                    <span className="whitespace-nowrap text-xs text-secondary">
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
                       {fmtDate(entry.takenAt)}
                     </span>
                     <RowActions {...row} />
                   </div>
                   <dl className="m-0 grid grid-cols-2 gap-x-4 px-3 pb-3">
                     <div>
-                      <dt className="text-xs text-secondary">Weight</dt>
+                      <dt className="text-xs text-muted-foreground">Weight</dt>
                       <dd className="num m-0 text-sm">
                         {fmtWeight(entry.weightKg, units)}
                         <Delta
@@ -301,7 +303,7 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-secondary">Waist</dt>
+                      <dt className="text-xs text-muted-foreground">Waist</dt>
                       <dd className="num m-0 text-sm">
                         {fmtLength(entry.waistCm, units)}
                         <Delta value={deltaVs(entry, prev, "waistCm", units)} />
@@ -323,7 +325,7 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
       <div className="hidden sm:block">
         <Table className="border-collapse">
           <TableHeader>
-            <TableRow className="border-border text-left text-xs text-secondary hover:bg-transparent">
+            <TableRow className="border-border text-left text-xs text-muted-foreground hover:bg-transparent">
               <TableHead scope="col" className="px-3 py-2 font-medium">
                 Date
               </TableHead>
@@ -362,7 +364,7 @@ export function HistoryTable({ entries, units, onEdit }: Props) {
               return (
                 <Fragment key={entry.id}>
                   <TableRow className="border-border">
-                    <TableCell className="h-10 px-3 text-xs text-secondary">
+                    <TableCell className="h-10 px-3 text-xs text-muted-foreground">
                       {fmtDate(entry.takenAt)}
                     </TableCell>
                     <TableCell className="num h-10 px-3">

@@ -106,7 +106,7 @@ function fmtSignedWeight(kg: number | null, units: UnitSystem): string {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 bg-card px-4 py-3">
-      <p className="m-0 text-xs text-secondary">{label}</p>
+      <p className="m-0 text-xs text-muted-foreground">{label}</p>
       <p className="num m-0 mt-1 truncate text-base font-medium">{value}</p>
     </div>
   );
@@ -261,7 +261,7 @@ function DashboardPage() {
 
       <div ref={formRef} className="mt-4 scroll-mt-20">
         {loggedFlash && (
-          <p role="status" className="m-0 mb-2 text-xs text-secondary">
+          <p role="status" className="m-0 mb-2 text-xs text-muted-foreground">
             Logged.
           </p>
         )}

@@ -261,7 +261,7 @@ export function MeasurementForm({
         <svg
           viewBox="0 0 16 16"
           aria-hidden="true"
-          className={`h-4 w-4 shrink-0 text-secondary transition-transform duration-200 ease-out ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out ${open ? "rotate-180" : ""}`}
         >
           <path
             d="M4 6l4 4 4-4"
@@ -437,7 +437,7 @@ export function MeasurementForm({
               type="button"
               variant="outline"
               onClick={resetToMode}
-              className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
+              className="min-h-11 px-4 font-medium text-muted-foreground hover:text-foreground"
             >
               Clear
             </Button>

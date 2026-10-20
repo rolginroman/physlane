@@ -271,14 +271,14 @@ function OnboardingPage() {
                     ? "font-medium text-foreground"
                     : step > i + 1
                       ? "text-brand-text"
-                      : "text-secondary"
+                      : "text-muted-foreground"
                 }
               >
                 {label}
               </li>
             ))}
           </ol>
-          <p className="m-0 text-xs text-secondary">Step {step} of 3</p>
+          <p className="m-0 text-xs text-muted-foreground">Step {step} of 3</p>
         </div>
         <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-muted">
           <div
@@ -296,7 +296,7 @@ function OnboardingPage() {
         <div className="card mt-4 p-4">
           {step === 1 && (
             <>
-              <p className="m-0 mb-4 text-sm text-secondary">
+              <p className="m-0 mb-4 text-sm text-muted-foreground">
                 Pick a phase and a weekly rate. You can change both later.
               </p>
               <RadioGroup
@@ -318,7 +318,7 @@ function OnboardingPage() {
                         }`}
                       >
                         <span className="text-sm font-semibold">{p.label}</span>
-                        <span className="text-xs text-secondary">
+                        <span className="text-xs text-muted-foreground">
                           {p.blurb}
                         </span>
                       </RadioGroupItem>
@@ -362,7 +362,7 @@ function OnboardingPage() {
 
           {step === 2 && (
             <>
-              <p className="m-0 mb-4 text-sm text-secondary">
+              <p className="m-0 mb-4 text-sm text-muted-foreground">
                 Where you start today. This seeds your trend line.
               </p>
               <div className="mb-4">
@@ -382,7 +382,7 @@ function OnboardingPage() {
                       className={`min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium ${
                         units === u
                           ? "bg-card text-foreground"
-                          : "text-secondary hover:text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {u === "metric" ? "Metric (kg, cm)" : "Imperial (lb, in)"}
@@ -472,7 +472,7 @@ function OnboardingPage() {
                       className={`min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium capitalize ${
                         sex === s
                           ? "bg-card text-foreground"
-                          : "text-secondary hover:text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {s}
@@ -488,7 +488,7 @@ function OnboardingPage() {
 
           {step === 3 && (
             <>
-              <p className="m-0 mb-4 text-sm text-secondary">
+              <p className="m-0 mb-4 text-sm text-muted-foreground">
                 {activePhase.label} at {rate} kg/wk
                 {weightDisplay
                   ? `, starting at ${weightDisplay}`
@@ -523,7 +523,7 @@ function OnboardingPage() {
                   </p>
                 )}
                 {whyKcal && (
-                  <details className="mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm text-secondary">
+                  <details className="mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
                     <summary className="cursor-pointer select-none font-medium text-foreground">
                       Why this number?
                     </summary>
@@ -536,7 +536,7 @@ function OnboardingPage() {
                     href="/guide"
                     target="_blank"
                     rel="noopener"
-                    className="underline underline-offset-4 hover:text-secondary"
+                    className="underline underline-offset-4 hover:text-muted-foreground"
                   >
                     Read the short guide
                   </a>
@@ -561,7 +561,7 @@ function OnboardingPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setStep((prev) => Math.max(1, prev - 1))}
-                className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
+                className="min-h-11 px-4 font-medium text-muted-foreground hover:text-foreground"
               >
                 Back
               </Button>

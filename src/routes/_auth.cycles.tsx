@@ -119,7 +119,7 @@ function CyclesPage() {
         <ActiveCycleCard cycle={active} units={units} />
       ) : (
         <div className="card mt-4 px-4 py-3">
-          <p className="m-0 text-sm text-secondary">
+          <p className="m-0 text-sm text-muted-foreground">
             No active cycle. Start one below.
           </p>
         </div>
@@ -180,23 +180,23 @@ function ActiveCycleCard({
 
       <dl className="m-0 mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
         <div>
-          <dt className="text-xs text-secondary">Start date</dt>
+          <dt className="text-xs text-muted-foreground">Start date</dt>
           <dd className="m-0 mt-0.5 text-sm">{fmtDate(cycle.startDate)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-secondary">Start weight</dt>
+          <dt className="text-xs text-muted-foreground">Start weight</dt>
           <dd className="num m-0 mt-0.5 text-sm">
             {fmtWeight(cycle.startWeightKg, units)}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-secondary">Target rate</dt>
+          <dt className="text-xs text-muted-foreground">Target rate</dt>
           <dd className="num m-0 mt-0.5 text-sm">
             {formatWeightRate(cycle.targetRateKgPerWeek, units)}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-secondary">Kcal target</dt>
+          <dt className="text-xs text-muted-foreground">Kcal target</dt>
           <dd className="num m-0 mt-0.5 text-sm">
             {cycle.kcalTargetPerDay != null
               ? `${cycle.kcalTargetPerDay} kcal`
@@ -223,7 +223,7 @@ function ActiveCycleCard({
               variant="outline"
               onClick={() => setConfirming(false)}
               disabled={pending}
-              className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
+              className="min-h-11 px-4 font-medium text-muted-foreground hover:text-foreground"
             >
               Keep
             </Button>
@@ -364,7 +364,7 @@ function NewPhaseCard({
   return (
     <form onSubmit={handleSubmit} noValidate className="card mt-4 p-4">
       <h2 className="m-0 text-sm font-semibold">Start a new phase</h2>
-      <p className="m-0 mt-1 text-xs text-secondary">
+      <p className="m-0 mt-1 text-xs text-muted-foreground">
         {hasActive
           ? "Starting a new phase ends the current one. History is kept."
           : "Set the phase and rate for your next block."}
@@ -389,7 +389,7 @@ function NewPhaseCard({
               }`}
             >
               <span className="text-sm font-semibold">{p.label}</span>
-              <span className="text-xs text-secondary">{p.blurb}</span>
+              <span className="text-xs text-muted-foreground">{p.blurb}</span>
             </RadioGroupItem>
           );
         })}
@@ -538,7 +538,7 @@ function HistoryCard({
     <div className="card mt-4">
       <h2 className="m-0 px-4 pt-4 text-sm font-semibold">History</h2>
       {history.length === 0 ? (
-        <p className="m-0 px-4 pb-4 pt-3 text-sm text-secondary">
+        <p className="m-0 px-4 pb-4 pt-3 text-sm text-muted-foreground">
           Previous phases will appear here.
         </p>
       ) : (
@@ -554,13 +554,13 @@ function HistoryCard({
                 className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-4 py-2.5 last:border-b-0"
               >
                 <PhaseLabel phase={c.phase} />
-                <span className="text-xs text-secondary">
+                <span className="text-xs text-muted-foreground">
                   {fmtDate(c.startDate)} – {fmtDate(c.endDate ?? c.startDate)}
                 </span>
                 <span className="num ml-auto text-sm">
                   {fmtSignedKg(Number.isNaN(deltaKg) ? null : deltaKg, units)}
                 </span>
-                <span className="num text-xs text-secondary">
+                <span className="num text-xs text-muted-foreground">
                   {c.kcalTargetPerDay != null
                     ? `${c.kcalTargetPerDay} kcal`
                     : "—"}

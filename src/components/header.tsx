@@ -60,7 +60,7 @@ export function Header() {
                     className={navLinkWide}
                     activeProps={{ className: "text-brand-text" }}
                     inactiveProps={{
-                      className: "text-secondary hover:text-foreground",
+                      className: "text-muted-foreground hover:text-foreground",
                     }}
                   >
                     {item.label}
@@ -72,7 +72,7 @@ export function Header() {
                     className={navLinkWide}
                     activeProps={{ className: "text-brand-text" }}
                     inactiveProps={{
-                      className: "text-secondary hover:text-foreground",
+                      className: "text-muted-foreground hover:text-foreground",
                     }}
                   >
                     Billing
@@ -147,7 +147,7 @@ export function Header() {
               <>
                 <Link
                   to="/sign-in"
-                  className={`${navLinkBase} whitespace-nowrap text-secondary hover:text-foreground`}
+                  className={`${navLinkBase} whitespace-nowrap text-muted-foreground hover:text-foreground`}
                 >
                   Sign in
                 </Link>
@@ -179,7 +179,7 @@ export function Header() {
                 className={`${navLinkBase} flex-1 justify-center`}
                 activeProps={{ className: "text-brand-text" }}
                 inactiveProps={{
-                  className: "text-secondary hover:text-foreground",
+                  className: "text-muted-foreground hover:text-foreground",
                 }}
               >
                 {item.label}

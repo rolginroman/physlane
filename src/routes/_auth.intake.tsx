@@ -83,7 +83,7 @@ function intakeSaveErrorCopy(err: unknown): string {
 
 const CELL_VALUE: Record<string, string> = {
   hit: "text-foreground",
-  off: "text-secondary",
+  off: "text-muted-foreground",
   logged: "text-foreground",
   missed: "text-muted-foreground",
   pending: "text-brand-text",
@@ -185,12 +185,12 @@ function IntakePage() {
         <h1 className="m-0 text-xl font-semibold tracking-tight">Intake</h1>
         <StreakChip streak={streak} />
         {targetKcalPerDay != null && (
-          <span className="num inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-xs text-secondary">
+          <span className="num inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             Target {fmtKcal(targetKcalPerDay)} kcal
           </span>
         )}
         {onGlp1 && (
-          <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-xs text-secondary">
+          <span className="inline-flex min-h-8 items-center rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             GLP-1 mode
           </span>
         )}
@@ -283,7 +283,7 @@ function IntakePage() {
         <div className="flex items-baseline justify-between">
           <h2 className="m-0 text-base font-semibold">Last 7 days</h2>
           {stats.pct != null && (
-            <p className="num m-0 text-sm text-secondary">
+            <p className="num m-0 text-sm text-muted-foreground">
               {stats.pct}% adherence
             </p>
           )}

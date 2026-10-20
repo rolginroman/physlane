@@ -433,10 +433,10 @@ export function TrendChart({
         <h2 className="m-0 text-sm font-semibold">Trend</h2>
         {bodyFatPercent != null && (
           <>
-            <span className="num inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-secondary">
+            <span className="num inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               Body fat ~{bodyFatPercent.toFixed(1)}% (estimate)
             </span>
-            <details className="text-xs text-secondary">
+            <details className="text-xs text-muted-foreground">
               <summary className="inline-flex min-h-9 cursor-pointer select-none items-center hover:text-foreground">
                 How is this estimated?
               </summary>
@@ -463,7 +463,7 @@ export function TrendChart({
             </details>
           </>
         )}
-        <p className="m-0 flex items-center gap-3 text-xs text-secondary">
+        <p className="m-0 flex items-center gap-3 text-xs text-muted-foreground">
           {series.map((s) => (
             <span key={s.key} className="inline-flex items-center gap-1.5">
               <span
@@ -506,7 +506,7 @@ export function TrendChart({
                     active
                       ? "bg-muted text-foreground"
                       : isEnabled
-                        ? "text-secondary hover:text-foreground"
+                        ? "text-muted-foreground hover:text-foreground"
                         : "cursor-not-allowed text-muted-foreground opacity-50"
                   }`}
                 >
@@ -531,7 +531,7 @@ export function TrendChart({
                   className={`relative inline-flex h-9 items-center justify-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
                     active
                       ? "bg-muted text-foreground"
-                      : "text-secondary hover:text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {r.label}
@@ -549,7 +549,7 @@ export function TrendChart({
        */}
       {plan === "free" && rangeId === "all" && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border bg-muted px-3 py-1">
-          <p className="m-0 text-xs text-secondary">
+          <p className="m-0 text-xs text-muted-foreground">
             Free plan sees the last 90 days here. Pro unlocks the full history.
           </p>
           <Link
@@ -575,7 +575,7 @@ export function TrendChart({
           />
         ) : !enough ? (
           <div className="flex h-full items-center justify-center px-4 text-center">
-            <p className="m-0 text-sm text-secondary">
+            <p className="m-0 text-sm text-muted-foreground">
               {isWeight
                 ? "Not enough data in this range. Log weigh-ins to build your trend."
                 : `Not enough ${FIELD_LABELS[siteDef.field].toLowerCase()} entries in this range yet.`}
@@ -779,7 +779,7 @@ function TrendTip({
   const target = targetAt?.(row.t);
   return (
     <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs">
-      <p className="m-0 text-secondary">{fmtDay(row.t)}</p>
+      <p className="m-0 text-muted-foreground">{fmtDay(row.t)}</p>
       {shown.map((s) => (
         <p key={s.key} className="num m-0 mt-1 flex items-center gap-1.5">
           <span
@@ -787,14 +787,14 @@ function TrendTip({
             className="inline-block h-0.5 w-3 rounded-full"
             style={{ background: s.color }}
           />
-          <span className="text-secondary">{s.label}</span>
+          <span className="text-muted-foreground">{s.label}</span>
           {s.kind === "weight"
             ? fmtWeight(row[s.key] as number, units)
             : formatGirth(row[s.key] as number, units)}
         </p>
       ))}
       {targetAt && target != null && (
-        <p className="num m-0 mt-0.5 flex items-center gap-1.5 text-secondary">
+        <p className="num m-0 mt-0.5 flex items-center gap-1.5 text-muted-foreground">
           <span
             className="inline-block w-3 border-t-2 border-dashed"
             style={{ borderColor: TARGET_COLOR }}
