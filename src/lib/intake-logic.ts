@@ -1,3 +1,5 @@
+import { appError } from "#/lib/app-error";
+
 /**
  * Pure intake input validation (rule BR1: no I/O). Shared by the server
  * function layer so the rules can be unit-tested without a database.
@@ -34,7 +36,7 @@ export function validateIntake(input: {
   proteinG?: unknown;
 }): IntakeInput {
   if (typeof input.date !== "string" || !isValidIntakeDate(input.date)) {
-    throw new Error("INVALID_DATE");
+    throw appError("INVALID_DATE");
   }
   if (
     typeof input.kcal !== "number" ||
@@ -42,7 +44,7 @@ export function validateIntake(input: {
     input.kcal < KCAL_MIN ||
     input.kcal > KCAL_MAX
   ) {
-    throw new Error("INVALID_KCAL");
+    throw appError("INVALID_KCAL");
   }
   if (input.proteinG !== null && input.proteinG !== undefined) {
     if (
@@ -51,7 +53,7 @@ export function validateIntake(input: {
       input.proteinG < PROTEIN_MIN ||
       input.proteinG > PROTEIN_MAX
     ) {
-      throw new Error("INVALID_PROTEIN");
+      throw appError("INVALID_PROTEIN");
     }
   }
   return {

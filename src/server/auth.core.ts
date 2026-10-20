@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { useDb } from "#/db/client";
+import { appError } from "#/lib/app-error";
 import { useAuth } from "#/lib/auth";
 import { isValidTimeZone, normalizeReminderTime } from "#/lib/remind";
 import { getRequestHeaders } from "@tanstack/react-start/server";
@@ -67,7 +68,7 @@ export async function loadSessionUser(): Promise<SessionUser | null> {
 /** Throws when unauthenticated — call inside guarded handlers. */
 export async function requireUser(): Promise<SessionUser> {
   const me = await loadSessionUser();
-  if (!me) throw new Error("UNAUTHORIZED");
+  if (!me) throw appError("UNAUTHORIZED");
   return me;
 }
 

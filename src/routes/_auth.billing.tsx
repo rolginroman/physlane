@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import type { AppErrorCode } from "#/lib/app-error";
 import {
   billingStatus,
   createBillingPortal,
@@ -117,10 +118,11 @@ function FeatureList({ items }: { items: string[] }) {
 /** Server-fn errors arrive as opaque messages; map what we can, generic copy for the rest. */
 function billingErrorCopy(err: unknown, action: string): string {
   const message = err instanceof Error ? err.message : "";
-  if (message.includes("BILLING_NOT_CONFIGURED")) {
+  const code = message as AppErrorCode;
+  if (code === "BILLING_NOT_CONFIGURED") {
     return `Checkout is temporarily unavailable. Billing is not configured on the server. Try again later.`;
   }
-  if (message.includes("NO_STRIPE_CUSTOMER")) {
+  if (code === "NO_STRIPE_CUSTOMER") {
     return "No billing profile is attached to your account yet. Contact support and we will sort it out.";
   }
   return `Could not ${action}. Check your connection and try again.`;

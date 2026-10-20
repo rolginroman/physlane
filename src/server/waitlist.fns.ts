@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
+import { appError } from "#/lib/app-error";
 import { checkEmail } from "#/lib/waitlist";
 
 export type JoinWaitlistResult =
@@ -20,7 +21,7 @@ export const joinWaitlist = createServerFn({ method: "POST" })
       input === null ||
       typeof (input as { email?: unknown }).email !== "string"
     ) {
-      throw new Error("Email is required.");
+      throw appError("EMAIL_REQUIRED");
     }
     const source = (input as { source?: unknown }).source;
     return {

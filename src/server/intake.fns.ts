@@ -11,6 +11,7 @@ import {
   type ActiveCycleRow,
   type IntakeContext,
 } from "./intake.core";
+import { appError } from "#/lib/app-error";
 import { isValidIntakeDate, validateIntake } from "#/lib/intake-logic";
 import { intakeStreak, type Phase } from "#/lib/adherence";
 import { detectReportingDrift, driftWindows } from "#/lib/drift";
@@ -61,7 +62,7 @@ export const getOrCreateIntake = createServerFn({ method: "GET" })
   .validator((d: { date: string }) => d)
   .handler(async ({ data }) => {
     const me = await requireUser();
-    if (!isValidIntakeDate(data.date)) throw new Error("INVALID_DATE");
+    if (!isValidIntakeDate(data.date)) throw appError("INVALID_DATE");
     const [row] = await useDb()
       .select()
       .from(schema.dailyIntake)
@@ -106,7 +107,7 @@ export const intakeRange = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const me = await requireUser();
     if (!isValidIntakeDate(data.from) || !isValidIntakeDate(data.to))
-      throw new Error("INVALID_DATE");
+      throw appError("INVALID_DATE");
     // Canonical dates sort lexicographically, so clamping is max(from, now-90d).
     const freeFloor = toDate(
       new Date(Date.now() - FREE_HISTORY_DAYS * 86_400_000),
