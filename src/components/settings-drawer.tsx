@@ -355,7 +355,7 @@ export function SettingsDrawer({
                 <div className="mt-2 flex items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-sm font-semibold text-secondary"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-sm font-semibold text-muted-foreground"
                   >
                     {initial || "·"}
                   </span>
@@ -389,7 +389,7 @@ export function SettingsDrawer({
                       className={`min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium ${
                         units === u
                           ? "bg-card text-foreground"
-                          : "text-secondary hover:text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       {u === "metric" ? "Metric (kg, cm)" : "Imperial (lb, in)"}
@@ -406,7 +406,7 @@ export function SettingsDrawer({
                 <h3 id="set-profile" className="m-0 text-sm font-semibold">
                   Profile
                 </h3>
-                <p className="m-0 mt-1 text-xs text-secondary">
+                <p className="m-0 mt-1 text-xs text-muted-foreground">
                   Height and sex tune the body fat estimate. Optional.
                 </p>
                 <div className="mt-3 grid gap-3">
@@ -460,7 +460,7 @@ export function SettingsDrawer({
                           className={`min-h-11 items-center justify-center rounded-md px-2 text-sm font-medium ${
                             sexChoice === opt.value
                               ? "bg-card text-foreground"
-                              : "text-secondary hover:text-foreground"
+                              : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
                           {opt.label}
@@ -480,11 +480,11 @@ export function SettingsDrawer({
                   Telegram
                 </h3>
                 {telegramId ? (
-                  <p className="m-0 mt-1 text-xs text-secondary">
+                  <p className="m-0 mt-1 text-xs text-muted-foreground">
                     Linked. Quick logging and reminders are on.
                   </p>
                 ) : (
-                  <p className="m-0 mt-1 max-w-xl text-xs leading-relaxed text-secondary">
+                  <p className="m-0 mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground">
                     Open physlane in Telegram and sign in; the accounts merge
                     via your email. Enables quick logging and daily reminders.
                   </p>
@@ -499,7 +499,7 @@ export function SettingsDrawer({
                 <h3 id="set-reminder" className="m-0 text-sm font-semibold">
                   Daily reminder
                 </h3>
-                <p className="m-0 mt-1 text-xs text-secondary">
+                <p className="m-0 mt-1 text-xs text-muted-foreground">
                   One Telegram nudge at your time, only on days you have not
                   logged yet.
                 </p>
@@ -523,7 +523,7 @@ export function SettingsDrawer({
                     <div className="flex min-h-11 flex-col items-end justify-end gap-1 pb-0.5">
                       <span
                         id="set-remind-enabled-label"
-                        className="text-xs text-secondary"
+                        className="text-xs text-muted-foreground"
                       >
                         Reminder
                       </span>
@@ -539,7 +539,7 @@ export function SettingsDrawer({
                     </div>
                     <div className="col-span-2 min-w-0">
                       <span className="label">Time zone</span>
-                      <p className="m-0 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-secondary">
+                      <p className="m-0 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-muted-foreground">
                         {browserTz}
                         {tzOffsetLabel(browserTz) ? (
                           <span className="text-muted-foreground">
@@ -556,7 +556,7 @@ export function SettingsDrawer({
                     </div>
                   </div>
                 ) : (
-                  <p className="m-0 mt-2 text-xs text-secondary">
+                  <p className="m-0 mt-2 text-xs text-muted-foreground">
                     Link Telegram above to get reminders.
                   </p>
                 )}
@@ -570,7 +570,7 @@ export function SettingsDrawer({
                 <h3 id="set-share" className="m-0 text-sm font-semibold">
                   Share progress
                 </h3>
-                <p className="m-0 mt-1 text-xs text-secondary">
+                <p className="m-0 mt-1 text-xs text-muted-foreground">
                   A read-only page with your numbers. No email or Telegram
                   details.
                 </p>
@@ -591,7 +591,7 @@ export function SettingsDrawer({
                       type="button"
                       variant="outline"
                       onClick={handleCopy}
-                      className="min-h-11 px-3 text-secondary hover:text-foreground"
+                      className="min-h-11 px-3 text-muted-foreground hover:text-foreground"
                     >
                       Copy
                     </Button>
@@ -601,7 +601,7 @@ export function SettingsDrawer({
                     variant="outline"
                     onClick={handleRotate}
                     disabled={sharePending}
-                    className="min-h-11 px-3 text-secondary hover:text-foreground"
+                    className="min-h-11 px-3 text-muted-foreground hover:text-foreground"
                   >
                     {sharePending
                       ? "Updating…"
@@ -610,7 +610,10 @@ export function SettingsDrawer({
                         : "Create link"}
                   </Button>
                   {copied && !sharePending && (
-                    <p role="status" className="m-0 text-xs text-secondary">
+                    <p
+                      role="status"
+                      className="m-0 text-xs text-muted-foreground"
+                    >
                       Copied.
                     </p>
                   )}
@@ -636,7 +639,7 @@ export function SettingsDrawer({
                     variant="outline"
                     onClick={() => handleExport("measurements")}
                     disabled={exporting != null}
-                    className="min-h-11 px-3 text-secondary hover:text-foreground"
+                    className="min-h-11 px-3 text-muted-foreground hover:text-foreground"
                   >
                     {exporting === "measurements"
                       ? "Exporting…"
@@ -647,7 +650,7 @@ export function SettingsDrawer({
                     variant="outline"
                     onClick={() => handleExport("intake")}
                     disabled={exporting != null}
-                    className="min-h-11 px-3 text-secondary hover:text-foreground"
+                    className="min-h-11 px-3 text-muted-foreground hover:text-foreground"
                   >
                     {exporting === "intake" ? "Exporting…" : "Intake CSV"}
                   </Button>
@@ -677,7 +680,10 @@ export function SettingsDrawer({
                   {pending ? "Saving…" : "Save changes"}
                 </Button>
                 {saved && !pending && (
-                  <p role="status" className="m-0 text-xs text-secondary">
+                  <p
+                    role="status"
+                    className="m-0 text-xs text-muted-foreground"
+                  >
                     Saved.
                   </p>
                 )}

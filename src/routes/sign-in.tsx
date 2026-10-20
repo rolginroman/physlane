@@ -75,7 +75,7 @@ function SignInPage() {
           <h1 className="m-0 text-lg font-semibold tracking-tight">
             Signing you in…
           </h1>
-          <p className="mt-1 mb-0 text-sm text-secondary">
+          <p className="mt-1 mb-0 text-sm text-muted-foreground">
             One moment while Telegram signs you in.
           </p>
         </div>
@@ -150,7 +150,7 @@ function SignInPage() {
     <main className="flex min-h-[calc(100dvh-3.5rem)] items-center justify-center px-4 py-10">
       <div className="card w-full max-w-sm p-6">
         <h1 className="m-0 text-lg font-semibold tracking-tight">Sign in</h1>
-        <p className="mt-1 mb-6 text-sm text-secondary">
+        <p className="mt-1 mb-6 text-sm text-muted-foreground">
           Weigh in, log intake, watch the trend.
         </p>
 
@@ -238,7 +238,7 @@ function SignInPage() {
           </Button>
         </form>
 
-        <p className="mt-5 mb-0 text-center text-sm text-secondary">
+        <p className="mt-5 mb-0 text-center text-sm text-muted-foreground">
           No account?{" "}
           <Link
             to="/sign-up"

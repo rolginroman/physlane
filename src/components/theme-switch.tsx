@@ -150,7 +150,7 @@ export function ThemeSwitch({
         type="button"
         aria-label={`Color theme: ${current.label}. Switch to ${next.label}`}
         onClick={() => setThemePreference(next.value)}
-        className={`inline-flex size-11 items-center justify-center rounded-full text-secondary hover:text-foreground sm:hidden ${className}`}
+        className={`inline-flex size-11 items-center justify-center rounded-full text-muted-foreground hover:text-foreground sm:hidden ${className}`}
       >
         <ThemeIcon value={preference} />
       </button>
@@ -169,7 +169,7 @@ export function ThemeSwitch({
               className={`min-h-9 cursor-pointer items-center justify-center rounded-full px-2.5 text-xs font-medium transition-colors duration-150 ease-out ${
                 checked
                   ? "bg-muted text-foreground"
-                  : "text-secondary hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {opt.label}
