@@ -13,6 +13,7 @@ import { shareUrl } from "#/lib/share";
 import { exportIntakeCsv, exportMeasurementsCsv } from "#/server/export.fns";
 import type { Sex } from "#/lib/navy-bf";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import { Switch } from "#/components/ui/switch";
 import { lengthFromInput, lengthToInput, type UnitSystem } from "#/lib/units";
 
 const SEX_RADIO_NONE = "none";
@@ -519,22 +520,23 @@ export function SettingsDrawer({
                         }}
                       />
                     </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={reminderEnabled}
-                      onClick={() => {
-                        setTime(reminderEnabled ? "" : time || "09:00");
-                        setSaved(false);
-                      }}
-                      className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-4 text-sm font-medium ${
-                        reminderEnabled
-                          ? "border-brand-text/60 bg-brand-text/10 text-brand-text"
-                          : "border-border text-secondary hover:text-foreground"
-                      }`}
-                    >
-                      {reminderEnabled ? "On" : "Off"}
-                    </button>
+                    <div className="flex min-h-11 flex-col items-end justify-end gap-1 pb-0.5">
+                      <span
+                        id="set-remind-enabled-label"
+                        className="text-xs text-secondary"
+                      >
+                        Reminder
+                      </span>
+                      <Switch
+                        id="set-remind-enabled"
+                        checked={reminderEnabled}
+                        aria-labelledby="set-remind-enabled-label"
+                        onCheckedChange={(checked) => {
+                          setTime(checked ? time || "09:00" : "");
+                          setSaved(false);
+                        }}
+                      />
+                    </div>
                     <div className="col-span-2 min-w-0">
                       <span className="label">Time zone</span>
                       <p className="m-0 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-secondary">
