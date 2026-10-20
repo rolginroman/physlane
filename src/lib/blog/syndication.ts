@@ -1,3 +1,4 @@
+import { LAST_UPDATED } from "#/lib/legal";
 import { SITE_URL } from "#/lib/seo";
 
 export interface SyndicationPost {
@@ -44,6 +45,8 @@ export function buildSitemapXml(posts: SyndicationPost[]): string {
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     urlEntry(`${SITE_URL}/`, homeLastmod),
     urlEntry(`${SITE_URL}/blog`, homeLastmod),
+    urlEntry(`${SITE_URL}/privacy`, LAST_UPDATED),
+    urlEntry(`${SITE_URL}/terms`, LAST_UPDATED),
     ...posts.map((p) => urlEntry(`${SITE_URL}/blog/${p.slug}`, p.updated)),
     "</urlset>",
   ];
