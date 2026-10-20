@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
+import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
 import {
   readThemePreference,
   setThemePreference,
@@ -149,37 +150,33 @@ export function ThemeSwitch({
         type="button"
         aria-label={`Color theme: ${current.label}. Switch to ${next.label}`}
         onClick={() => setThemePreference(next.value)}
-        className={`inline-flex size-11 items-center justify-center rounded-full text-dim hover:text-text sm:hidden ${className}`}
+        className={`inline-flex size-11 items-center justify-center rounded-full text-secondary hover:text-foreground sm:hidden ${className}`}
       >
         <ThemeIcon value={preference} />
       </button>
-      <div
-        role="radiogroup"
+      <RadioGroup
+        value={preference}
+        onValueChange={(next) => setThemePreference(next as ThemePreference)}
         aria-label="Color theme"
-        className={`hidden items-center gap-0.5 rounded-full border border-line bg-surface p-0.5 sm:inline-flex ${className}`}
+        className={`hidden w-auto items-center gap-0.5 rounded-full border border-border bg-card p-0.5 sm:inline-flex ${className}`}
       >
         {OPTIONS.map((opt) => {
           const checked = preference === opt.value;
           return (
-            <label
+            <RadioGroupItem
               key={opt.value}
-              className={`relative inline-flex min-h-9 cursor-pointer items-center justify-center rounded-full px-2.5 text-xs font-medium transition-colors duration-150 ease-out has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring ${
-                checked ? "bg-surface2 text-text" : "text-dim hover:text-text"
+              value={opt.value}
+              className={`min-h-9 cursor-pointer items-center justify-center rounded-full px-2.5 text-xs font-medium transition-colors duration-150 ease-out ${
+                checked
+                  ? "bg-muted text-foreground"
+                  : "text-secondary hover:text-foreground"
               }`}
             >
-              <input
-                type="radio"
-                name="theme"
-                value={opt.value}
-                checked={checked}
-                className="sr-only"
-                onChange={() => setThemePreference(opt.value)}
-              />
               {opt.label}
-            </label>
+            </RadioGroupItem>
           );
         })}
-      </div>
+      </RadioGroup>
     </>
   );
 }

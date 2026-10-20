@@ -12,7 +12,19 @@ import { rotateShareLink } from "#/server/share.fns";
 import { shareUrl } from "#/lib/share";
 import { exportIntakeCsv, exportMeasurementsCsv } from "#/server/export.fns";
 import type { Sex } from "#/lib/navy-bf";
+import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
 import { lengthFromInput, lengthToInput, type UnitSystem } from "#/lib/units";
+
+const SEX_RADIO_NONE = "none";
+
+function sexToRadioValue(sex: Sex | null): string {
+  return sex ?? SEX_RADIO_NONE;
+}
+
+function sexFromRadioValue(value: string): Sex | null {
+  if (value === SEX_RADIO_NONE) return null;
+  return value as Sex;
+}
 
 const SEX_OPTIONS: { value: Sex | null; label: string }[] = [
   { value: null, label: "Prefer not to say" },
@@ -363,28 +375,26 @@ export function SettingsDrawer({
                 <h3 id="set-units" className="m-0 text-sm font-semibold">
                   Units
                 </h3>
-                <div
-                  role="radiogroup"
+                <RadioGroup
+                  value={units}
+                  onValueChange={(next) => pickUnits(next as UnitSystem)}
                   aria-labelledby="set-units"
                   className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted p-1"
                 >
                   {(["metric", "imperial"] as const).map((u) => (
-                    <button
+                    <RadioGroupItem
                       key={u}
-                      type="button"
-                      role="radio"
-                      aria-checked={units === u}
-                      onClick={() => pickUnits(u)}
-                      className={`min-h-11 rounded-md px-3 text-sm font-medium ${
+                      value={u}
+                      className={`min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium ${
                         units === u
                           ? "bg-card text-foreground"
                           : "text-secondary hover:text-foreground"
                       }`}
                     >
                       {u === "metric" ? "Metric (kg, cm)" : "Imperial (lb, in)"}
-                    </button>
+                    </RadioGroupItem>
                   ))}
-                </div>
+                </RadioGroup>
               </section>
 
               {/* Profile */}
@@ -433,31 +443,29 @@ export function SettingsDrawer({
                     <span className="label" id="set-sex-label">
                       Sex
                     </span>
-                    <div
-                      role="radiogroup"
+                    <RadioGroup
+                      value={sexToRadioValue(sexChoice)}
+                      onValueChange={(next) => {
+                        setSexChoice(sexFromRadioValue(next));
+                        setSaved(false);
+                      }}
                       aria-labelledby="set-sex-label"
                       className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-muted p-1"
                     >
                       {SEX_OPTIONS.map((opt) => (
-                        <button
+                        <RadioGroupItem
                           key={opt.label}
-                          type="button"
-                          role="radio"
-                          aria-checked={sexChoice === opt.value}
-                          onClick={() => {
-                            setSexChoice(opt.value);
-                            setSaved(false);
-                          }}
-                          className={`min-h-11 rounded-md px-2 text-sm font-medium ${
+                          value={sexToRadioValue(opt.value)}
+                          className={`min-h-11 items-center justify-center rounded-md px-2 text-sm font-medium ${
                             sexChoice === opt.value
                               ? "bg-card text-foreground"
                               : "text-secondary hover:text-foreground"
                           }`}
                         >
                           {opt.label}
-                        </button>
+                        </RadioGroupItem>
                       ))}
-                    </div>
+                    </RadioGroup>
                   </div>
                 </div>
               </section>

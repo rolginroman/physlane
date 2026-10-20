@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { isAppErrorCode } from "#/lib/app-error";
+import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
 import {
   billingStatus,
   createBillingPortal,
@@ -108,7 +109,7 @@ function FeatureList({ items }: { items: string[] }) {
       {items.map((item) => (
         <li key={item} className="flex items-start gap-2.5">
           <Check />
-          <span className="text-sm text-dim">{item}</span>
+          <span className="text-sm text-secondary">{item}</span>
         </li>
       ))}
     </ul>
@@ -144,31 +145,30 @@ function IntervalPicker({
     ...PRICING[id],
   }));
   return (
-    <div
-      role="radiogroup"
+    <RadioGroup
+      value={value}
+      onValueChange={(next) => onChange(next as Interval)}
       aria-label="Billing interval"
+      disabled={disabled}
       className="grid grid-cols-2 gap-2"
     >
       {options.map((o) => {
         const active = value === o.id;
         return (
-          <button
+          <RadioGroupItem
             key={o.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
+            value={o.id}
             disabled={disabled}
-            onClick={() => onChange(o.id)}
-            className={`flex min-h-[96px] flex-col items-start rounded-xl border p-3.5 text-left transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`flex min-h-[96px] flex-col items-start rounded-xl border p-3.5 text-left transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-60 ${
               active
-                ? "border-brand bg-brand-soft/50"
-                : "border-line bg-surface hover:border-line2"
+                ? "border-primary bg-brand-soft/50"
+                : "border-border bg-card hover:border-border"
             }`}
           >
             <span className="font-display text-[1.875rem] leading-none">
               {o.price}
             </span>
-            <span className="mt-1 text-xs text-dim">{o.sub}</span>
+            <span className="mt-1 text-xs text-secondary">{o.sub}</span>
             {o.flag ? (
               <span className="mt-2 text-[0.625rem] font-semibold uppercase tracking-wide text-brand-text">
                 {o.flag}
@@ -182,12 +182,14 @@ function IntervalPicker({
               </span>
             )}
             {o.effective ? (
-              <span className="num mt-0.5 text-xs text-dim">{o.effective}</span>
+              <span className="num mt-0.5 text-xs text-secondary">
+                {o.effective}
+              </span>
             ) : null}
-          </button>
+          </RadioGroupItem>
         );
       })}
-    </div>
+    </RadioGroup>
   );
 }
 
@@ -274,7 +276,7 @@ function BillingPage() {
       {checkout === "success" && (
         <p
           role="status"
-          className="mt-4 rounded-lg border border-brand-text/40 bg-brand-text/10 px-3 py-2.5 text-sm text-text"
+          className="mt-4 rounded-lg border border-brand-text/40 bg-brand-text/10 px-3 py-2.5 text-sm text-foreground"
         >
           {plan === "pro"
             ? "Pro is active. Every Pro feature is unlocked."
@@ -284,7 +286,7 @@ function BillingPage() {
       {checkout === "cancelled" && (
         <p
           role="status"
-          className="mt-4 rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-dim"
+          className="mt-4 rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-secondary"
         >
           Checkout cancelled. Nothing was charged.
         </p>
@@ -302,12 +304,12 @@ function BillingPage() {
       {!configured && (
         <div
           role="note"
-          className="mt-4 rounded-xl border border-line bg-surface px-4 py-3.5"
+          className="mt-4 rounded-xl border border-border bg-card px-4 py-3.5"
         >
-          <p className="m-0 text-sm font-medium text-text">
+          <p className="m-0 text-sm font-medium text-foreground">
             Online checkout is not enabled yet
           </p>
-          <p className="m-0 mt-1 text-sm text-dim">
+          <p className="m-0 mt-1 text-sm text-secondary">
             {plan === "pro"
               ? "Card billing goes live shortly. Nothing can be charged today. Your Pro plan stays active in the meantime."
               : "Card billing goes live shortly. Nothing can be charged today. Your free plan keeps working in full: logging, charts, cycles, streaks."}
@@ -319,11 +321,11 @@ function BillingPage() {
         <div className="card mt-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="m-0 text-base font-semibold">Current plan: Free</h2>
-            <p className="num m-0 text-sm text-dim">$0</p>
+            <p className="num m-0 text-sm text-secondary">$0</p>
           </div>
           <FeatureList items={FREE_FEATURES} />
 
-          <div className="mt-5 border-t border-line pt-4">
+          <div className="mt-5 border-t border-border pt-4">
             <h3 className="m-0 flex flex-wrap items-baseline gap-2">
               <span className="font-display text-[1.375rem] leading-none">
                 Pro
@@ -363,7 +365,7 @@ function BillingPage() {
                 </div>
               </>
             ) : (
-              <p className="m-0 mt-2 text-sm text-dim">
+              <p className="m-0 mt-2 text-sm text-secondary">
                 Pro pricing will be $10 per month or $100 per year once checkout
                 is enabled. The estimate keeps building from your data in the
                 meantime.
@@ -381,18 +383,20 @@ function BillingPage() {
               </span>
             </h2>
             {renewalDate && (
-              <p className="num m-0 text-sm text-dim">Renews {renewalDate}</p>
+              <p className="num m-0 text-sm text-secondary">
+                Renews {renewalDate}
+              </p>
             )}
           </div>
           <FeatureList items={PRO_FEATURES} />
-          <div className="mt-4 border-t border-line pt-4">
+          <div className="mt-4 border-t border-border pt-4">
             {configured ? (
               <>
                 <button
                   type="button"
                   onClick={openPortal}
                   disabled={pending !== null}
-                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-surface2 px-4 text-sm font-semibold text-text transition-colors duration-150 ease-out hover:border-line2 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-muted px-4 text-sm font-semibold text-foreground transition-colors duration-150 ease-out hover:border-border2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {pending === "portal"
                     ? "Opening portal…"
@@ -404,7 +408,7 @@ function BillingPage() {
                 </p>
               </>
             ) : (
-              <p className="m-0 text-sm text-dim">
+              <p className="m-0 text-sm text-secondary">
                 Subscription management is unavailable while checkout is
                 offline. Your Pro plan stays active.
               </p>
@@ -413,7 +417,7 @@ function BillingPage() {
         </div>
       )}
 
-      <p className="mt-6 mb-0 text-xs text-faint">
+      <p className="mt-6 mb-0 text-xs text-muted-foreground">
         Only manual numbers are stored. No bank or social integrations, ever.
       </p>
     </section>
