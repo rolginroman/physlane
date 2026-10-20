@@ -4,7 +4,7 @@ import {
   buildRssXml,
   buildSitemapXml,
   type SyndicationPost,
-} from "./syndication";
+} from "../syndication";
 
 const postA: SyndicationPost = {
   slug: "what-is-tdee",

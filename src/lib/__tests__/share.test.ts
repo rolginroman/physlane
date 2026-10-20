@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newShareToken, publicFirstName, shareUrl } from "./share";
+import { newShareToken, publicFirstName, shareUrl } from "../share";
 
 describe("newShareToken", () => {
   it("is 32 hex chars, no dashes", () => {

@@ -14,7 +14,7 @@ import {
   rateToInput,
   weightFromInput,
   leanMassRisk,
-} from "./units";
+} from "../units";
 
 describe("unit conversions — round trips", () => {
   it("kg ↔ lb round trips", () => {

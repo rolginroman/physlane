@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveUserPatch, type PlanUserState } from "./billing.core";
+import { deriveUserPatch, type PlanUserState } from "../billing.core";
 
 const freeUser = (): PlanUserState => ({
   plan: "free",

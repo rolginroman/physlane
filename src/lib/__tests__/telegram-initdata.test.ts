@@ -16,7 +16,7 @@ import { betterAuth } from "better-auth";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { describe, expect, it } from "vitest";
 import { telegram } from "tele-better-auth";
-import { validateTelegramInitData } from "./telegram-verify";
+import { validateTelegramInitData } from "../telegram-verify";
 
 const BOT_TOKEN = "123456:TEST-TOKEN";
 

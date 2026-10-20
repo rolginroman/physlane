@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkEmail } from "./waitlist";
+import { checkEmail } from "../waitlist";
 
 describe("checkEmail", () => {
   it("accepts a normal address and normalizes case + surrounding spaces", () => {

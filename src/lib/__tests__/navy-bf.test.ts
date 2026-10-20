@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { navyBodyFat, type Sex } from "./navy-bf";
+import { navyBodyFat, type Sex } from "../navy-bf";
 
 const CM_PER_IN = 2.54;
 /** The inch value of a centimetre measurement. */

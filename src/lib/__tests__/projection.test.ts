@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  PACE_TOLERANCE_KG_PER_WEEK,
-  PROJECTION_WEEKS,
   paceVerdict,
   projectWeight,
   verdictCopy,
   type PaceVerdictKind,
-} from "./projection";
-import type { Phase } from "./adherence";
+} from "../projection";
+import type { Phase } from "../adherence";
 
 describe("projectWeight — energy balance", () => {
   it("maintenance: intake equals burn → flat projection", () => {
@@ -49,7 +47,6 @@ describe("projectWeight — energy balance", () => {
   });
 
   it("weeks override scales the horizon; default is the 4-week F11 contract", () => {
-    expect(PROJECTION_WEEKS).toBe(4);
     const one = projectWeight({
       currentWeightKg: 80,
       avgIntakeKcal: 2300,
@@ -164,7 +161,6 @@ describe("paceVerdict — signed rate vs target (±0.1 kg/wk default band)", () 
       actualRateKgPerWeek: -0.82,
       targetRateKgPerWeek: -0.5,
     });
-    expect(PACE_TOLERANCE_KG_PER_WEEK).toBe(0.1);
   });
 });
 

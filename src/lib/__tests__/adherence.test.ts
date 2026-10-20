@@ -8,7 +8,7 @@ import {
   lastNDates,
   tdeeEnergyCopy,
   type IntakeDay,
-} from "./adherence";
+} from "../adherence";
 
 const day = (start: string, n: number) => addDays(start, n);
 const row = (

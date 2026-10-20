@@ -5,8 +5,8 @@ import {
   estimateMovedSinceApply,
   targetPromptEligible,
   type TargetPromptState,
-} from "./target-prompt";
-import { normalizeTargetKcal } from "./kcal-start";
+} from "../target-prompt";
+import { normalizeTargetKcal } from "../kcal-start";
 
 const DAY_MS = 86_400_000;
 const NOW = new Date("2026-10-18T12:00:00Z");

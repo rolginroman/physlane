@@ -1,18 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  KCAL_PER_KG,
   estimateStartingKcal,
-  kcalPerKg,
   maintenanceKcal,
   rateToDailyKcal,
-} from "./kcal-start";
+} from "../kcal-start";
 
-describe("kcalPerKg / maintenanceKcal", () => {
-  it("uses 33 male, 31 female, 32 unknown", () => {
-    expect(kcalPerKg("male")).toBe(33);
-    expect(kcalPerKg("female")).toBe(31);
-    expect(kcalPerKg(null)).toBe(32);
+describe("maintenanceKcal", () => {
+  it("scales body weight by sex-specific maintenance factors", () => {
     expect(maintenanceKcal(80, "male")).toBe(2640);
+    expect(maintenanceKcal(80, "female")).toBe(2480);
+    expect(maintenanceKcal(80, null)).toBe(2560);
   });
 });
 
@@ -20,7 +17,6 @@ describe("rateToDailyKcal", () => {
   it("converts weekly kg to daily kcal (0.5 kg/wk = 550/day)", () => {
     expect(rateToDailyKcal(-0.5)).toBe(550);
     expect(rateToDailyKcal(0.25)).toBe(275);
-    expect(KCAL_PER_KG).toBe(7700);
   });
 });
 

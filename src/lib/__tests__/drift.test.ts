@@ -4,7 +4,7 @@ import {
   driftWindows,
   type DriftDay,
   type DriftWindow,
-} from "./drift";
+} from "../drift";
 
 // Anchor series: 8 flat weekly estimates at 2600 (the honest history).
 const weekly = Array.from({ length: 8 }, (_, i) => ({

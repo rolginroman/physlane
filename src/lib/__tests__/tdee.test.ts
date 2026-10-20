@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeTdee, type TdeeEntry } from "./tdee";
+import { computeTdee, type TdeeEntry } from "../tdee";
 
 const DAY_MS = 86_400_000;
 

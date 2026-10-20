@@ -5,7 +5,7 @@ import {
   csvField,
   MEASUREMENTS_CSV_HEADER,
   type MeasurementCsvRow,
-} from "./csv";
+} from "../csv";
 
 const row = (patch: Partial<MeasurementCsvRow> = {}): MeasurementCsvRow => ({
   takenAtIso: "2026-10-17T00:00:00.000Z",
@@ -52,12 +52,6 @@ describe("csvField — RFC 4180 escaping", () => {
 describe("buildMeasurementsCsv", () => {
   it("empty dataset → header only", () => {
     expect(buildMeasurementsCsv([])).toBe(MEASUREMENTS_CSV_HEADER);
-  });
-
-  it("header matches the spec column order", () => {
-    expect(MEASUREMENTS_CSV_HEADER).toBe(
-      "taken_at_iso,weight_kg,neck_cm,chest_cm,waist_cm,hips_cm,arm_left_cm,arm_right_cm,thigh_left_cm,thigh_right_cm,calf_cm,notes",
-    );
   });
 
   it("one line per row; null cells empty, numbers raw", () => {

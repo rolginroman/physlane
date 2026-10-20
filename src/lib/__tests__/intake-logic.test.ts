@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidIntakeDate, validateIntake } from "./intake-logic";
+import { isValidIntakeDate, validateIntake } from "../intake-logic";
 
 describe("isValidIntakeDate", () => {
   it("accepts canonical real dates", () => {

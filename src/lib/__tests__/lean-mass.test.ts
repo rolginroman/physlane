@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { leanMassStatus, weeklyRates, type RateSample } from "./lean-mass";
+import { leanMassStatus, weeklyRates, type RateSample } from "../lean-mass";
 
 const DAY = 86_400_000;
 

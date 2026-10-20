@@ -20,7 +20,6 @@ export default defineConfig({
     },
   },
   test: {
-    // TODO(3e): drop src/**/*.test.ts once tests move
-    include: ["src/**/*.test.ts", "src/**/__tests__/**/*.test.{ts,tsx}"],
+    include: ["src/**/__tests__/**/*.test.{ts,tsx}"],
   },
 });

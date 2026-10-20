@@ -10,7 +10,7 @@ import {
   REMINDER_BUCKET_MINUTES,
   shouldRemind,
   timingSafeEqual,
-} from "./remind";
+} from "../remind";
 
 /* 2026 US DST: starts Sun Mar 8, ends Sun Nov 1. */
 const WINTER = Date.UTC(2026, 0, 15, 12, 0, 0); // Jan 15 — EST in New York

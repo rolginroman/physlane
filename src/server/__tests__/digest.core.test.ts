@@ -4,7 +4,7 @@ import {
   renderDigest,
   shouldSendDigest,
   type DigestInput,
-} from "./digest.core";
+} from "../digest.core";
 
 const DAY_MS = 86_400_000;
 const TZ = "UTC";

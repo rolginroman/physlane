@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { daysToTight, estimateBand, shapeTdeeStatus } from "./band";
-import type { TdeeResult } from "./tdee";
-import type { TargetPromptState } from "./target-prompt";
+import { daysToTight, estimateBand, shapeTdeeStatus } from "../band";
+import type { TdeeResult } from "../tdee";
+import type { TargetPromptState } from "../target-prompt";
 
 const freshState: TargetPromptState = {
   lastAppliedAt: null,
