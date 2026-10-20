@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { and, asc, desc, eq, gte } from "drizzle-orm";
-import { useDb, schema } from "#/db";
+import { useDb } from "#/db/client";
+import * as schema from "#/db/schema";
 import { requireUser } from "./auth.fns";
 
 const FREE_HISTORY_DAYS = 90;

@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { env } from "cloudflare:workers";
-import { useDb, schema } from "#/db";
+import { useDb } from "#/db/client";
+import * as schema from "#/db/schema";
 import { useStripe } from "#/lib/stripe";
 import { deriveUserPatch, type PlanUserPatch } from "#/server/billing.core";
 

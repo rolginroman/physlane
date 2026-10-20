@@ -1,4 +1,4 @@
-import type { BlogPost } from "#/lib/blog";
+import type { BlogPost } from "#/lib/blog/posts";
 import { ogImageForPost } from "#/lib/blog/og";
 import { SITE_URL } from "#/lib/seo";
 

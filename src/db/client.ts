@@ -6,5 +6,3 @@ import * as schema from "./schema";
 export function useDb() {
   return drizzle(env.DB, { schema });
 }
-
-export { schema };

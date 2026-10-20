@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
-import { useDb, schema } from "#/db";
+import { useDb } from "#/db/client";
+import * as schema from "#/db/schema";
 import { checkEmail } from "#/lib/waitlist";
 
 export type JoinWaitlistResult =

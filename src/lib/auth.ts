@@ -3,7 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { telegram } from "tele-better-auth";
 import { env } from "cloudflare:workers";
-import { useDb } from "#/db";
+import { useDb } from "#/db/client";
 
 export function useAuth() {
   // Telegram auth is env-optional: without a bot token the plugin is skipped

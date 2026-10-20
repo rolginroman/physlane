@@ -7,8 +7,8 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { describe, expect, it } from "vitest";
-import type { BlogPost } from "#/lib/blog";
-import Listing, { listingModel } from "./Listing";
+import type { BlogPost } from "#/lib/blog/posts";
+import Listing, { listingModel } from "./listing";
 
 const fixture: BlogPost[] = [
   {

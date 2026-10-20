@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import type { BlogPost } from "#/lib/blog";
+import type { BlogPost } from "#/lib/blog/posts";
 
 const categoryLabel: Record<BlogPost["category"], string> = {
   training: "Training",

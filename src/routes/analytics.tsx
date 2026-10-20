@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import SiteShell, { Arrow } from "../components/site/SiteShell";
+import SiteShell, { Arrow } from "../components/site/site-shell";
 import { ConvergeFigure } from "../components/site/charts";
 import { LearnIcon, TapeIcon, TrendIcon } from "../components/site/icons";
 import {
@@ -10,7 +10,7 @@ import {
   PageHero,
   Steps,
 } from "../components/site/sections";
-import SiteTable from "../components/site/SiteTable";
+import SiteTable from "../components/site/site-table";
 
 const SITE_URL = "https://physlane.unpackit.top";
 const TITLE = "Measure Your TDEE From Your Own Logs · physlane";

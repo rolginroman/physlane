@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
-import { useDb, schema } from "#/db";
+import { useDb } from "#/db/client";
+import * as schema from "#/db/schema";
 import type { TdeeEntry } from "#/lib/tdee";
 
 /**

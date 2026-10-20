@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
-import { useDb, schema } from "#/db";
+import { useDb } from "#/db/client";
+import * as schema from "#/db/schema";
 import { requireUser } from "./auth.fns";
 import { useStripe, stripeConfigured } from "#/lib/stripe";
 

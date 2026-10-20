@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { getAllPosts, selectVisible, type BlogPost } from "./index";
+import { getAllPosts, selectVisible, type BlogPost } from "./posts";
 import { parseBlogFile } from "./schema";
 import { ogImageForPost } from "./og";
 import { seoHead, SITE_URL } from "../seo";

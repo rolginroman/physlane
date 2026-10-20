@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import SiteShell, { Arrow } from "../components/site/SiteShell";
+import SiteShell, { Arrow } from "../components/site/site-shell";
 import { Bars, ConvergeFigure, SparkChart } from "../components/site/charts";
-import DashboardPreview from "../components/site/DashboardPreview";
+import DashboardPreview from "../components/site/dashboard-preview";
 import {
   AdjustIcon,
   LearnIcon,

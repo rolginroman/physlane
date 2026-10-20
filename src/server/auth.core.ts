@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { useDb } from "#/db";
+import { useDb } from "#/db/client";
 import { useAuth } from "#/lib/auth";
 import { isValidTimeZone, normalizeReminderTime } from "#/lib/remind";
 import { getRequestHeaders } from "@tanstack/react-start/server";

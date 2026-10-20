@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTelegramMode } from "#/lib/telegram-mode";
-import ThemeSwitch from "#/components/ThemeSwitch";
-import ThemeToggleButton from "#/components/ThemeToggleButton";
+import ThemeSwitch from "#/components/theme-switch";
+import ThemeToggleButton from "#/components/theme-toggle-button";
 import "../../styles/site.css";
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

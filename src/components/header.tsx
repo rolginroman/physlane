@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useSession } from "#/lib/auth-client";
 import { useTelegramMode } from "#/lib/telegram-mode";
-import SettingsDrawer from "#/components/SettingsDrawer";
-import ThemeSwitch from "#/components/ThemeSwitch";
+import SettingsDrawer from "#/components/settings-drawer";
+import ThemeSwitch from "#/components/theme-switch";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },

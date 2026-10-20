@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import SiteShell, { Arrow } from "../components/site/SiteShell";
-import DashboardPreview from "../components/site/DashboardPreview";
+import SiteShell, { Arrow } from "../components/site/site-shell";
+import DashboardPreview from "../components/site/dashboard-preview";
 import { LearnIcon, LogIcon, OpenIcon } from "../components/site/icons";
 import {
   ART_PANEL_SIZES,
@@ -10,7 +10,7 @@ import {
   PageHero,
   Steps,
 } from "../components/site/sections";
-import SiteTable from "../components/site/SiteTable";
+import SiteTable from "../components/site/site-table";
 
 const SITE_URL = "https://physlane.unpackit.top";
 const TITLE = "Daily Weight and Calorie Log · physlane";

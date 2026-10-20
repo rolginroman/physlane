@@ -8,7 +8,7 @@ import {
   type DailyIntakeDTO,
 } from "#/server/intake.fns";
 import { getViewer } from "#/lib/auth-guard.fns";
-import { StreakChip } from "#/components/TdeePanel";
+import { StreakChip } from "#/components/tdee-panel";
 import {
   addDays,
   adherence7d,

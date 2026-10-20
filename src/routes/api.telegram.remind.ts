@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { env } from "cloudflare:workers";
-import { useDb, schema } from "#/db";
+import { useDb } from "#/db/client";
+import * as schema from "#/db/schema";
 import { intakeStreak } from "#/lib/adherence";
 import {
   localDate,

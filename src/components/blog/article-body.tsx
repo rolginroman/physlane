@@ -1,6 +1,6 @@
-import SiteShell from "#/components/site/SiteShell";
-import { getPost, type BlogPost } from "#/lib/blog";
-import Chart from "./Chart";
+import SiteShell from "#/components/site/site-shell";
+import { getPost, type BlogPost } from "#/lib/blog/posts";
+import Chart from "./chart";
 
 const categoryLabel: Record<BlogPost["category"], string> = {
   training: "Training",
