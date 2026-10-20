@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "src/routeTree.gen.ts",
+    "worker-configuration.d.ts",
+    "dist/**",
+    ".wrangler/**",
+    "public/**"
+  ],
+  "rules": {
+    "typescript/no-explicit-any": "error"
+  }
+}

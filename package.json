@@ -13,6 +13,9 @@
     "deploy": "pnpm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "typecheck": "tsc --noEmit",
+    "lint": "oxlint src vite.config.ts vitest.config.ts drizzle.config.ts scripts",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "stripe:fixtures": "stripe fixtures stripe/fixtures.json"
@@ -45,6 +48,8 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "drizzle-kit": "^0.31.11",
+    "oxfmt": "^0.73.0",
+    "oxlint": "^1.88.0",
     "rehype-slug": "^6.0.0",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
