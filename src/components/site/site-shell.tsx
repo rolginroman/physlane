@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTelegramMode } from "#/lib/telegram-mode";
-import ThemeSwitch from "#/components/theme-switch";
-import ThemeToggleButton from "#/components/theme-toggle-button";
+import { ThemeSwitch } from "#/components/theme-switch";
+import { ThemeToggleButton } from "#/components/theme-toggle-button";
 import "../../styles/site.css";
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -57,7 +57,7 @@ export function Arrow() {
  * toggle, app access and a mobile menu disclosure; footer with the theme
  * switch. site.css is imported here only, so it reaches public routes only.
  */
-export default function SiteShell({ children }: { children: ReactNode }) {
+export function SiteShell({ children }: { children: ReactNode }) {
   const tgMode = useTelegramMode();
   const appHref = tgMode ? "/dashboard" : "/sign-in";
   const [menuOpen, setMenuOpen] = useState(false);

@@ -2,8 +2,8 @@ import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useSession } from "#/lib/auth-client";
 import { useTelegramMode } from "#/lib/telegram-mode";
-import SettingsDrawer from "#/components/settings-drawer";
-import ThemeSwitch from "#/components/theme-switch";
+import { SettingsDrawer } from "#/components/settings-drawer";
+import { ThemeSwitch } from "#/components/theme-switch";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
@@ -18,7 +18,7 @@ const navLinkBase =
 const navLinkWide =
   "hidden min-h-11 items-center rounded-md px-2.5 text-sm font-medium sm:inline-flex";
 
-export default function Header() {
+export function Header() {
   const { data: session, isPending } = useSession();
   // Telegram mode: slim the header, no marketing CTAs.
   const tgMode = useTelegramMode();

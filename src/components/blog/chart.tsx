@@ -13,7 +13,7 @@ export type ChartProps = {
   source?: string;
 };
 
-export default function Chart({ data, title, source }: ChartProps) {
+export function Chart({ data, title, source }: ChartProps) {
   const chartData = data.map((point) => ({
     name: String(point.x),
     value: point.y,

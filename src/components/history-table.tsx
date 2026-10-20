@@ -205,7 +205,7 @@ function DetailFields({
 const hasDetailFields = (entry: MeasurementDTO) =>
   DETAIL_FIELDS.some((f) => entry[f] != null) || Boolean(entry.notes?.trim());
 
-export default function HistoryTable({ entries, units, onEdit }: Props) {
+export function HistoryTable({ entries, units, onEdit }: Props) {
   const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);

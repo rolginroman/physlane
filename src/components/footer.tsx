@@ -6,7 +6,7 @@ import { useTelegramMode } from "#/lib/telegram-mode";
  * stance), app surfaces keep the one-liner product register. Inside Telegram
  * the marketing footer is dropped everywhere — dense shell, no nav duplication.
  */
-export default function Footer() {
+export function Footer() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const tgMode = useTelegramMode();
   const isLanding = path === "/";

@@ -22,7 +22,7 @@ import {
   weightFromInput,
   type UnitSystem,
 } from "#/lib/units";
-import PhaseLabel from "#/components/phase-label";
+import { PhaseLabel } from "#/components/phase-label";
 
 export const Route = createFileRoute("/_auth/cycles")({
   head: () => ({ meta: [{ title: "Cycles · physlane" }] }),

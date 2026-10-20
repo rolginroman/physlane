@@ -281,7 +281,7 @@ function Glp1Row({ plan, onGlp1 }: { plan: "free" | "pro"; onGlp1: boolean }) {
   );
 }
 
-export default function TdeePanel({
+export function TdeePanel({
   status,
   streak,
   plan,

@@ -33,7 +33,7 @@ export function WeightTrendCard({ chartHeight }: { chartHeight?: number }) {
  * Example dashboard card (DESIGN.md §8.1). `tab` selects the highlighted tab
  * in the bar; the cards are the same on every tab.
  */
-export default function DashboardPreview({
+export function DashboardPreview({
   tab = "Overview",
 }: {
   tab?: (typeof TABS)[number];

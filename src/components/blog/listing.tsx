@@ -18,7 +18,7 @@ export function listingModel(posts: BlogPost[]) {
   }));
 }
 
-export default function Listing({ posts }: { posts: BlogPost[] }) {
+export function Listing({ posts }: { posts: BlogPost[] }) {
   const cards = listingModel(posts);
 
   if (cards.length === 0) {

@@ -1,6 +1,6 @@
-import SiteShell from "#/components/site/site-shell";
+import { SiteShell } from "#/components/site/site-shell";
 import { getPost, type BlogPost } from "#/lib/blog/posts";
-import Chart from "./chart";
+import { Chart } from "./chart";
 
 const categoryLabel: Record<BlogPost["category"], string> = {
   training: "Training",
@@ -12,7 +12,7 @@ export function resolvePost(slug: string): BlogPost | undefined {
   return getPost(slug);
 }
 
-export default function ArticleBody({ post }: { post: BlogPost }) {
+export function ArticleBody({ post }: { post: BlogPost }) {
   const showPublished = post.updated !== post.published;
 
   return (

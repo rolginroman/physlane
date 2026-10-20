@@ -6,7 +6,7 @@ const isNumeric = (cell: ReactNode) =>
   /^[≈±+−-]?\s?[\d.,]+(\s?[a-z%/]{1,6})?$/i.test(cell);
 
 /** Two-or-more column spec table: hairline rules, tabular figures in numeric cells, no zebra. */
-export default function SiteTable({
+export function SiteTable({
   caption,
   columns,
   rows,

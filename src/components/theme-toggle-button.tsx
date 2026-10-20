@@ -12,11 +12,7 @@ import {
  * One-click theme flip for the site header: switches to the opposite of the
  * currently resolved theme and persists it as an explicit preference.
  */
-export default function ThemeToggleButton({
-  className = "",
-}: {
-  className?: string;
-}) {
+export function ThemeToggleButton({ className = "" }: { className?: string }) {
   const preference = useSyncExternalStore(
     subscribeThemePreference,
     readThemePreference,

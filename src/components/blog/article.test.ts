@@ -9,7 +9,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { getPost } from "#/lib/blog/posts";
 import { SITE_URL } from "#/lib/seo";
-import ArticleBody, { resolvePost } from "./article-body";
+import { ArticleBody, resolvePost } from "./article-body";
 import { blogPostingJsonLd } from "./jsonld";
 
 describe("blogPostingJsonLd", () => {

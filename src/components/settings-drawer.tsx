@@ -85,7 +85,7 @@ interface ViewerSettings {
   shareToken: string | null;
 }
 
-export default function SettingsDrawer({
+export function SettingsDrawer({
   open,
   onClose,
 }: {

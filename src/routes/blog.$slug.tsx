@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import ArticleBody, { resolvePost } from "#/components/blog/article-body";
+import { ArticleBody, resolvePost } from "#/components/blog/article-body";
 import { blogPostingJsonLd } from "#/components/blog/jsonld";
 import { ogImageForPost } from "#/lib/blog/og";
 import { seoHead } from "#/lib/seo";

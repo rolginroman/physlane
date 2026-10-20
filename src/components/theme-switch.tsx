@@ -83,7 +83,7 @@ function ThemeIcon({ value }: { value: ThemePreference }) {
  * Header control; `segmented` renders text-only options styled by the
  * site's `.theme-seg` rules (src/styles/site.css).
  */
-export default function ThemeSwitch({
+export function ThemeSwitch({
   className = "",
   variant = "pill",
 }: {

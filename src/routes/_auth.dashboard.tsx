@@ -16,11 +16,11 @@ import {
   showMainButton,
 } from "#/lib/telegram-web";
 import { useTelegramMode } from "#/lib/telegram-mode";
-import MeasurementForm from "#/components/measurement-form";
-import HistoryTable from "#/components/history-table";
-import TrendChart from "#/components/trend-chart";
-import TdeePanel from "#/components/tdee-panel";
-import PhaseLabel from "#/components/phase-label";
+import { MeasurementForm } from "#/components/measurement-form";
+import { HistoryTable } from "#/components/history-table";
+import { TrendChart } from "#/components/trend-chart";
+import { TdeePanel } from "#/components/tdee-panel";
+import { PhaseLabel } from "#/components/phase-label";
 import {
   fmtLength,
   fmtWeight,

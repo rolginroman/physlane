@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Listing from "#/components/blog/listing";
-import SiteShell from "#/components/site/site-shell";
+import { Listing } from "#/components/blog/listing";
+import { SiteShell } from "#/components/site/site-shell";
 import { getAllPosts } from "#/lib/blog/posts";
 import { ogUrl } from "#/lib/blog/og";
 import { seoHead } from "#/lib/seo";

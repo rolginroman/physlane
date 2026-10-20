@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import TrendChart from "#/components/trend-chart";
+import { TrendChart } from "#/components/trend-chart";
 import type { MeasurementDTO } from "#/server/measurements.fns";
 import type { CycleDTO } from "#/server/cycles.fns";
 import { getSharedCard, type SharedCard } from "#/server/share.fns";

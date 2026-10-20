@@ -191,7 +191,7 @@ function ChipScroller({
   );
 }
 
-export default function TrendChart({
+export function TrendChart({
   entries,
   cycle,
   units,

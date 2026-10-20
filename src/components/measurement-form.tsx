@@ -49,7 +49,7 @@ type Props = {
   lastWeightKg?: number | null;
 };
 
-export default function MeasurementForm({
+export function MeasurementForm({
   units,
   editing,
   onEditDone,
