@@ -36,6 +36,50 @@ Deploy: `pnpm build && npx wrangler deploy -c dist/server/wrangler.json`
 `user.plan` is written **only** by the Stripe webhook (`src/routes/api.stripe.webhook.ts`).
 Pro features (adaptive TDEE, projection, verdicts, full history, GLP-1 mode) are gated server-side; numbers never reach free clients.
 
+## Connect your AI
+
+Hosted MCP at **`POST /mcp`** (Streamable HTTP, [MCP protocol 2026-07-28](https://modelcontextprotocol.io); legacy protocol versions are rejected). Auth is OAuth 2.0 through the app’s better-auth IdP (dev issuer: `http://localhost:3000/api/auth`).
+
+**URL (paste into the host):**
+
+| Environment | MCP URL                             |
+| ----------- | ----------------------------------- |
+| Production  | `https://physlane.unpackit.top/mcp` |
+| Local dev   | `http://localhost:3000/mcp`         |
+
+Hosts that implement MCP OAuth discovery (`/.well-known/oauth-protected-resource`) — Claude, Cursor, MCP Inspector, pi, etc. — connect with that URL only; no manual client ID unless your host requires it.
+
+**OAuth (verified on dev):**
+
+- Dynamic client registration: `POST /api/auth/oauth2/register` (DCR).
+- Token endpoint: `client_secret_basic` (HTTP Basic with `client_id` / `client_secret`).
+- Authorize: clients sending `Accept: application/json` get `{ "redirect": "<url>" }` (not a 303).
+- PKCE required. Resource indicator: `http://localhost:3000/mcp` in dev (`https://physlane.unpackit.top/mcp` in prod).
+
+**Human step:** when the host opens the consent screen, sign in to physlane and click **Allow**.
+
+**Scopes**
+
+| Scope       | Tools                                                                 |
+| ----------- | --------------------------------------------------------------------- |
+| `mcp:read`  | `get_status`, `get_history`                                           |
+| `mcp:write` | `log_intake`, `log_measurement`, `set_cycle`, `apply_measured_target` |
+
+Missing scope → HTTP **403** `insufficient_scope` with `WWW-Authenticate` naming the required scope.
+
+**Tools (6)**
+
+| Tool                    | Scope | Notes                                                                                                                                                      |
+| ----------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_status`            | read  | Units, plan, active cycle, TDEE snapshot; Pro-gated estimate numbers stay hidden on free (same as the app).                                                |
+| `get_history`           | read  | `kind`: `intake` \| `measurements` \| `cycles`; optional `from` / `to`; `limit` ≤ 400 (default 120). Free plan: 90-day clamp on intake.                    |
+| `log_intake`            | write | `date`, `kcal`, optional `proteinG`; idempotent per date.                                                                                                  |
+| `log_measurement`       | write | **`unit` required:** `metric` \| `imperial`; converts to canonical kg/cm before save.                                                                      |
+| `set_cycle`             | write | `phase`: `cut` \| `bulk` \| `maintain`; optional `startDate`, `targetRateKgPerWeek` in [-1.5, 1], `kcalTargetPerDay` in [1, 20000]; ends any active cycle. |
+| `apply_measured_target` | write | **Pro only** — writes measured TDEE target to the active cycle (server-computed).                                                                          |
+
+Telegram-only accounts (no password) cannot complete OAuth until email/password sign-in exists; use the web app for those users.
+
 ## Status (Oct 2026)
 
 MVP shipped (M1–M6). v3 (Oct 17): body-measurement parity — per-site trend charts (10 sites), cm/in display parity, per-site deltas, US Navy body-fat estimate (optional height/sex), free CSV export; Telegram Mini App via `tele-better-auth` (zero-tap sign-in, auto account, link via Settings), daily reminder bot endpoint (`/api/telegram/remind`, cron-secret guarded, inert until secrets set), read-only share cards (`/share/:token`, privacy-scoped). Stripe is Q4: webhook + checkout/portal UI are live but intentionally inert until `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` are set. Telegram live wiring (bot token, BotFather menu, reminder cron) pending bot creation.
