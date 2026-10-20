@@ -5,6 +5,9 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import { Button } from "#/components/ui/button";
 import { authClient, signIn } from "#/lib/auth-client";
 import { authErrorMessage } from "#/lib/auth-error";
 import { getWebApp } from "#/lib/telegram-web";
@@ -72,7 +75,7 @@ function SignInPage() {
           <h1 className="m-0 text-lg font-semibold tracking-tight">
             Signing you in…
           </h1>
-          <p className="mt-1 mb-0 text-sm text-dim">
+          <p className="mt-1 mb-0 text-sm text-secondary">
             One moment while Telegram signs you in.
           </p>
         </div>
@@ -147,7 +150,7 @@ function SignInPage() {
     <main className="flex min-h-[calc(100dvh-3.5rem)] items-center justify-center px-4 py-10">
       <div className="card w-full max-w-sm p-6">
         <h1 className="m-0 text-lg font-semibold tracking-tight">Sign in</h1>
-        <p className="mt-1 mb-6 text-sm text-dim">
+        <p className="mt-1 mb-6 text-sm text-secondary">
           Weigh in, log intake, watch the trend.
         </p>
 
@@ -162,15 +165,12 @@ function SignInPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="mb-4">
-            <label htmlFor="sign-in-email" className="label">
-              Email
-            </label>
-            <input
+            <Label htmlFor="sign-in-email">Email</Label>
+            <Input
               id="sign-in-email"
               name="email"
               type="email"
               autoComplete="email"
-              className="input"
               placeholder="you@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -190,16 +190,14 @@ function SignInPage() {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="sign-in-password" className="label">
-              Password
-            </label>
+            <Label htmlFor="sign-in-password">Password</Label>
             <div className="relative">
-              <input
+              <Input
                 id="sign-in-password"
                 name="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
-                className="input pr-12"
+                className="pr-12"
                 placeholder="Your password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -214,14 +212,15 @@ function SignInPage() {
                   errors.password ? "sign-in-password-error" : undefined
                 }
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-xs font-medium text-dim hover:text-text"
+                className="absolute inset-y-0 right-0 h-auto w-11 rounded-r-lg text-xs font-medium"
               >
                 {showPassword ? "Hide" : "Show"}
-              </button>
+              </Button>
             </div>
             {errors.password && (
               <p id="sign-in-password-error" className="field-error">
@@ -230,20 +229,20 @@ function SignInPage() {
             )}
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={pending}
-            className="btn-primary w-full"
+            className="min-h-11 w-full font-semibold"
           >
             {pending ? "Signing in…" : "Sign in"}
-          </button>
+          </Button>
         </form>
 
-        <p className="mt-5 mb-0 text-center text-sm text-dim">
+        <p className="mt-5 mb-0 text-center text-sm text-secondary">
           No account?{" "}
           <Link
             to="/sign-up"
-            className="font-medium text-accent underline decoration-line underline-offset-2 hover:text-accent-dim"
+            className="font-medium text-brand-text underline decoration-border underline-offset-2 hover:text-brand-hover"
           >
             Create one
           </Link>

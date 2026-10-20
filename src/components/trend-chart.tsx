@@ -193,7 +193,7 @@ function ChipScroller({
       : undefined;
 
   return (
-    <div className="min-w-0 max-w-full overflow-hidden rounded-full border border-line bg-surface">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-full border border-border bg-card">
       <div
         ref={ref}
         role="group"
@@ -433,14 +433,14 @@ export function TrendChart({
         <h2 className="m-0 text-sm font-semibold">Trend</h2>
         {bodyFatPercent != null && (
           <>
-            <span className="num inline-flex items-center rounded-full border border-line bg-surface2 px-2 py-0.5 text-xs text-dim">
+            <span className="num inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-secondary">
               Body fat ~{bodyFatPercent.toFixed(1)}% (estimate)
             </span>
-            <details className="text-xs text-dim">
-              <summary className="inline-flex min-h-9 cursor-pointer select-none items-center hover:text-text">
+            <details className="text-xs text-secondary">
+              <summary className="inline-flex min-h-9 cursor-pointer select-none items-center hover:text-foreground">
                 How is this estimated?
               </summary>
-              <div className="mt-1 max-w-2xl rounded-lg border border-line bg-surface2 px-3 py-2">
+              <div className="mt-1 max-w-2xl rounded-lg border border-border bg-muted px-3 py-2">
                 <p className="m-0">
                   Estimated with the US Navy circumference method. It turns your
                   height and the latest neck, waist and hips measurements into
@@ -455,7 +455,7 @@ export function TrendChart({
                   Density for women: 1.29579 − 0.35004 × log10(waist + hips −
                   neck) + 0.221 × log10(height).
                 </p>
-                <p className="m-0 mt-1.5 text-faint">
+                <p className="m-0 mt-1.5 text-muted-foreground">
                   A rough estimate from tape measurements, not a
                   body-composition scan.
                 </p>
@@ -463,7 +463,7 @@ export function TrendChart({
             </details>
           </>
         )}
-        <p className="m-0 flex items-center gap-3 text-xs text-dim">
+        <p className="m-0 flex items-center gap-3 text-xs text-secondary">
           {series.map((s) => (
             <span key={s.key} className="inline-flex items-center gap-1.5">
               <span
@@ -504,10 +504,10 @@ export function TrendChart({
                   onClick={() => setSiteId(s.id)}
                   className={`relative inline-flex h-9 shrink-0 snap-start items-center whitespace-nowrap rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] sm:h-7 sm:px-2 ${
                     active
-                      ? "bg-surface2 text-text"
+                      ? "bg-muted text-foreground"
                       : isEnabled
-                        ? "text-dim hover:text-text"
-                        : "cursor-not-allowed text-faint opacity-50"
+                        ? "text-secondary hover:text-foreground"
+                        : "cursor-not-allowed text-muted-foreground opacity-50"
                   }`}
                 >
                   {FIELD_LABELS[s.field]}
@@ -518,7 +518,7 @@ export function TrendChart({
           <div
             role="group"
             aria-label="Trend range"
-            className="grid w-full grid-cols-4 items-center gap-1 rounded-full border border-line bg-surface p-1 sm:inline-flex sm:w-auto"
+            className="grid w-full grid-cols-4 items-center gap-1 rounded-full border border-border bg-card p-1 sm:inline-flex sm:w-auto"
           >
             {RANGES.map((r) => {
               const active = r.id === rangeId;
@@ -530,8 +530,8 @@ export function TrendChart({
                   onClick={() => setRangeId(r.id)}
                   className={`relative inline-flex h-9 items-center justify-center rounded-full px-3 text-xs font-medium transition-colors duration-150 ease-out after:absolute after:inset-x-0 after:-inset-y-1 after:content-[''] ${
                     active
-                      ? "bg-surface2 text-text"
-                      : "text-dim hover:text-text"
+                      ? "bg-muted text-foreground"
+                      : "text-secondary hover:text-foreground"
                   }`}
                 >
                   {r.label}
@@ -548,13 +548,13 @@ export function TrendChart({
        * where the full history lives, next to the chart where value is proven.
        */}
       {plan === "free" && rangeId === "all" && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-line bg-surface2 px-3 py-1">
-          <p className="m-0 text-xs text-dim">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border bg-muted px-3 py-1">
+          <p className="m-0 text-xs text-secondary">
             Free plan sees the last 90 days here. Pro unlocks the full history.
           </p>
           <Link
             to="/billing"
-            className="inline-flex min-h-11 items-center rounded-md px-1 text-sm font-medium text-accent hover:text-accent-dim"
+            className="inline-flex min-h-11 items-center rounded-md px-1 text-sm font-medium text-brand-text hover:text-brand-hover"
           >
             Upgrade
           </Link>
@@ -571,11 +571,11 @@ export function TrendChart({
           // Recharts renders client-only; hold the plot area until hydration.
           <div
             aria-hidden="true"
-            className="h-full rounded-lg bg-surface2 motion-safe:animate-pulse"
+            className="h-full rounded-lg bg-muted motion-safe:animate-pulse"
           />
         ) : !enough ? (
           <div className="flex h-full items-center justify-center px-4 text-center">
-            <p className="m-0 text-sm text-dim">
+            <p className="m-0 text-sm text-secondary">
               {isWeight
                 ? "Not enough data in this range. Log weigh-ins to build your trend."
                 : `Not enough ${FIELD_LABELS[siteDef.field].toLowerCase()} entries in this range yet.`}
@@ -778,8 +778,8 @@ function TrendTip({
   if (shown.length === 0) return null;
   const target = targetAt?.(row.t);
   return (
-    <div className="rounded-lg border border-line bg-surface2 px-3 py-2 text-xs">
-      <p className="m-0 text-dim">{fmtDay(row.t)}</p>
+    <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs">
+      <p className="m-0 text-secondary">{fmtDay(row.t)}</p>
       {shown.map((s) => (
         <p key={s.key} className="num m-0 mt-1 flex items-center gap-1.5">
           <span
@@ -787,14 +787,14 @@ function TrendTip({
             className="inline-block h-0.5 w-3 rounded-full"
             style={{ background: s.color }}
           />
-          <span className="text-dim">{s.label}</span>
+          <span className="text-secondary">{s.label}</span>
           {s.kind === "weight"
             ? fmtWeight(row[s.key] as number, units)
             : formatGirth(row[s.key] as number, units)}
         </p>
       ))}
       {targetAt && target != null && (
-        <p className="num m-0 mt-0.5 flex items-center gap-1.5 text-dim">
+        <p className="num m-0 mt-0.5 flex items-center gap-1.5 text-secondary">
           <span
             className="inline-block w-3 border-t-2 border-dashed"
             style={{ borderColor: TARGET_COLOR }}

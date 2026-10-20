@@ -4,6 +4,8 @@ import { useSession } from "#/lib/auth-client";
 import { useTelegramMode } from "#/lib/telegram-mode";
 import { SettingsDrawer } from "#/components/settings-drawer";
 import { ThemeSwitch } from "#/components/theme-switch";
+import { Button, buttonVariants } from "#/components/ui/button";
+import { cn } from "#/lib/cn";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
@@ -30,7 +32,7 @@ export function Header() {
   return (
     <>
       <header
-        className={`sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur ${
+        className={`sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur ${
           tgMode ? "min-h-14" : "h-14"
         }`}
         style={tgMode ? { paddingTop: "var(--tg-safe-top, 0px)" } : undefined}
@@ -39,7 +41,7 @@ export function Header() {
           <Link
             to="/"
             aria-label="physlane home"
-            className="shrink-0 text-base font-semibold tracking-tight text-text no-underline"
+            className="shrink-0 text-base font-semibold tracking-tight text-foreground no-underline"
           >
             phys<span className="text-brand-text">lane</span>
           </Link>
@@ -57,7 +59,9 @@ export function Header() {
                     to={item.to}
                     className={navLinkWide}
                     activeProps={{ className: "text-brand-text" }}
-                    inactiveProps={{ className: "text-dim hover:text-text" }}
+                    inactiveProps={{
+                      className: "text-secondary hover:text-foreground",
+                    }}
                   >
                     {item.label}
                   </Link>
@@ -67,18 +71,22 @@ export function Header() {
                     to="/billing"
                     className={navLinkWide}
                     activeProps={{ className: "text-brand-text" }}
-                    inactiveProps={{ className: "text-dim hover:text-text" }}
+                    inactiveProps={{
+                      className: "text-secondary hover:text-foreground",
+                    }}
                   >
                     Billing
                   </Link>
                 )}
-                <button
+                <Button
                   ref={gearRef}
                   type="button"
+                  variant="ghost"
+                  size="icon-lg"
                   onClick={() => setSettingsOpen(true)}
                   aria-label="Settings"
                   aria-haspopup="dialog"
-                  className="ml-1 inline-flex size-11 shrink-0 items-center justify-center rounded-md text-dim hover:text-text"
+                  className="ml-1 size-11 shrink-0"
                 >
                   <svg
                     width="18"
@@ -133,19 +141,22 @@ export function Header() {
                       strokeWidth="1.5"
                     />
                   </svg>
-                </button>
+                </Button>
               </>
             ) : tgMode ? null : (
               <>
                 <Link
                   to="/sign-in"
-                  className={`${navLinkBase} whitespace-nowrap text-dim hover:text-text`}
+                  className={`${navLinkBase} whitespace-nowrap text-secondary hover:text-foreground`}
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/sign-up"
-                  className="btn-primary whitespace-nowrap px-3"
+                  className={cn(
+                    buttonVariants(),
+                    "min-h-11 whitespace-nowrap px-3 font-semibold no-underline",
+                  )}
                 >
                   {/* Full label needs ~350px of header; narrower phones get the short one. */}
                   <span className="min-[360px]:hidden">Sign up</span>
@@ -159,7 +170,7 @@ export function Header() {
         </div>
       </header>
       {!isPending && user && (
-        <nav aria-label="Sections" className="border-b border-line sm:hidden">
+        <nav aria-label="Sections" className="border-b border-border sm:hidden">
           <div className="mx-auto flex max-w-5xl px-3">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -167,7 +178,9 @@ export function Header() {
                 to={item.to}
                 className={`${navLinkBase} flex-1 justify-center`}
                 activeProps={{ className: "text-brand-text" }}
-                inactiveProps={{ className: "text-dim hover:text-text" }}
+                inactiveProps={{
+                  className: "text-secondary hover:text-foreground",
+                }}
               >
                 {item.label}
               </Link>

@@ -1,5 +1,9 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, type FormEvent, type KeyboardEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import { Button } from "#/components/ui/button";
 import { hasAnyCycle, saveCycle } from "#/server/cycles.fns";
 import { saveMeasurement } from "#/server/measurements.fns";
 import { saveSettings } from "#/lib/auth-guard.fns";
@@ -158,26 +162,6 @@ function OnboardingPage() {
     }
   }
 
-  /** Radiogroup arrow keys: left/up selects the previous phase, right/down the next. */
-  function handlePhaseKeys(event: KeyboardEvent<HTMLDivElement>) {
-    const keys = ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown"];
-    if (!keys.includes(event.key)) return;
-    event.preventDefault();
-    const radios = Array.from(
-      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'),
-    );
-    const index = radios.findIndex(
-      (r) => r.getAttribute("aria-checked") === "true",
-    );
-    const dir = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
-    const nextIndex = (index + dir + radios.length) % radios.length;
-    const target = radios[nextIndex];
-    if (target) {
-      target.focus();
-      target.click();
-    }
-  }
-
   /** Convert the entered weight and height when switching unit systems, so nothing is retyped. */
   function switchUnits(next: UnitSystem) {
     if (next === units) return;
@@ -284,21 +268,21 @@ function OnboardingPage() {
                 key={label}
                 className={
                   step === i + 1
-                    ? "font-medium text-text"
+                    ? "font-medium text-foreground"
                     : step > i + 1
-                      ? "text-accent"
-                      : "text-dim"
+                      ? "text-brand-text"
+                      : "text-secondary"
                 }
               >
                 {label}
               </li>
             ))}
           </ol>
-          <p className="m-0 text-xs text-dim">Step {step} of 3</p>
+          <p className="m-0 text-xs text-secondary">Step {step} of 3</p>
         </div>
-        <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-line">
+        <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full origin-left bg-accent transition-transform duration-200 ease-out"
+            className="h-full origin-left bg-brand-text transition-transform duration-200 ease-out"
             style={{ transform: `scaleX(${step / 3})` }}
           />
         </div>
@@ -312,43 +296,40 @@ function OnboardingPage() {
         <div className="card mt-4 p-4">
           {step === 1 && (
             <>
-              <p className="m-0 mb-4 text-sm text-dim">
+              <p className="m-0 mb-4 text-sm text-secondary">
                 Pick a phase and a weekly rate. You can change both later.
               </p>
-              <div
-                role="radiogroup"
+              <RadioGroup
+                value={phase}
+                onValueChange={(next) => selectPhase(next as Phase)}
                 aria-label="Goal"
-                onKeyDown={handlePhaseKeys}
                 className="grid gap-2 sm:grid-cols-3"
               >
                 {PHASES.map((p) => {
                   const selected = phase === p.id;
                   return (
                     <div key={p.id}>
-                      <button
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        onClick={() => selectPhase(p.id)}
+                      <RadioGroupItem
+                        value={p.id}
                         className={`flex min-h-11 w-full flex-col items-start gap-1 rounded-lg border p-3 text-left ${
                           selected
-                            ? "border-accent bg-surface2"
-                            : "border-line bg-surface hover:border-line2"
+                            ? "border-brand-text bg-muted"
+                            : "border-border bg-card hover:border-border"
                         }`}
                       >
                         <span className="text-sm font-semibold">{p.label}</span>
-                        <span className="text-xs text-dim">{p.blurb}</span>
-                      </button>
+                        <span className="text-xs text-secondary">
+                          {p.blurb}
+                        </span>
+                      </RadioGroupItem>
                       {selected && (
                         <div className="mt-2">
-                          <label htmlFor="onb-rate" className="label">
-                            Target rate (kg/wk)
-                          </label>
-                          <input
+                          <Label htmlFor="onb-rate">Target rate (kg/wk)</Label>
+                          <Input
                             id="onb-rate"
                             type="text"
                             inputMode="decimal"
-                            className="input num"
+                            className="num"
                             value={rate}
                             onChange={(e) => setRate(e.target.value)}
                             onBlur={() => mark("rate")}
@@ -375,51 +356,49 @@ function OnboardingPage() {
                     </div>
                   );
                 })}
-              </div>
+              </RadioGroup>
             </>
           )}
 
           {step === 2 && (
             <>
-              <p className="m-0 mb-4 text-sm text-dim">
+              <p className="m-0 mb-4 text-sm text-secondary">
                 Where you start today. This seeds your trend line.
               </p>
               <div className="mb-4">
                 <span className="label" id="onb-units-label">
                   Units
                 </span>
-                <div
-                  role="radiogroup"
+                <RadioGroup
+                  value={units}
+                  onValueChange={(next) => switchUnits(next as UnitSystem)}
                   aria-labelledby="onb-units-label"
-                  className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface2 p-1"
+                  className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted p-1"
                 >
                   {(["metric", "imperial"] as const).map((u) => (
-                    <button
+                    <RadioGroupItem
                       key={u}
-                      type="button"
-                      role="radio"
-                      aria-checked={units === u}
-                      onClick={() => switchUnits(u)}
-                      className={`min-h-11 rounded-md px-3 text-sm font-medium ${
+                      value={u}
+                      className={`min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium ${
                         units === u
-                          ? "bg-surface text-text"
-                          : "text-dim hover:text-text"
+                          ? "bg-card text-foreground"
+                          : "text-secondary hover:text-foreground"
                       }`}
                     >
                       {u === "metric" ? "Metric (kg, cm)" : "Imperial (lb, in)"}
-                    </button>
+                    </RadioGroupItem>
                   ))}
-                </div>
+                </RadioGroup>
               </div>
               <div>
-                <label htmlFor="onb-weight" className="label">
+                <Label htmlFor="onb-weight">
                   Current weight ({units === "metric" ? "kg" : "lb"})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="onb-weight"
                   type="text"
                   inputMode="decimal"
-                  className="input num"
+                  className="num"
                   placeholder={units === "metric" ? "72.5" : "160"}
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
@@ -443,14 +422,14 @@ function OnboardingPage() {
               </div>
 
               <div className="mt-4">
-                <label htmlFor="onb-height" className="label">
+                <Label htmlFor="onb-height">
                   Height ({units === "metric" ? "cm" : "in"})
-                </label>
-                <input
+                </Label>
+                <Input
                   id="onb-height"
                   type="text"
                   inputMode="decimal"
-                  className="input num"
+                  className="num"
                   placeholder={units === "metric" ? "180" : "71"}
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
@@ -477,28 +456,29 @@ function OnboardingPage() {
                 <span className="label" id="onb-sex-label">
                   Sex
                 </span>
-                <div
-                  role="radiogroup"
+                <RadioGroup
+                  value={sex === "" ? null : sex}
+                  onValueChange={(next) => setSex(next as Sex)}
                   aria-labelledby="onb-sex-label"
-                  className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface2 p-1"
+                  className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted p-1"
                 >
                   {(["male", "female"] as const).map((s) => (
-                    <button
+                    <RadioGroupItem
                       key={s}
-                      type="button"
-                      role="radio"
-                      aria-checked={sex === s}
-                      onClick={() => setSex(sex === s ? "" : s)}
-                      className={`min-h-11 rounded-md px-3 text-sm font-medium capitalize ${
+                      value={s}
+                      onClick={() => {
+                        if (sex === s) setSex("");
+                      }}
+                      className={`min-h-11 items-center justify-center rounded-md px-3 text-sm font-medium capitalize ${
                         sex === s
-                          ? "bg-surface text-text"
-                          : "text-dim hover:text-text"
+                          ? "bg-card text-foreground"
+                          : "text-secondary hover:text-foreground"
                       }`}
                     >
                       {s}
-                    </button>
+                    </RadioGroupItem>
                   ))}
-                </div>
+                </RadioGroup>
                 <p className="hint">
                   Used to estimate body fat from your measurements. Optional.
                 </p>
@@ -508,7 +488,7 @@ function OnboardingPage() {
 
           {step === 3 && (
             <>
-              <p className="m-0 mb-4 text-sm text-dim">
+              <p className="m-0 mb-4 text-sm text-secondary">
                 {activePhase.label} at {rate} kg/wk
                 {weightDisplay
                   ? `, starting at ${weightDisplay}`
@@ -516,14 +496,12 @@ function OnboardingPage() {
                 .
               </p>
               <div>
-                <label htmlFor="onb-kcal" className="label">
-                  Daily kcal target
-                </label>
-                <input
+                <Label htmlFor="onb-kcal">Daily kcal target</Label>
+                <Input
                   id="onb-kcal"
                   type="text"
                   inputMode="numeric"
-                  className="input num"
+                  className="num"
                   placeholder="2000"
                   value={kcal}
                   onChange={(e) => setKcal(e.target.value)}
@@ -545,20 +523,20 @@ function OnboardingPage() {
                   </p>
                 )}
                 {whyKcal && (
-                  <details className="mt-2 rounded-lg border border-line bg-surface2 px-3 py-2 text-sm text-dim">
-                    <summary className="cursor-pointer select-none font-medium text-text">
+                  <details className="mt-2 rounded-lg border border-border bg-muted px-3 py-2 text-sm text-secondary">
+                    <summary className="cursor-pointer select-none font-medium text-foreground">
                       Why this number?
                     </summary>
                     <p className="mt-2">{whyKcal}</p>
                   </details>
                 )}
-                <p className="mt-2 text-xs text-faint">
+                <p className="mt-2 text-xs text-muted-foreground">
                   New to tracking, or want the research behind these numbers?{" "}
                   <a
                     href="/guide"
                     target="_blank"
                     rel="noopener"
-                    className="underline underline-offset-4 hover:text-dim"
+                    className="underline underline-offset-4 hover:text-secondary"
                   >
                     Read the short guide
                   </a>
@@ -579,33 +557,34 @@ function OnboardingPage() {
 
           <div className="mt-6 flex items-center justify-between gap-3">
             {step > 1 ? (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setStep((prev) => Math.max(1, prev - 1))}
-                className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-medium text-dim hover:text-text"
+                className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
               >
                 Back
-              </button>
+              </Button>
             ) : (
               <span aria-hidden="true" />
             )}
             {step < 3 ? (
-              <button
+              <Button
                 type="button"
                 disabled={!stepValid}
                 onClick={() => setStep((prev) => Math.min(3, prev + 1))}
-                className="btn-primary px-5"
+                className="min-h-11 px-5 font-semibold"
               >
                 Continue
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="submit"
                 disabled={!stepValid || pending}
-                className="btn-primary px-5"
+                className="min-h-11 px-5 font-semibold"
               >
                 {pending ? "Saving…" : "Start tracking"}
-              </button>
+              </Button>
             )}
           </div>
         </div>

@@ -105,8 +105,8 @@ function fmtSignedWeight(kg: number | null, units: UnitSystem): string {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 bg-surface px-4 py-3">
-      <p className="m-0 text-xs text-dim">{label}</p>
+    <div className="min-w-0 bg-card px-4 py-3">
+      <p className="m-0 text-xs text-secondary">{label}</p>
       <p className="num m-0 mt-1 truncate text-base font-medium">{value}</p>
     </div>
   );
@@ -207,7 +207,7 @@ function DashboardPage() {
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-x-4">
         <h1 className="m-0 text-xl font-semibold tracking-tight">Dashboard</h1>
         {cycle ? (
-          <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-sm text-text-muted">
+          <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-sm text-muted-foreground">
             <PhaseLabel phase={cycle.phase} />
             {cycle.targetRateKgPerWeek != null && (
               <span className="num whitespace-nowrap">
@@ -224,11 +224,11 @@ function DashboardPage() {
             )}
           </p>
         ) : (
-          <p className="m-0 text-sm text-text-muted">No active cycle</p>
+          <p className="m-0 text-sm text-muted-foreground">No active cycle</p>
         )}
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-4">
         <Stat
           label="Latest weight"
           value={fmtWeight(latestWeight?.weightKg ?? null, units)}
@@ -261,7 +261,7 @@ function DashboardPage() {
 
       <div ref={formRef} className="mt-4 scroll-mt-20">
         {loggedFlash && (
-          <p role="status" className="m-0 mb-2 text-xs text-dim">
+          <p role="status" className="m-0 mb-2 text-xs text-secondary">
             Logged.
           </p>
         )}
@@ -276,7 +276,7 @@ function DashboardPage() {
 
       <HistoryTable entries={newestFirst} units={units} onEdit={handleEdit} />
 
-      <p className="mt-6 mb-0 text-xs text-faint">
+      <p className="mt-6 mb-0 text-xs text-muted-foreground">
         Only manual numbers are stored. No integrations, ever.
       </p>
     </section>

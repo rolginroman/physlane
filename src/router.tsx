@@ -12,7 +12,7 @@ function NotFound() {
       </h1>
       <Link
         to="/"
-        className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-medium text-dim hover:text-text"
+        className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary hover:text-foreground"
       >
         Home
       </Link>

@@ -133,43 +133,45 @@ Do not treat dark mode as a simple inversion of the light theme. Re-art-direct a
 
 ## 3.1 Light Editorial palette
 
-| Token            | Value     | Purpose                            |
-| ---------------- | --------- | ---------------------------------- |
-| `canvas`         | `#F7F4EE` | Main page background               |
-| `surface`        | `#FFFEFC` | Cards and primary surfaces         |
-| `surface-muted`  | `#EEEAE2` | Subtle alternate sections          |
-| `surface-raised` | `#FFFFFF` | High-clarity overlay surfaces      |
-| `ink`            | `#171717` | Main text and headlines            |
-| `text-secondary` | `#62615E` | Body text and descriptions         |
-| `text-muted`     | `#898781` | Captions and metadata              |
-| `border`         | `#E3DED5` | Dividers and card outlines         |
-| `brand`          | `#D92F28` | Primary action and brand emphasis  |
-| `brand-hover`    | `#B92520` | Hover and pressed states           |
-| `brand-soft`     | `#F5DCD7` | Subtle highlights and chart ranges |
-| `chart-grid`     | `#E7E2D9` | Chart grid lines                   |
-| `chart-neutral`  | `#777773` | Secondary data series              |
-| `data-positive`  | `#426C56` | Contextual positive indicators     |
-| `focus-ring`     | `#345B9A` | Visible keyboard focus             |
+| Token              | Value     | Purpose                                |
+| ------------------ | --------- | -------------------------------------- |
+| `background`       | `#F7F4EE` | Main page background                   |
+| `card`             | `#FFFEFC` | Cards and primary surfaces             |
+| `muted`            | `#EEEAE2` | Subtle alternate sections              |
+| `popover`          | `#FFFFFF` | High-clarity overlay surfaces          |
+| `foreground`       | `#171717` | Main text and headlines                |
+| `text-secondary`   | `#62615E` | Body text and descriptions             |
+| `muted-foreground` | `#898781` | Captions and metadata (see Appendix A) |
+| `border`           | `#E3DED5` | Dividers and card outlines             |
+| `primary`          | `#D92F28` | Primary action and brand emphasis      |
+| `brand-hover`      | `#B92520` | Hover and pressed states               |
+| `brand-soft`       | `#F5DCD7` | Subtle highlights and chart ranges     |
+| `chart-grid`       | `#E7E2D9` | Chart grid lines                       |
+| `chart-neutral`    | `#777773` | Secondary data series                  |
+| `data-positive`    | `#426C56` | Contextual positive indicators         |
+| `ring`             | `#345B9A` | Visible keyboard focus                 |
+
+Merged palette tokens use shadcn canonical names in code (`--background`, `--primary`, etc.); hex values and dark overrides are unchanged. See `plans/shadcn-baseui-report.md`.
 
 ## 3.2 Dark Performance palette
 
-| Token            | Value     | Purpose                           |
-| ---------------- | --------- | --------------------------------- |
-| `canvas`         | `#101112` | Main dark background              |
-| `surface`        | `#171819` | Cards and primary surfaces        |
-| `surface-muted`  | `#1E2021` | Secondary sections                |
-| `surface-raised` | `#242526` | Overlays and elevated surfaces    |
-| `ink`            | `#F4F1EA` | Main text and headlines           |
-| `text-secondary` | `#B6B3AD` | Body text and descriptions        |
-| `text-muted`     | `#8D8A84` | Captions and metadata             |
-| `border`         | `#343332` | Dividers and card outlines        |
-| `brand`          | `#E63A33` | Primary action and brand emphasis |
-| `brand-hover`    | `#F04A42` | Hover and pressed states          |
-| `brand-soft`     | `#482321` | Subtle red-tinted surfaces        |
-| `chart-grid`     | `#343332` | Chart grid lines                  |
-| `chart-neutral`  | `#AAA79F` | Secondary data series             |
-| `data-positive`  | `#8DB69A` | Contextual positive indicators    |
-| `focus-ring`     | `#A8C7FF` | Visible keyboard focus            |
+| Token              | Value     | Purpose                           |
+| ------------------ | --------- | --------------------------------- |
+| `background`       | `#101112` | Main dark background              |
+| `card`             | `#171819` | Cards and primary surfaces        |
+| `muted`            | `#1E2021` | Secondary sections                |
+| `popover`          | `#242526` | Overlays and elevated surfaces    |
+| `foreground`       | `#F4F1EA` | Main text and headlines           |
+| `text-secondary`   | `#B6B3AD` | Body text and descriptions        |
+| `muted-foreground` | `#8D8A84` | Captions and metadata             |
+| `border`           | `#343332` | Dividers and card outlines        |
+| `primary`          | `#E63A33` | Primary action and brand emphasis |
+| `brand-hover`      | `#F04A42` | Hover and pressed states          |
+| `brand-soft`       | `#482321` | Subtle red-tinted surfaces        |
+| `chart-grid`       | `#343332` | Chart grid lines                  |
+| `chart-neutral`    | `#AAA79F` | Secondary data series             |
+| `data-positive`    | `#8DB69A` | Contextual positive indicators    |
+| `ring`             | `#A8C7FF` | Visible keyboard focus            |
 
 These values are canonical starting tokens. Validate text, button, chart, and focus contrast before production. Accessibility requirements take precedence over exact decorative color values.
 

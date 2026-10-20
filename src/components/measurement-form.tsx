@@ -4,6 +4,9 @@ import {
   saveMeasurement,
   type MeasurementDTO,
 } from "#/server/measurements.fns";
+import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import { Button } from "#/components/ui/button";
 import {
   FIELD_LABELS,
   lengthFromInput,
@@ -258,7 +261,7 @@ export function MeasurementForm({
         <svg
           viewBox="0 0 16 16"
           aria-hidden="true"
-          className={`h-4 w-4 shrink-0 text-dim transition-transform duration-200 ease-out ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-secondary transition-transform duration-200 ease-out ${open ? "rotate-180" : ""}`}
         >
           <path
             d="M4 6l4 4 4-4"
@@ -275,18 +278,15 @@ export function MeasurementForm({
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="border-t border-line p-4"
+          className="border-t border-border p-4"
         >
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {/* Full row below sm: half of a 320 px card clips the date. */}
             <div className="col-span-2 sm:col-span-1">
-              <label htmlFor="m-date" className="label">
-                Date
-              </label>
-              <input
+              <Label htmlFor="m-date">Date</Label>
+              <Input
                 id="m-date"
                 type="date"
-                className="input"
                 max={today()}
                 value={date}
                 onChange={(e) => {
@@ -306,14 +306,12 @@ export function MeasurementForm({
             </div>
 
             <div>
-              <label htmlFor="m-weight" className="label">
-                Weight ({weightUnit})
-              </label>
-              <input
+              <Label htmlFor="m-weight">Weight ({weightUnit})</Label>
+              <Input
                 id="m-weight"
                 type="text"
                 inputMode="decimal"
-                className="input num"
+                className="num"
                 placeholder={units === "metric" ? "72.5" : "160"}
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
@@ -341,14 +339,12 @@ export function MeasurementForm({
             </div>
 
             <div>
-              <label htmlFor="m-waist" className="label">
-                Waist ({lengthUnit})
-              </label>
-              <input
+              <Label htmlFor="m-waist">Waist ({lengthUnit})</Label>
+              <Input
                 id="m-waist"
                 type="text"
                 inputMode="decimal"
-                className="input num"
+                className="num"
                 placeholder={units === "metric" ? "78" : "30.7"}
                 value={waist}
                 onChange={(e) => setWaist(e.target.value)}
@@ -366,14 +362,15 @@ export function MeasurementForm({
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setShowMore((prev) => !prev)}
             aria-expanded={showMore}
-            className="mt-3 inline-flex min-h-11 items-center rounded-md px-1 text-sm font-medium text-dim hover:text-text"
+            className="mt-3 min-h-11 px-1"
           >
             {showMore ? "Fewer fields" : "More fields"}
-          </button>
+          </Button>
 
           {showMore && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -381,14 +378,14 @@ export function MeasurementForm({
                 const error = girthErrors[f];
                 return (
                   <div key={f}>
-                    <label htmlFor={`m-${f}`} className="label">
+                    <Label htmlFor={`m-${f}`}>
                       {FIELD_LABELS[f]} ({lengthUnit})
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id={`m-${f}`}
                       type="text"
                       inputMode="decimal"
-                      className="input num"
+                      className="num"
                       value={girths[f]}
                       onChange={(e) =>
                         setGirths((prev) => ({ ...prev, [f]: e.target.value }))
@@ -409,9 +406,7 @@ export function MeasurementForm({
               })}
 
               <div className="col-span-2 sm:col-span-4">
-                <label htmlFor="m-notes" className="label">
-                  Notes
-                </label>
+                <Label htmlFor="m-notes">Notes</Label>
                 <textarea
                   id="m-notes"
                   className="input resize-y"
@@ -438,17 +433,18 @@ export function MeasurementForm({
           )}
 
           <div className="mt-4 flex items-center justify-between gap-3">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={resetToMode}
-              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-medium text-dim hover:text-text"
+              className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
             >
               Clear
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={pending || !hasAnyValue || hasError}
-              className="btn-primary px-5"
+              className="min-h-11 px-5 font-semibold"
             >
               {saved
                 ? "Saved"
@@ -457,7 +453,7 @@ export function MeasurementForm({
                   : editing
                     ? "Save changes"
                     : "Log entry"}
-            </button>
+            </Button>
           </div>
 
           {!hasAnyValue && (

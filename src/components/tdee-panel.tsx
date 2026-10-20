@@ -13,6 +13,9 @@ import { verdictCopy } from "#/lib/projection";
 import { fmtWeight, kgToLb, type UnitSystem } from "#/lib/units";
 import type { ProjectionDTO, TdeeStatusResult } from "#/server/intake.fns";
 import type { MeasurementDTO } from "#/server/measurements.fns";
+import { Switch } from "#/components/ui/switch";
+import { Button, buttonVariants } from "#/components/ui/button";
+import { cn } from "#/lib/cn";
 
 type Props = {
   status: TdeeStatusResult;
@@ -35,9 +38,9 @@ function fmtSignedDelta(kg: number, units: UnitSystem): string {
 
 /** Verdict weight: text is the signal, color follows the chart semantics. */
 const VERDICT_TEXT: Record<string, string> = {
-  "on-pace": "text-text",
-  "too-fast": "text-text",
-  "too-slow": "text-text",
+  "on-pace": "text-foreground",
+  "too-fast": "text-foreground",
+  "too-slow": "text-foreground",
 };
 
 /** F11 (Pro): forward weight at current intake + pace verdict vs cycle target. */
@@ -50,12 +53,14 @@ function ProjectionBlock({
 }) {
   const verdict = p.verdict ? verdictCopy(p.verdict, p.phase) : null;
   return (
-    <div className="mt-3 border-t border-line pt-3">
+    <div className="mt-3 border-t border-border pt-3">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="text-xs text-dim">At current intake, in 4 weeks:</span>
+        <span className="text-xs text-secondary">
+          At current intake, in 4 weeks:
+        </span>
         <span className="num text-lg font-medium">
           {fmtWeight(p.projectedWeightKg4w, units)}{" "}
-          <span className="text-sm text-dim">
+          <span className="text-sm text-secondary">
             ({fmtSignedDelta(p.projectedDeltaKg4w, units)})
           </span>
         </span>
@@ -68,7 +73,7 @@ function ProjectionBlock({
             {verdict.headline}
           </p>
           {verdict.body && (
-            <p className="m-0 mt-1 text-xs text-dim">{verdict.body}</p>
+            <p className="m-0 mt-1 text-xs text-secondary">{verdict.body}</p>
           )}
         </>
       )}
@@ -81,44 +86,13 @@ export function StreakChip({ streak }: { streak: number }) {
   return (
     <span
       className={`num inline-flex min-h-8 items-center rounded-full border px-2.5 text-xs ${
-        streak >= 7 ? "border-accent/60 text-accent" : "border-line text-dim"
+        streak >= 7
+          ? "border-brand-text/60 text-brand-text"
+          : "border-border text-secondary"
       }`}
     >
       {streak > 0 ? `${streak}-day streak` : "No streak yet"}
     </span>
-  );
-}
-
-/** 44px-hit switch (visual track 24px, padded hit area via ::before). */
-function Switch({
-  checked,
-  disabled,
-  onToggle,
-  label,
-}: {
-  checked: boolean;
-  disabled: boolean;
-  onToggle: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors duration-150 ease-out before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-[''] ${
-        checked ? "border-accent/60 bg-accent/15" : "border-line bg-surface2"
-      } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-    >
-      <span
-        className={`ml-0.5 h-5 w-5 rounded-full transition-transform duration-150 ease-out ${
-          checked ? "translate-x-5 bg-accent" : "translate-x-0 bg-dim"
-        }`}
-      />
-    </button>
   );
 }
 
@@ -137,14 +111,14 @@ function BandBar({ confidence, label }: { confidence: number; label: string }) {
         aria-valuemax={100}
         aria-valuenow={pct}
         aria-label="Estimate tightness"
-        className="h-1.5 w-full overflow-hidden rounded-full bg-surface2"
+        className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
       >
         <div
-          className="h-full rounded-full bg-accent"
+          className="h-full rounded-full bg-brand-text"
           style={{ width: `${Math.max(4, pct)}%` }}
         />
       </div>
-      <p className="m-0 mt-1.5 text-xs text-dim">{label}</p>
+      <p className="m-0 mt-1.5 text-xs text-secondary">{label}</p>
     </div>
   );
 }
@@ -197,9 +171,9 @@ function TargetPromptCard({
   return (
     <div
       role="status"
-      className="mt-3 rounded-lg border border-accent/50 bg-accent/5 px-3 py-2.5"
+      className="mt-3 rounded-lg border border-brand-text/50 bg-brand-text/5 px-3 py-2.5"
     >
-      <p className="num m-0 text-sm text-text">
+      <p className="num m-0 text-sm text-foreground">
         Your logs say you burn about {fmtKcal(measuredKcal)}
         {targetKcalPerDay != null ? (
           <> a day. Your target assumes {fmtKcal(targetKcalPerDay)}.</>
@@ -209,22 +183,23 @@ function TargetPromptCard({
         Follow the measurement?
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
           onClick={() => act("apply")}
           disabled={pending != null}
-          className="btn-primary inline-flex min-h-9 items-center rounded-md px-3 text-sm disabled:opacity-60"
+          className="min-h-9 px-3 text-sm font-semibold"
         >
           {pending === "apply" ? "Applying" : `Apply ${fmtKcal(applied)}`}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           onClick={() => act("dismiss")}
           disabled={pending != null}
-          className="inline-flex min-h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-dim hover:text-text disabled:opacity-60"
+          className="min-h-9 px-3 text-sm font-medium text-secondary hover:text-foreground"
         >
           Keep mine
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -248,17 +223,17 @@ function Glp1Row({ plan, onGlp1 }: { plan: "free" | "pro"; onGlp1: boolean }) {
   }
 
   return (
-    <div className="mt-4 flex items-center gap-3 border-t border-line pt-3">
+    <div className="mt-4 flex items-center gap-3 border-t border-border pt-3">
       <div className="min-w-0 flex-1">
-        <p className="m-0 text-sm font-medium text-text">
+        <p className="m-0 text-sm font-medium text-foreground">
           GLP-1 mode
           {plan !== "pro" && (
-            <span className="ml-2 rounded border border-line px-1 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-dim">
+            <span className="ml-2 rounded border border-border px-1 py-0.5 text-[0.6875rem] font-semibold tracking-wide text-secondary">
               PRO
             </span>
           )}
         </p>
-        <p className="m-0 mt-0.5 text-xs text-dim">
+        <p className="m-0 mt-0.5 text-xs text-secondary">
           Swaps deficit targets for protein-first guidance and lean-mass watch.
         </p>
       </div>
@@ -266,13 +241,15 @@ function Glp1Row({ plan, onGlp1 }: { plan: "free" | "pro"; onGlp1: boolean }) {
         <Switch
           checked={onGlp1}
           disabled={pending}
-          onToggle={toggle}
-          label="GLP-1 mode"
+          aria-label="GLP-1 mode"
+          onCheckedChange={() => {
+            void toggle();
+          }}
         />
       ) : (
         <Link
           to="/billing"
-          className="inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium text-accent hover:text-accent-dim"
+          className="inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium text-brand-text hover:text-brand-hover"
         >
           Upgrade
         </Link>
@@ -317,19 +294,19 @@ export function TdeePanel({
             aria-valuemax={status.needed}
             aria-valuenow={status.pairs}
             aria-label="Days of paired weight and intake data"
-            className="h-1.5 w-full overflow-hidden rounded-full bg-surface2"
+            className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
           >
             <div
-              className="h-full rounded-full bg-accent"
+              className="h-full rounded-full bg-brand-text"
               style={{
                 width: `${Math.max(4, Math.round((status.pairs / status.needed) * 100))}%`,
               }}
             />
           </div>
-          <p className="num m-0 mt-2 text-sm text-text">
+          <p className="num m-0 mt-2 text-sm text-foreground">
             Collecting data: {status.pairs} of {status.needed} days
           </p>
-          <p className="m-0 mt-1 text-xs text-dim">
+          <p className="m-0 mt-1 text-xs text-secondary">
             Log intake and a same-day weight. The estimate builds from your own
             series, not a formula.
           </p>
@@ -338,10 +315,10 @@ export function TdeePanel({
 
       {status.status === "ready" && status.gated && (
         <div className="mt-3">
-          <p className="m-0 text-sm font-medium text-text">
+          <p className="m-0 text-sm font-medium text-foreground">
             Your burn-rate estimate is ready.
           </p>
-          <p className="m-0 mt-1 text-sm text-dim">
+          <p className="m-0 mt-1 text-sm text-secondary">
             Built from {status.pairs} days of your own weight + intake pairs.
             The 4-week projection and pace verdict are ready too.
           </p>
@@ -350,18 +327,24 @@ export function TdeePanel({
             label={tightnessLabel(status.confidence, status.pairs, "free")}
           />
           {status.driftFired && (
-            <p className="m-0 mt-3 rounded-lg border border-line bg-surface2 px-3 py-2.5 text-sm text-dim">
+            <p className="m-0 mt-3 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-secondary">
               Your weight trend and your logged intake disagree. Logs may be
               missing bites.
             </p>
           )}
           {status.targetPrompt.eligible && (
-            <p className="m-0 mt-3 rounded-lg border border-line bg-surface2 px-3 py-2.5 text-sm text-dim">
+            <p className="m-0 mt-3 rounded-lg border border-border bg-muted px-3 py-2.5 text-sm text-secondary">
               Your logs and your daily target have drifted apart. Pro shows the
               measured number and realigns your target in one tap.
             </p>
           )}
-          <Link to="/billing" className="btn-primary mt-3 no-underline">
+          <Link
+            to="/billing"
+            className={cn(
+              buttonVariants(),
+              "mt-3 min-h-11 font-semibold no-underline",
+            )}
+          >
             Unlock with Pro
           </Link>
           <p className="hint">
@@ -378,27 +361,27 @@ export function TdeePanel({
               {fmtKcal(status.kcal)}{" "}
               <span className="text-xl">± {fmtKcal(status.bandKcal)}</span>
             </span>
-            <span className="text-sm text-dim">kcal per day</span>
+            <span className="text-sm text-secondary">kcal per day</span>
           </div>
           <BandBar
             confidence={status.confidence}
             label={tightnessLabel(status.confidence, status.pairs, "pro")}
           />
-          <p className="m-0 mt-1.5 text-xs text-faint">
+          <p className="m-0 mt-1.5 text-xs text-muted-foreground">
             Adaptive estimate from your same-day weight + intake, smoothed
             weekly. The band narrows as the weeks agree.
           </p>
           {status.drift != null && (
             <div
               role="status"
-              className="mt-3 rounded-lg border border-line bg-surface2 px-3 py-2.5"
+              className="mt-3 rounded-lg border border-border bg-muted px-3 py-2.5"
             >
-              <p className="num m-0 text-sm text-text">
+              <p className="num m-0 text-sm text-foreground">
                 {status.drift.direction === "under"
                   ? `Your weight trend says the deficit is about ${fmtKcal(status.drift.impliedKcalPerDay)} kcal a day bigger than your logs do.`
                   : `Your weight trend says the surplus is about ${fmtKcal(status.drift.impliedKcalPerDay)} kcal a day bigger than your logs do.`}
               </p>
-              <p className="m-0 mt-1 text-xs text-dim">
+              <p className="m-0 mt-1 text-xs text-secondary">
                 {status.drift.direction === "under"
                   ? "Logs and scale cannot both be right. Some days are probably going unlogged; weigh what you eat for a week."
                   : "Logs and scale cannot both be right. More is going in than the logs show; weigh what you eat for a week."}
@@ -407,9 +390,9 @@ export function TdeePanel({
           )}
           {energy && (
             <div className="mt-3">
-              <p className="m-0 text-sm text-text">{energy.headline}</p>
+              <p className="m-0 text-sm text-foreground">{energy.headline}</p>
               {energy.body && (
-                <p className="m-0 mt-1 text-sm text-dim">{energy.body}</p>
+                <p className="m-0 mt-1 text-sm text-secondary">{energy.body}</p>
               )}
             </div>
           )}
@@ -433,7 +416,7 @@ export function TdeePanel({
                 Losing {Math.abs(wRate).toFixed(1)} kg per week with a near-flat
                 waist.
               </p>
-              <p className="m-0 mt-1 text-xs text-dim">
+              <p className="m-0 mt-1 text-xs text-secondary">
                 That pattern can mean muscle loss. Keep protein high and
                 consider slowing the rate. Heuristic, not medical advice.
               </p>

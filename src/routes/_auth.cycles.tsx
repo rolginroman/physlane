@@ -1,5 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useState, type FormEvent, type KeyboardEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import { Button } from "#/components/ui/button";
 import {
   endActiveCycle,
   getActiveCycle,
@@ -108,7 +110,7 @@ function CyclesPage() {
   return (
     <section className="pt-8">
       <h1 className="m-0 text-xl font-semibold tracking-tight">Cycles</h1>
-      <p className="m-0 mt-1 text-xs text-faint">
+      <p className="m-0 mt-1 text-xs text-muted-foreground">
         Units, profile, reminders, sharing and exports live in Settings, top
         right.
       </p>
@@ -117,7 +119,7 @@ function CyclesPage() {
         <ActiveCycleCard cycle={active} units={units} />
       ) : (
         <div className="card mt-4 px-4 py-3">
-          <p className="m-0 text-sm text-dim">
+          <p className="m-0 text-sm text-secondary">
             No active cycle. Start one below.
           </p>
         </div>
@@ -165,35 +167,36 @@ function ActiveCycleCard({
         <h2 className="m-0 text-sm font-semibold">Active phase</h2>
         <PhaseLabel phase={cycle.phase} />
         {!confirming && (
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => setConfirming(true)}
-            className="ml-auto inline-flex min-h-11 items-center rounded-lg border border-danger/40 px-4 text-sm font-medium text-danger hover:bg-danger/10"
+            className="ml-auto min-h-11 px-4 font-medium text-danger border-danger/40 hover:bg-danger/10"
           >
             End cycle
-          </button>
+          </Button>
         )}
       </div>
 
       <dl className="m-0 mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
         <div>
-          <dt className="text-xs text-dim">Start date</dt>
+          <dt className="text-xs text-secondary">Start date</dt>
           <dd className="m-0 mt-0.5 text-sm">{fmtDate(cycle.startDate)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-dim">Start weight</dt>
+          <dt className="text-xs text-secondary">Start weight</dt>
           <dd className="num m-0 mt-0.5 text-sm">
             {fmtWeight(cycle.startWeightKg, units)}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-dim">Target rate</dt>
+          <dt className="text-xs text-secondary">Target rate</dt>
           <dd className="num m-0 mt-0.5 text-sm">
             {formatWeightRate(cycle.targetRateKgPerWeek, units)}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-dim">Kcal target</dt>
+          <dt className="text-xs text-secondary">Kcal target</dt>
           <dd className="num m-0 mt-0.5 text-sm">
             {cycle.kcalTargetPerDay != null
               ? `${cycle.kcalTargetPerDay} kcal`
@@ -206,22 +209,24 @@ function ActiveCycleCard({
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2">
           <p className="m-0 text-sm">End this cycle? History is kept.</p>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="destructive"
               onClick={handleEnd}
               disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-lg border border-danger/60 bg-danger/15 px-4 text-sm font-medium text-danger hover:bg-danger/25"
+              className="min-h-11 px-4 font-medium"
             >
               {pending ? "Ending…" : "End"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setConfirming(false)}
               disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-lg border border-line px-4 text-sm font-medium text-dim hover:text-text"
+              className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
             >
               Keep
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -327,26 +332,6 @@ function NewPhaseCard({
     }
   }
 
-  /** Radiogroup arrow keys: left/up selects the previous phase, right/down the next. */
-  function handlePhaseKeys(event: KeyboardEvent<HTMLDivElement>) {
-    const keys = ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown"];
-    if (!keys.includes(event.key)) return;
-    event.preventDefault();
-    const radios = Array.from(
-      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'),
-    );
-    const index = radios.findIndex(
-      (r) => r.getAttribute("aria-checked") === "true",
-    );
-    const dir = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
-    const nextIndex = (index + dir + radios.length) % radios.length;
-    const target = radios[nextIndex];
-    if (target) {
-      target.focus();
-      target.click();
-    }
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (hasError || pending) return;
@@ -379,39 +364,36 @@ function NewPhaseCard({
   return (
     <form onSubmit={handleSubmit} noValidate className="card mt-4 p-4">
       <h2 className="m-0 text-sm font-semibold">Start a new phase</h2>
-      <p className="m-0 mt-1 text-xs text-dim">
+      <p className="m-0 mt-1 text-xs text-secondary">
         {hasActive
           ? "Starting a new phase ends the current one. History is kept."
           : "Set the phase and rate for your next block."}
       </p>
 
-      <div
-        role="radiogroup"
+      <RadioGroup
+        value={phase}
+        onValueChange={(next) => selectPhase(next as Phase)}
         aria-label="Phase"
-        onKeyDown={handlePhaseKeys}
         className="mt-3 grid gap-2 sm:grid-cols-3"
       >
         {PHASES.map((p) => {
           const selected = phase === p.id;
           return (
-            <button
+            <RadioGroupItem
               key={p.id}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => selectPhase(p.id)}
+              value={p.id}
               className={`flex min-h-11 w-full flex-col items-start gap-1 rounded-lg border p-3 text-left ${
                 selected
-                  ? "border-accent bg-surface2"
-                  : "border-line bg-surface hover:border-line2"
+                  ? "border-brand-text bg-muted"
+                  : "border-border bg-card hover:border-border"
               }`}
             >
               <span className="text-sm font-semibold">{p.label}</span>
-              <span className="text-xs text-dim">{p.blurb}</span>
-            </button>
+              <span className="text-xs text-secondary">{p.blurb}</span>
+            </RadioGroupItem>
           );
         })}
-      </div>
+      </RadioGroup>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
         <div>
@@ -515,13 +497,13 @@ function NewPhaseCard({
       )}
 
       <div className="mt-4">
-        <button
+        <Button
           type="submit"
           disabled={pending || hasError}
-          className="btn-primary px-5"
+          className="min-h-11 px-5 font-semibold"
         >
           {pending ? "Starting…" : "Start cycle"}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -556,7 +538,7 @@ function HistoryCard({
     <div className="card mt-4">
       <h2 className="m-0 px-4 pt-4 text-sm font-semibold">History</h2>
       {history.length === 0 ? (
-        <p className="m-0 px-4 pb-4 pt-3 text-sm text-dim">
+        <p className="m-0 px-4 pb-4 pt-3 text-sm text-secondary">
           Previous phases will appear here.
         </p>
       ) : (
@@ -569,16 +551,16 @@ function HistoryCard({
             return (
               <li
                 key={c.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line px-4 py-2.5 last:border-b-0"
+                className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-4 py-2.5 last:border-b-0"
               >
                 <PhaseLabel phase={c.phase} />
-                <span className="text-xs text-dim">
+                <span className="text-xs text-secondary">
                   {fmtDate(c.startDate)} – {fmtDate(c.endDate ?? c.startDate)}
                 </span>
                 <span className="num ml-auto text-sm">
                   {fmtSignedKg(Number.isNaN(deltaKg) ? null : deltaKg, units)}
                 </span>
-                <span className="num text-xs text-dim">
+                <span className="num text-xs text-secondary">
                   {c.kcalTargetPerDay != null
                     ? `${c.kcalTargetPerDay} kcal`
                     : "—"}

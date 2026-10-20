@@ -14,11 +14,11 @@ export function Footer() {
   if (!isLanding || tgMode) {
     return (
       <footer className="px-4 py-6">
-        <p className="m-0 text-center text-xs text-faint">
+        <p className="m-0 text-center text-xs text-muted-foreground">
           physlane · manual numbers only, no bank or social integrations ·{" "}
           <Link
             to="/billing"
-            className="inline-flex items-center px-2 py-2 text-dim underline decoration-line underline-offset-2 hover:text-text"
+            className="inline-flex items-center px-2 py-2 text-secondary underline decoration-border underline-offset-2 hover:text-foreground"
           >
             Pricing
           </Link>
@@ -32,24 +32,24 @@ export function Footer() {
     "physlane learns your real daily calorie burn from your own weigh-ins and food logs";
 
   return (
-    <footer className="border-t border-line px-4 py-10 sm:px-6">
+    <footer className="border-t border-border px-4 py-10 sm:px-6">
       <div className="mx-auto grid w-full max-w-6xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="m-0 text-sm font-semibold text-text">physlane</p>
-          <p className="m-0 mt-2 max-w-56 text-xs leading-relaxed text-dim">
+          <p className="m-0 text-sm font-semibold text-foreground">physlane</p>
+          <p className="m-0 mt-2 max-w-56 text-xs leading-relaxed text-secondary">
             Find your real daily calorie burn, from your own numbers. Manual
             entry only.
           </p>
         </div>
         <nav aria-label="Product">
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Product
           </p>
           <ul className="m-0 mt-3 list-none space-y-2 p-0">
             <li>
               <Link
                 to="/sign-up"
-                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+                className="inline-flex min-h-8 items-center text-sm text-secondary no-underline hover:text-foreground"
               >
                 Create account
               </Link>
@@ -57,7 +57,7 @@ export function Footer() {
             <li>
               <Link
                 to="/sign-in"
-                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+                className="inline-flex min-h-8 items-center text-sm text-secondary no-underline hover:text-foreground"
               >
                 Sign in
               </Link>
@@ -65,7 +65,7 @@ export function Footer() {
             <li>
               <Link
                 to="/blog"
-                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+                className="inline-flex min-h-8 items-center text-sm text-secondary no-underline hover:text-foreground"
               >
                 Blog
               </Link>
@@ -73,7 +73,7 @@ export function Footer() {
             <li>
               <a
                 href="/#pricing"
-                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+                className="inline-flex min-h-8 items-center text-sm text-secondary no-underline hover:text-foreground"
               >
                 Pricing
               </a>
@@ -81,7 +81,7 @@ export function Footer() {
             <li>
               <a
                 href="/#faq"
-                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+                className="inline-flex min-h-8 items-center text-sm text-secondary no-underline hover:text-foreground"
               >
                 Questions
               </a>
@@ -89,10 +89,10 @@ export function Footer() {
           </ul>
         </nav>
         <nav aria-label="Stance">
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Stance
           </p>
-          <ul className="m-0 mt-3 list-none space-y-2 p-0 text-sm text-dim">
+          <ul className="m-0 mt-3 list-none space-y-2 p-0 text-sm text-secondary">
             <li>No food database, ever</li>
             <li>No bank or social integrations</li>
             <li>Delete any entry anytime</li>
@@ -100,7 +100,7 @@ export function Footer() {
           </ul>
         </nav>
         <div>
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-faint">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Share
           </p>
           <ul className="m-0 mt-3 list-none space-y-2 p-0">
@@ -109,7 +109,7 @@ export function Footer() {
                 href={`https://x.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+                className="inline-flex min-h-8 items-center text-sm text-secondary no-underline hover:text-foreground"
               >
                 Post on X
               </a>
@@ -119,7 +119,7 @@ export function Footer() {
                 href={`https://www.reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareText)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-8 items-center text-sm text-dim no-underline hover:text-text"
+                className="inline-flex min-h-8 items-center text-sm text-secondary no-underline hover:text-foreground"
               >
                 Post on Reddit
               </a>
@@ -127,8 +127,8 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="mx-auto mt-8 w-full max-w-6xl border-t border-line pt-5">
-        <p className="num m-0 text-xs text-faint">
+      <div className="mx-auto mt-8 w-full max-w-6xl border-t border-border pt-5">
+        <p className="num m-0 text-xs text-muted-foreground">
           © 2026 physlane · two numbers a day
         </p>
       </div>
