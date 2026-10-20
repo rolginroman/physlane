@@ -1,58 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { and, desc, eq, isNull } from "drizzle-orm";
+import { z } from "zod";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
 import { requireUser } from "./auth.fns";
+import {
+  listCyclesForUser,
+  saveCycleForUser,
+  SaveCycleInputSchema,
+  toCycleDTO,
+  type CycleDTO,
+} from "./cycles.core";
 
-export type CycleDTO = {
-  id: string;
-  phase: "cut" | "bulk" | "maintain";
-  startDate: string;
-  endDate: string | null;
-  startWeightKg: number | null;
-  targetRateKgPerWeek: number | null;
-  kcalTargetPerDay: number | null;
-  notes: string | null;
-};
-
-const CyclePhaseSchema = z.enum(["cut", "bulk", "maintain"]);
-
-const SaveCycleInputSchema = z.object({
-  id: z.string().optional(),
-  phase: CyclePhaseSchema,
-  startDate: z.string(),
-  endDate: z.string().nullable().optional(),
-  startWeightKg: z.number().nullable().optional(),
-  targetRateKgPerWeek: z.number().nullable().optional(),
-  kcalTargetPerDay: z.number().nullable().optional(),
-  notes: z.string().nullable().optional(),
-});
+export type { CycleDTO };
 
 const EndActiveCycleInputSchema = z.object({
   id: z.string(),
 });
 
-const toCycleDTO = (c: schema.Cycle): CycleDTO => ({
-  id: c.id,
-  phase: c.phase,
-  startDate: new Date(c.startDate).toISOString(),
-  endDate: c.endDate ? new Date(c.endDate).toISOString() : null,
-  startWeightKg: c.startWeightKg,
-  targetRateKgPerWeek: c.targetRateKgPerWeek,
-  kcalTargetPerDay: c.kcalTargetPerDay,
-  notes: c.notes,
-});
-
 export const listCycles = createServerFn({ method: "GET" }).handler(
   async () => {
     const me = await requireUser();
-    const rows = await useDb()
-      .select()
-      .from(schema.cycles)
-      .where(eq(schema.cycles.userId, me.id))
-      .orderBy(desc(schema.cycles.startDate));
-    return rows.map(toCycleDTO);
+    return listCyclesForUser(me);
   },
 );
 
@@ -89,42 +58,7 @@ export const saveCycle = createServerFn({ method: "POST" })
   .validator((d) => SaveCycleInputSchema.parse(d))
   .handler(async ({ data }) => {
     const me = await requireUser();
-    const db = useDb();
-
-    // Invariant I2 (single active cycle): starting a new cycle, or updating one
-    // to active, auto-ends any currently open cycle first. Powers cut→bulk rollover.
-    if (!data.endDate) {
-      await db
-        .update(schema.cycles)
-        .set({ endDate: new Date() })
-        .where(
-          and(eq(schema.cycles.userId, me.id), isNull(schema.cycles.endDate)),
-        );
-    }
-
-    const values = {
-      userId: me.id,
-      phase: data.phase,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : null,
-      startWeightKg: data.startWeightKg ?? null,
-      targetRateKgPerWeek: data.targetRateKgPerWeek ?? null,
-      kcalTargetPerDay: data.kcalTargetPerDay ?? null,
-      notes: data.notes?.trim() || null,
-    };
-
-    if (data.id) {
-      await db
-        .update(schema.cycles)
-        .set(values)
-        .where(
-          and(eq(schema.cycles.id, data.id), eq(schema.cycles.userId, me.id)),
-        );
-    } else {
-      await db
-        .insert(schema.cycles)
-        .values({ id: crypto.randomUUID(), ...values });
-    }
+    await saveCycleForUser(me, data);
     return { ok: true };
   });
 
