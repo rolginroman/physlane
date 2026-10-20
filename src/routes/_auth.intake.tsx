@@ -10,6 +10,7 @@ import {
 import { getViewer } from "#/lib/auth-guard.fns";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import { Button } from "#/components/ui/button";
 import { StreakChip } from "#/components/tdee-panel";
 import {
   addDays,
@@ -203,13 +204,14 @@ function IntakePage() {
               : `${weekday(selected, "long")}, ${monthDay(selected)}`}
           </h2>
           {selected !== today && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setSelected(today)}
-              className="inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium text-secondary hover:text-foreground"
+              className="min-h-11 px-2.5"
             >
               Jump to today
-            </button>
+            </Button>
           )}
         </div>
 
@@ -257,9 +259,13 @@ function IntakePage() {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button type="submit" className="btn-primary" disabled={pending}>
+          <Button
+            type="submit"
+            className="min-h-11 font-semibold"
+            disabled={pending}
+          >
             {pending ? "Saving…" : row?.kcal != null ? "Update day" : "Log day"}
-          </button>
+          </Button>
           {saved && !pending && (
             <span role="status" className="text-sm text-brand-text">
               Saved

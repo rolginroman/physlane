@@ -7,6 +7,7 @@ import {
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import { Button } from "#/components/ui/button";
 import { authClient, signIn } from "#/lib/auth-client";
 import { authErrorMessage } from "#/lib/auth-error";
 import { getWebApp } from "#/lib/telegram-web";
@@ -211,14 +212,15 @@ function SignInPage() {
                   errors.password ? "sign-in-password-error" : undefined
                 }
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-xs font-medium text-secondary hover:text-foreground"
+                className="absolute inset-y-0 right-0 h-auto w-11 rounded-r-lg text-xs font-medium"
               >
                 {showPassword ? "Hide" : "Show"}
-              </button>
+              </Button>
             </div>
             {errors.password && (
               <p id="sign-in-password-error" className="field-error">
@@ -227,13 +229,13 @@ function SignInPage() {
             )}
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={pending}
-            className="btn-primary w-full"
+            className="min-h-11 w-full font-semibold"
           >
             {pending ? "Signing in…" : "Sign in"}
-          </button>
+          </Button>
         </form>
 
         <p className="mt-5 mb-0 text-center text-sm text-secondary">

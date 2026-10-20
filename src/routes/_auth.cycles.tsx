@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import { Button } from "#/components/ui/button";
 import {
   endActiveCycle,
   getActiveCycle,
@@ -166,13 +167,14 @@ function ActiveCycleCard({
         <h2 className="m-0 text-sm font-semibold">Active phase</h2>
         <PhaseLabel phase={cycle.phase} />
         {!confirming && (
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => setConfirming(true)}
-            className="ml-auto inline-flex min-h-11 items-center rounded-lg border border-danger/40 px-4 text-sm font-medium text-danger hover:bg-danger/10"
+            className="ml-auto min-h-11 px-4 font-medium text-danger border-danger/40 hover:bg-danger/10"
           >
             End cycle
-          </button>
+          </Button>
         )}
       </div>
 
@@ -207,22 +209,24 @@ function ActiveCycleCard({
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2">
           <p className="m-0 text-sm">End this cycle? History is kept.</p>
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="destructive"
               onClick={handleEnd}
               disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-lg border border-danger/60 bg-danger/15 px-4 text-sm font-medium text-danger hover:bg-danger/25"
+              className="min-h-11 px-4 font-medium"
             >
               {pending ? "Ending…" : "End"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setConfirming(false)}
               disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary hover:text-foreground"
+              className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
             >
               Keep
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -493,13 +497,13 @@ function NewPhaseCard({
       )}
 
       <div className="mt-4">
-        <button
+        <Button
           type="submit"
           disabled={pending || hasError}
-          className="btn-primary px-5"
+          className="min-h-11 px-5 font-semibold"
         >
           {pending ? "Starting…" : "Start cycle"}
-        </button>
+        </Button>
       </div>
     </form>
   );

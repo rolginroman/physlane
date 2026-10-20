@@ -4,6 +4,8 @@ import { useSession } from "#/lib/auth-client";
 import { useTelegramMode } from "#/lib/telegram-mode";
 import { SettingsDrawer } from "#/components/settings-drawer";
 import { ThemeSwitch } from "#/components/theme-switch";
+import { Button, buttonVariants } from "#/components/ui/button";
+import { cn } from "#/lib/cn";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
@@ -72,13 +74,15 @@ export function Header() {
                     Billing
                   </Link>
                 )}
-                <button
+                <Button
                   ref={gearRef}
                   type="button"
+                  variant="ghost"
+                  size="icon-lg"
                   onClick={() => setSettingsOpen(true)}
                   aria-label="Settings"
                   aria-haspopup="dialog"
-                  className="ml-1 inline-flex size-11 shrink-0 items-center justify-center rounded-md text-dim hover:text-text"
+                  className="ml-1 size-11 shrink-0"
                 >
                   <svg
                     width="18"
@@ -133,7 +137,7 @@ export function Header() {
                       strokeWidth="1.5"
                     />
                   </svg>
-                </button>
+                </Button>
               </>
             ) : tgMode ? null : (
               <>
@@ -145,7 +149,10 @@ export function Header() {
                 </Link>
                 <Link
                   to="/sign-up"
-                  className="btn-primary whitespace-nowrap px-3"
+                  className={cn(
+                    buttonVariants(),
+                    "min-h-11 whitespace-nowrap px-3 font-semibold no-underline",
+                  )}
                 >
                   {/* Full label needs ~350px of header; narrower phones get the short one. */}
                   <span className="min-[360px]:hidden">Sign up</span>

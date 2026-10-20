@@ -6,6 +6,7 @@ import {
 } from "#/server/measurements.fns";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import { Button } from "#/components/ui/button";
 import {
   FIELD_LABELS,
   lengthFromInput,
@@ -361,14 +362,15 @@ export function MeasurementForm({
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setShowMore((prev) => !prev)}
             aria-expanded={showMore}
-            className="mt-3 inline-flex min-h-11 items-center rounded-md px-1 text-sm font-medium text-secondary hover:text-foreground"
+            className="mt-3 min-h-11 px-1"
           >
             {showMore ? "Fewer fields" : "More fields"}
-          </button>
+          </Button>
 
           {showMore && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -431,17 +433,18 @@ export function MeasurementForm({
           )}
 
           <div className="mt-4 flex items-center justify-between gap-3">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={resetToMode}
-              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary hover:text-foreground"
+              className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
             >
               Clear
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={pending || !hasAnyValue || hasError}
-              className="btn-primary px-5"
+              className="min-h-11 px-5 font-semibold"
             >
               {saved
                 ? "Saved"
@@ -450,7 +453,7 @@ export function MeasurementForm({
                   : editing
                     ? "Save changes"
                     : "Log entry"}
-            </button>
+            </Button>
           </div>
 
           {!hasAnyValue && (

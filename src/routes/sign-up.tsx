@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
+import { Button } from "#/components/ui/button";
 import { signUp } from "#/lib/auth-client";
 import { authErrorMessage } from "#/lib/auth-error";
 
@@ -165,14 +166,15 @@ function SignUpPage() {
                   errors.password ? "sign-up-password-error" : undefined
                 }
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-xs font-medium text-secondary hover:text-foreground"
+                className="absolute inset-y-0 right-0 h-auto w-11 rounded-r-lg text-xs font-medium"
               >
                 {showPassword ? "Hide" : "Show"}
-              </button>
+              </Button>
             </div>
             {errors.password ? (
               <p id="sign-up-password-error" className="field-error">
@@ -183,13 +185,13 @@ function SignUpPage() {
             )}
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={pending}
-            className="btn-primary w-full"
+            className="min-h-11 w-full font-semibold"
           >
             {pending ? "Creating account…" : "Create account"}
-          </button>
+          </Button>
         </form>
 
         <p className="mt-5 mb-0 text-center text-sm text-secondary">

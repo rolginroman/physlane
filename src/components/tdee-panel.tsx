@@ -14,6 +14,8 @@ import { fmtWeight, kgToLb, type UnitSystem } from "#/lib/units";
 import type { ProjectionDTO, TdeeStatusResult } from "#/server/intake.fns";
 import type { MeasurementDTO } from "#/server/measurements.fns";
 import { Switch } from "#/components/ui/switch";
+import { Button, buttonVariants } from "#/components/ui/button";
+import { cn } from "#/lib/cn";
 
 type Props = {
   status: TdeeStatusResult;
@@ -181,22 +183,23 @@ function TargetPromptCard({
         Follow the measurement?
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
           onClick={() => act("apply")}
           disabled={pending != null}
-          className="btn-primary inline-flex min-h-9 items-center rounded-md px-3 text-sm disabled:opacity-60"
+          className="min-h-9 px-3 text-sm font-semibold"
         >
           {pending === "apply" ? "Applying" : `Apply ${fmtKcal(applied)}`}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           onClick={() => act("dismiss")}
           disabled={pending != null}
-          className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm font-medium text-secondary hover:text-foreground disabled:opacity-60"
+          className="min-h-9 px-3 text-sm font-medium text-secondary hover:text-foreground"
         >
           Keep mine
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -335,7 +338,13 @@ export function TdeePanel({
               measured number and realigns your target in one tap.
             </p>
           )}
-          <Link to="/billing" className="btn-primary mt-3 no-underline">
+          <Link
+            to="/billing"
+            className={cn(
+              buttonVariants(),
+              "mt-3 min-h-11 font-semibold no-underline",
+            )}
+          >
             Unlock with Pro
           </Link>
           <p className="hint">

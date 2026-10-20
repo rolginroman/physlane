@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { isAppErrorCode } from "#/lib/app-error";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import { Button } from "#/components/ui/button";
 import {
   billingStatus,
   createBillingPortal,
@@ -343,11 +344,11 @@ function BillingPage() {
                     onChange={setInterval}
                     disabled={pending !== null}
                   />
-                  <button
+                  <Button
                     type="button"
                     onClick={startCheckout}
                     disabled={pending !== null}
-                    className="btn-primary mt-3 inline-flex items-center gap-2"
+                    className="mt-3 min-h-11 gap-2 font-semibold"
                   >
                     {pending === "checkout" ? (
                       "Opening checkout…"
@@ -357,7 +358,7 @@ function BillingPage() {
                         <ArrowRight />
                       </>
                     )}
-                  </button>
+                  </Button>
                   <p className="hint">
                     Secure Stripe checkout in a new tab. Cancel anytime from
                     this page.
@@ -392,16 +393,17 @@ function BillingPage() {
           <div className="mt-4 border-t border-border pt-4">
             {configured ? (
               <>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={openPortal}
                   disabled={pending !== null}
-                  className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-muted px-4 text-sm font-semibold text-foreground transition-colors duration-150 ease-out hover:border-border2 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-11 px-4 font-semibold"
                 >
                   {pending === "portal"
                     ? "Opening portal…"
                     : "Manage subscription"}
-                </button>
+                </Button>
                 <p className="hint">
                   Update card, switch monthly or yearly, or cancel. Cancellation
                   takes effect at the end of the paid period.

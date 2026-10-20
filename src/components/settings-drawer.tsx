@@ -14,6 +14,7 @@ import { exportIntakeCsv, exportMeasurementsCsv } from "#/server/export.fns";
 import type { Sex } from "#/lib/navy-bf";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
 import { Switch } from "#/components/ui/switch";
+import { Button } from "#/components/ui/button";
 import { lengthFromInput, lengthToInput, type UnitSystem } from "#/lib/units";
 
 const SEX_RADIO_NONE = "none";
@@ -90,9 +91,6 @@ function tzOffsetLabel(tz: string): string {
     return "";
   }
 }
-
-const rowButton =
-  "inline-flex min-h-11 items-center rounded-lg border border-border px-3 text-sm font-medium text-secondary hover:text-foreground disabled:opacity-60";
 
 interface ViewerSettings {
   units: UnitSystem;
@@ -306,12 +304,14 @@ export function SettingsDrawer({
           <SheetDescription className="sr-only">
             Account, units, profile, reminders, sharing, and export.
           </SheetDescription>
-          <button
+          <Button
             ref={closeRef}
             type="button"
+            variant="ghost"
+            size="icon-lg"
             onClick={onClose}
             aria-label="Close settings"
-            className="inline-flex size-11 items-center justify-center rounded-md text-secondary hover:text-foreground"
+            className="size-11 shrink-0"
           >
             <svg
               width="18"
@@ -327,7 +327,7 @@ export function SettingsDrawer({
                 strokeLinecap="round"
               />
             </svg>
-          </button>
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -587,26 +587,28 @@ export function SettingsDrawer({
                     onFocus={(e) => e.currentTarget.select()}
                   />
                   {shareToken && (
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={handleCopy}
-                      className={rowButton}
+                      className="min-h-11 px-3 text-secondary hover:text-foreground"
                     >
                       Copy
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={handleRotate}
                     disabled={sharePending}
-                    className={rowButton}
+                    className="min-h-11 px-3 text-secondary hover:text-foreground"
                   >
                     {sharePending
                       ? "Updating…"
                       : shareToken
                         ? "Revoke / new link"
                         : "Create link"}
-                  </button>
+                  </Button>
                   {copied && !sharePending && (
                     <p role="status" className="m-0 text-xs text-secondary">
                       Copied.
@@ -629,24 +631,26 @@ export function SettingsDrawer({
                   Export
                 </h3>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => handleExport("measurements")}
                     disabled={exporting != null}
-                    className={rowButton}
+                    className="min-h-11 px-3 text-secondary hover:text-foreground"
                   >
                     {exporting === "measurements"
                       ? "Exporting…"
                       : "Measurements CSV"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => handleExport("intake")}
                     disabled={exporting != null}
-                    className={rowButton}
+                    className="min-h-11 px-3 text-secondary hover:text-foreground"
                   >
                     {exporting === "intake" ? "Exporting…" : "Intake CSV"}
-                  </button>
+                  </Button>
                 </div>
                 {exportError && (
                   <p role="alert" className="m-0 mt-2 text-xs text-danger">
@@ -665,13 +669,13 @@ export function SettingsDrawer({
               )}
 
               <div className="mt-4 flex items-center gap-3 pb-2">
-                <button
+                <Button
                   type="submit"
                   disabled={pending || Boolean(liveHeight)}
-                  className="btn-primary px-5"
+                  className="min-h-11 px-5 font-semibold"
                 >
                   {pending ? "Saving…" : "Save changes"}
-                </button>
+                </Button>
                 {saved && !pending && (
                   <p role="status" className="m-0 text-xs text-secondary">
                     Saved.
@@ -688,13 +692,14 @@ export function SettingsDrawer({
             paddingBottom: "calc(0.75rem + var(--tg-safe-bottom, 0px))",
           }}
         >
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={handleSignOut}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-danger/40 px-4 text-sm font-medium text-danger hover:bg-danger/10"
+            className="min-h-11 w-full border-danger/40 px-4 font-medium text-danger hover:bg-danger/10"
           >
             Sign out
-          </button>
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

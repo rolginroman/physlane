@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "#/components/ui/table";
+import { Button } from "#/components/ui/button";
 
 const DETAIL_FIELDS = [
   "neckCm",
@@ -101,22 +102,24 @@ function ConfirmDelete({
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="m-0 text-sm text-foreground">Delete this entry?</p>
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="button"
+          variant="destructive"
           onClick={onConfirm}
           disabled={deleting}
-          className="inline-flex min-h-11 items-center rounded-lg border border-danger/60 bg-danger/15 px-4 text-sm font-medium text-danger hover:bg-danger/25"
+          className="min-h-11 px-4 font-medium"
         >
           {deleting ? "Deleting…" : "Delete"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           onClick={onKeep}
           disabled={deleting}
-          className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary hover:text-foreground"
+          className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
         >
           Keep
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -163,20 +166,22 @@ function RowActions({
           </svg>
         </button>
       )}
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={onEdit}
-        className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-secondary hover:text-foreground"
+        className="min-h-11 px-2 text-xs font-medium"
       >
         Edit
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="ghost"
         onClick={onDelete}
-        className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-medium text-secondary hover:text-danger"
+        className="min-h-11 px-2 text-xs font-medium hover:text-danger"
       >
         Delete
-      </button>
+      </Button>
     </div>
   );
 }

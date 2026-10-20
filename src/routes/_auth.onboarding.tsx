@@ -3,6 +3,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import { Button } from "#/components/ui/button";
 import { hasAnyCycle, saveCycle } from "#/server/cycles.fns";
 import { saveMeasurement } from "#/server/measurements.fns";
 import { saveSettings } from "#/lib/auth-guard.fns";
@@ -556,33 +557,34 @@ function OnboardingPage() {
 
           <div className="mt-6 flex items-center justify-between gap-3">
             {step > 1 ? (
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setStep((prev) => Math.max(1, prev - 1))}
-                className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-secondary hover:text-foreground"
+                className="min-h-11 px-4 font-medium text-secondary hover:text-foreground"
               >
                 Back
-              </button>
+              </Button>
             ) : (
               <span aria-hidden="true" />
             )}
             {step < 3 ? (
-              <button
+              <Button
                 type="button"
                 disabled={!stepValid}
                 onClick={() => setStep((prev) => Math.min(3, prev + 1))}
-                className="btn-primary px-5"
+                className="min-h-11 px-5 font-semibold"
               >
                 Continue
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="submit"
                 disabled={!stepValid || pending}
-                className="btn-primary px-5"
+                className="min-h-11 px-5 font-semibold"
               >
                 {pending ? "Saving…" : "Start tracking"}
-              </button>
+              </Button>
             )}
           </div>
         </div>
