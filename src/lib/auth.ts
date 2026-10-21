@@ -6,6 +6,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { telegram } from "tele-better-auth";
 import { env } from "cloudflare:workers";
 import { useDb } from "#/db/client";
+import { captureEvent } from "#/lib/analytics/server";
 import { MCP_RESOURCE } from "#/server/mcp/config";
 
 export function useAuth() {
@@ -33,6 +34,15 @@ export function useAuth() {
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7 days
       updateAge: 60 * 60 * 24, // refresh daily
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            captureEvent({ name: "signup_completed" }, user.id);
+          },
+        },
+      },
     },
     plugins: [
       tanstackStartCookies(),

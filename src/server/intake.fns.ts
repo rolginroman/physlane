@@ -6,6 +6,7 @@ import * as schema from "#/db/schema";
 import { appError } from "#/lib/app-error";
 import { isValidIntakeDate } from "#/lib/intake-logic";
 import { intakeStreak } from "#/lib/adherence";
+import { captureEvent } from "#/lib/analytics/server";
 import { requireUser } from "./auth.fns";
 import {
   buildTdeeStatusForUser,
@@ -68,6 +69,7 @@ export const upsertIntake = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const me = await requireUser();
     await upsertIntakeForUser(me, data);
+    captureEvent({ name: "intake_logged" }, me.id);
     return { ok: true };
   });
 

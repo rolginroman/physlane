@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
+import { captureEvent } from "#/lib/analytics/server";
 import { requireUser } from "./auth.fns";
 import { appError } from "#/lib/app-error";
 import { useStripe, stripeConfigured } from "#/lib/stripe";
@@ -80,6 +81,10 @@ export const createCheckout = createServerFn({ method: "POST" })
       allow_promotion_codes: true,
       subscription_data: { metadata: { userId: me.id } },
     });
+    captureEvent(
+      { name: "checkout_started", props: { interval: data.interval } },
+      me.id,
+    );
     return { url: session.url };
   });
 

@@ -20,5 +20,8 @@
     // Public data — price IDs are safe to commit; set at launch, override in .dev.vars
     "STRIPE_PRICE_MONTHLY": "",
     "STRIPE_PRICE_YEARLY": "",
+    // Public data — PostHog client key is safe to commit; set at launch, override in .dev.vars
+    "POSTHOG_KEY": "",
+    "POSTHOG_HOST": "",
   },
 }

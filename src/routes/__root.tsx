@@ -5,9 +5,12 @@ import {
   Scripts,
   createRootRoute,
   useMatches,
+  useRouterState,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Footer } from "#/components/footer";
 import { Header } from "#/components/header";
+import { initAnalytics, pageview } from "#/lib/analytics/client";
 
 import { THEME_COLORS, themeBootstrapScript } from "#/lib/theme";
 import appCss from "#/styles.css?url";
@@ -71,6 +74,20 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   const appChrome = useMatches({
     select: (ms) => ms.every((m) => m.staticData.appChrome !== false),
   });
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
+  });
+
+  // Lazy-load the analytics SDK only when a key is configured.
+  useEffect(() => {
+    void initAnalytics();
+  }, []);
+
+  // Client navigations (and first paint after hydration).
+  useEffect(() => {
+    pageview(pathname);
+  }, [pathname]);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

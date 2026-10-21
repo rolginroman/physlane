@@ -3,6 +3,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
+import { captureEvent } from "#/lib/analytics/server";
 import { requireUser } from "./auth.fns";
 import {
   listCyclesForUser,
@@ -59,6 +60,26 @@ export const saveCycle = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const me = await requireUser();
     await saveCycleForUser(me, data);
+    return { ok: true };
+  });
+
+const OnboardingCompletedInputSchema = z.object({
+  goal: z.enum(["cut", "bulk", "maintain"]),
+  units: z.enum(["metric", "imperial"]),
+});
+
+/** Analytics-only: onboarding wizard finished (all three saves succeeded). */
+export const onboardingCompleted = createServerFn({ method: "POST" })
+  .validator((d) => OnboardingCompletedInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    captureEvent(
+      {
+        name: "onboarding_completed",
+        props: { goal: data.goal, units: data.units },
+      },
+      me.id,
+    );
     return { ok: true };
   });
 
