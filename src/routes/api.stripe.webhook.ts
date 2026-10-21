@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
 import { useStripe } from "#/lib/stripe";
+import { captureEvent } from "#/lib/analytics/server";
 import { deriveUserPatch, type PlanUserPatch } from "#/server/billing.core";
 
 /**
@@ -75,6 +76,9 @@ async function processEvent(
         const sub = await retrieveSubscription(stripe, subscriptionId);
         Object.assign(patch, deriveUserPatch(sub, user));
       }
+      if (patch.plan === "pro") {
+        captureEvent({ name: "subscription_activated" }, user.id);
+      }
       await applyPatch(user.id, patch);
       return;
     }
@@ -91,7 +95,19 @@ async function processEvent(
         payloadSub.id,
         event.type === "customer.subscription.deleted" ? payloadSub : undefined,
       );
-      await applyPatch(user.id, deriveUserPatch(sub, user));
+      const patch = deriveUserPatch(sub, user);
+      if (Object.keys(patch).length > 0) {
+        captureEvent(
+          {
+            name:
+              event.type === "customer.subscription.deleted"
+                ? "subscription_deleted"
+                : "subscription_updated",
+          },
+          user.id,
+        );
+      }
+      await applyPatch(user.id, patch);
       return;
     }
     default:

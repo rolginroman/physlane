@@ -22,7 +22,7 @@ pnpm typecheck && pnpm test && pnpm build
 ```
 
 Deploy: `pnpm build && npx wrangler deploy -c dist/server/wrangler.json`
-(secrets: `wrangler secret put AUTH_SECRET`; Telegram: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` + `CRON_SECRET` for mini app + reminders; Stripe keys when billing launches)
+(secrets: `wrangler secret put AUTH_SECRET`; Telegram: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` + `CRON_SECRET` for mini app + reminders; Stripe keys when billing launches; PostHog `POSTHOG_KEY` when analytics launches)
 
 ## Layout
 

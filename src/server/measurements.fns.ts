@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
+import { captureEvent } from "#/lib/analytics/server";
 import { requireUser } from "./auth.fns";
 import {
   latestMeasurementForUser,
@@ -31,6 +32,7 @@ export const saveMeasurement = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const me = await requireUser();
     await saveMeasurementForUser(me, data);
+    captureEvent({ name: "measurement_logged" }, me.id);
     return { ok: true };
   });
 

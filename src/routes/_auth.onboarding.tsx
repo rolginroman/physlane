@@ -4,7 +4,11 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
 import { Button } from "#/components/ui/button";
-import { hasAnyCycle, saveCycle } from "#/server/cycles.fns";
+import {
+  hasAnyCycle,
+  onboardingCompleted,
+  saveCycle,
+} from "#/server/cycles.fns";
 import { saveMeasurement } from "#/server/measurements.fns";
 import { saveSettings } from "#/lib/auth-guard.fns";
 import type { Sex } from "#/lib/navy-bf";
@@ -207,6 +211,9 @@ function OnboardingPage() {
           sex: sex === "" ? null : sex,
         },
       });
+      await onboardingCompleted({ data: { goal: phase, units } }).catch(
+        () => {},
+      );
       await navigate({ to: "/dashboard" });
     } catch {
       setServerError(
