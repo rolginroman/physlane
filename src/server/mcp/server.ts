@@ -22,6 +22,8 @@ export function buildMcpServer(): McpServer {
   return server;
 }
 
+// "stateless" keeps the default serving of 2025-era (non-envelope) clients
+// like pi and Claude Code; "reject" would serve only the 2026-07-28 protocol.
 export const mcpHttpHandler = createMcpHandler(() => buildMcpServer(), {
-  legacy: "reject",
+  legacy: "stateless",
 });

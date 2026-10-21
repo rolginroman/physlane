@@ -62,7 +62,25 @@ async function handleMcp(request: Request): Promise<Response> {
     (req, claims) =>
       mcpHttpHandler.fetch(req, { authInfo: authInfoFromRequest(req, claims) }),
   );
-  return protectedHandler(request);
+  try {
+    return await protectedHandler(request);
+  } catch (error) {
+    // Challenge responses are returned, not thrown; a throw here is a server
+    // fault that TanStack would mask behind a generic "HTTPError" body.
+    console.error("mcp request failed", error);
+    const message =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
+    return new Response(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        error: { code: -32603, message },
+        id: null,
+      }),
+      { status: 500, headers: { "content-type": "application/json" } },
+    );
+  }
 }
 
 export const Route = createFileRoute("/mcp")({
