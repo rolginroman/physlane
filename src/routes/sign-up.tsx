@@ -19,7 +19,12 @@ export const Route = createFileRoute("/sign-up")({
   component: SignUpPage,
 });
 
-type FieldErrors = { name?: string; email?: string; password?: string };
+type FieldErrors = {
+  name?: string;
+  email?: string;
+  password?: string;
+  healthConsent?: string;
+};
 
 function SignUpPage() {
   const navigate = useNavigate();
@@ -29,6 +34,7 @@ function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
+  const [healthConsent, setHealthConsent] = useState(false);
   const [pending, setPending] = useState(false);
 
   function validateName(): string | undefined {
@@ -50,16 +56,31 @@ function SignUpPage() {
     return undefined;
   }
 
+  function validateHealthConsent(): string | undefined {
+    if (!healthConsent) {
+      return "Consent is required before we can store your health data.";
+    }
+    return undefined;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextErrors: FieldErrors = {
       name: validateName(),
       email: validateEmail(),
       password: validatePassword(),
+      healthConsent: validateHealthConsent(),
     };
     setErrors(nextErrors);
     setServerError(null);
-    if (nextErrors.name || nextErrors.email || nextErrors.password) return;
+    if (
+      nextErrors.name ||
+      nextErrors.email ||
+      nextErrors.password ||
+      nextErrors.healthConsent
+    ) {
+      return;
+    }
 
     setPending(true);
     const { error } = await signUp.email({
@@ -182,6 +203,58 @@ function SignUpPage() {
               </p>
             ) : (
               <p className="hint">At least 8 characters.</p>
+            )}
+          </div>
+
+          <div className="mb-6">
+            <div className="flex gap-3">
+              <input
+                id="sign-up-health-consent"
+                name="healthConsent"
+                type="checkbox"
+                checked={healthConsent}
+                onChange={(event) => {
+                  setHealthConsent(event.target.checked);
+                  setErrors((prev) => ({
+                    ...prev,
+                    healthConsent: event.target.checked
+                      ? undefined
+                      : validateHealthConsent(),
+                  }));
+                }}
+                onBlur={() =>
+                  setErrors((prev) => ({
+                    ...prev,
+                    healthConsent: validateHealthConsent(),
+                  }))
+                }
+                aria-invalid={errors.healthConsent ? true : undefined}
+                aria-describedby={
+                  errors.healthConsent
+                    ? "sign-up-health-consent-error"
+                    : undefined
+                }
+                className="mt-1 size-4 shrink-0 rounded border-border accent-primary"
+              />
+              <Label
+                htmlFor="sign-up-health-consent"
+                className="text-sm leading-snug font-normal text-muted-foreground"
+              >
+                I consent to physlane storing and processing my weight, body
+                measurements, and calorie intake, as described in the{" "}
+                <Link
+                  to="/privacy"
+                  className="font-medium text-brand-text underline decoration-border underline-offset-2 hover:text-brand-hover"
+                >
+                  Privacy Policy
+                </Link>
+                .
+              </Label>
+            </div>
+            {errors.healthConsent && (
+              <p id="sign-up-health-consent-error" className="field-error">
+                {errors.healthConsent}
+              </p>
             )}
           </div>
 
