@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
@@ -39,6 +39,14 @@ export type ProgramSessionDTO = {
   entries: ProgramEntryDTO[];
 };
 
+export type ProgramExerciseRefDTO = {
+  name: string;
+  musclePrimary: Muscle;
+  equipment: Equipment;
+  formNote: string | null;
+  isCustom: boolean;
+};
+
 export type ProgramDTO = {
   id: string;
   title: string;
@@ -56,6 +64,7 @@ export type ProgramDTO = {
   shareToken: string | null;
   createdAt: string;
   sessions?: ProgramSessionDTO[];
+  exercises?: Record<string, ProgramExerciseRefDTO>;
 };
 
 export type ProgramListItemDTO = Pick<
@@ -86,6 +95,8 @@ export type ExercisePickerRowDTO = {
   equipment: Equipment;
   formNote: string | null;
   isCustom: boolean;
+  hasVideo: boolean;
+  hasArticle: boolean;
 };
 
 const toProgramDTO = (
@@ -197,6 +208,36 @@ async function inheritedForeignCustomIdsForProgram(
   return inherited;
 }
 
+async function loadProgramExerciseMap(
+  sessions: ProgramSessionDTO[],
+): Promise<Record<string, ProgramExerciseRefDTO>> {
+  const ids = new Set<string>();
+  for (const session of sessions) {
+    for (const entry of session.entries) {
+      ids.add(entry.exerciseId);
+    }
+  }
+  if (ids.size === 0) {
+    return {};
+  }
+  const db = useDb();
+  const rows = await db
+    .select()
+    .from(schema.exercises)
+    .where(inArray(schema.exercises.id, [...ids]));
+  const map: Record<string, ProgramExerciseRefDTO> = {};
+  for (const row of rows) {
+    map[row.id] = {
+      name: row.name,
+      musclePrimary: row.musclePrimary,
+      equipment: row.equipment,
+      formNote: row.formNote,
+      isCustom: row.ownerUserId != null,
+    };
+  }
+  return map;
+}
+
 async function loadProgramSessionsDTO(
   programId: string,
 ): Promise<ProgramSessionDTO[]> {
@@ -294,7 +335,8 @@ export const getMyProgram = createServerFn({ method: "GET" })
     const me = await requireUser();
     const program = await loadAuthorProgram(data.programId, me.id);
     const sessions = await loadProgramSessionsDTO(program.id);
-    return toProgramDTO(program, sessions);
+    const exercises = await loadProgramExerciseMap(sessions);
+    return { ...toProgramDTO(program, sessions), exercises };
   });
 
 export const listMyPrograms = createServerFn({ method: "GET" }).handler(
@@ -661,14 +703,42 @@ export const searchCatalogExercises = createServerFn({ method: "GET" })
       })
       .slice(0, 50);
 
-    return ranked.map(({ row }) => ({
-      id: row.id,
-      name: row.name,
-      aliases: row.aliases,
-      musclePrimary: row.musclePrimary,
-      muscleSecondary: row.muscleSecondary,
-      equipment: row.equipment,
-      formNote: row.formNote,
-      isCustom: row.ownerUserId != null,
-    })) satisfies ExercisePickerRowDTO[];
+    const rankedIds = ranked.map(({ row }) => row.id);
+    const assetHints = new Map<
+      string,
+      { hasVideo: boolean; hasArticle: boolean }
+    >();
+    if (rankedIds.length > 0) {
+      const assetRows = await db
+        .select({
+          exerciseId: schema.exerciseAssets.exerciseId,
+          hasVideo: sql<number>`max(case when ${schema.exerciseAssets.kind} = 'video' then 1 else 0 end)`,
+          hasArticle: sql<number>`max(case when ${schema.exerciseAssets.kind} = 'article' then 1 else 0 end)`,
+        })
+        .from(schema.exerciseAssets)
+        .where(inArray(schema.exerciseAssets.exerciseId, rankedIds))
+        .groupBy(schema.exerciseAssets.exerciseId);
+      for (const hint of assetRows) {
+        assetHints.set(hint.exerciseId, {
+          hasVideo: hint.hasVideo > 0,
+          hasArticle: hint.hasArticle > 0,
+        });
+      }
+    }
+
+    return ranked.map(({ row }) => {
+      const hints = assetHints.get(row.id);
+      return {
+        id: row.id,
+        name: row.name,
+        aliases: row.aliases,
+        musclePrimary: row.musclePrimary,
+        muscleSecondary: row.muscleSecondary,
+        equipment: row.equipment,
+        formNote: row.formNote,
+        isCustom: row.ownerUserId != null,
+        hasVideo: hints?.hasVideo ?? false,
+        hasArticle: hints?.hasArticle ?? false,
+      };
+    }) satisfies ExercisePickerRowDTO[];
   });
