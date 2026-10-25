@@ -40,8 +40,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api.stripe.webhook'
 import { Route as ApiTelegramRemindRouteImport } from './routes/api.telegram.remind'
 import { Route as ApiTelegramWebhookRouteImport } from './routes/api.telegram.webhook'
-import { Route as UAuthorSlugPProgramIdRouteImport } from './routes/u.$authorSlug.p.$programId'
-import { Route as UAuthorSlugPProgramSlugRouteImport } from './routes/u.$authorSlug.p.$programSlug'
+import { Route as UAuthorSlugPProgramRefRouteImport } from './routes/u.$authorSlug.p.$programRef'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -200,14 +199,9 @@ const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
   path: '/api/telegram/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UAuthorSlugPProgramIdRoute = UAuthorSlugPProgramIdRouteImport.update({
-  id: '/u/$authorSlug/p/$programId',
-  path: '/u/$authorSlug/p/$programId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UAuthorSlugPProgramSlugRoute = UAuthorSlugPProgramSlugRouteImport.update({
-  id: '/u/$authorSlug/p/$programSlug',
-  path: '/u/$authorSlug/p/$programSlug',
+const UAuthorSlugPProgramRefRoute = UAuthorSlugPProgramRefRouteImport.update({
+  id: '/u/$authorSlug/p/$programRef',
+  path: '/u/$authorSlug/p/$programRef',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -242,8 +236,7 @@ export interface FileRoutesByFullPath {
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/programs/': typeof AuthProgramsIndexRoute
-  '/u/$authorSlug/p/$programId': typeof UAuthorSlugPProgramIdRoute
-  '/u/$authorSlug/p/$programSlug': typeof UAuthorSlugPProgramSlugRoute
+  '/u/$authorSlug/p/$programRef': typeof UAuthorSlugPProgramRefRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -276,8 +269,7 @@ export interface FileRoutesByTo {
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/programs': typeof AuthProgramsIndexRoute
-  '/u/$authorSlug/p/$programId': typeof UAuthorSlugPProgramIdRoute
-  '/u/$authorSlug/p/$programSlug': typeof UAuthorSlugPProgramSlugRoute
+  '/u/$authorSlug/p/$programRef': typeof UAuthorSlugPProgramRefRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -312,8 +304,7 @@ export interface FileRoutesById {
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
   '/_auth/programs/': typeof AuthProgramsIndexRoute
-  '/u/$authorSlug/p/$programId': typeof UAuthorSlugPProgramIdRoute
-  '/u/$authorSlug/p/$programSlug': typeof UAuthorSlugPProgramSlugRoute
+  '/u/$authorSlug/p/$programRef': typeof UAuthorSlugPProgramRefRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -348,8 +339,7 @@ export interface FileRouteTypes {
     | '/api/telegram/remind'
     | '/api/telegram/webhook'
     | '/programs/'
-    | '/u/$authorSlug/p/$programId'
-    | '/u/$authorSlug/p/$programSlug'
+    | '/u/$authorSlug/p/$programRef'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -382,8 +372,7 @@ export interface FileRouteTypes {
     | '/api/telegram/remind'
     | '/api/telegram/webhook'
     | '/programs'
-    | '/u/$authorSlug/p/$programId'
-    | '/u/$authorSlug/p/$programSlug'
+    | '/u/$authorSlug/p/$programRef'
   id:
     | '__root__'
     | '/'
@@ -417,8 +406,7 @@ export interface FileRouteTypes {
     | '/api/telegram/remind'
     | '/api/telegram/webhook'
     | '/_auth/programs/'
-    | '/u/$authorSlug/p/$programId'
-    | '/u/$authorSlug/p/$programSlug'
+    | '/u/$authorSlug/p/$programRef'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -445,8 +433,7 @@ export interface RootRouteChildren {
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiTelegramRemindRoute: typeof ApiTelegramRemindRoute
   ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
-  UAuthorSlugPProgramIdRoute: typeof UAuthorSlugPProgramIdRoute
-  UAuthorSlugPProgramSlugRoute: typeof UAuthorSlugPProgramSlugRoute
+  UAuthorSlugPProgramRefRoute: typeof UAuthorSlugPProgramRefRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -668,18 +655,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTelegramWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/u/$authorSlug/p/$programId': {
-      id: '/u/$authorSlug/p/$programId'
-      path: '/u/$authorSlug/p/$programId'
-      fullPath: '/u/$authorSlug/p/$programId'
-      preLoaderRoute: typeof UAuthorSlugPProgramIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/u/$authorSlug/p/$programSlug': {
-      id: '/u/$authorSlug/p/$programSlug'
-      path: '/u/$authorSlug/p/$programSlug'
-      fullPath: '/u/$authorSlug/p/$programSlug'
-      preLoaderRoute: typeof UAuthorSlugPProgramSlugRouteImport
+    '/u/$authorSlug/p/$programRef': {
+      id: '/u/$authorSlug/p/$programRef'
+      path: '/u/$authorSlug/p/$programRef'
+      fullPath: '/u/$authorSlug/p/$programRef'
+      preLoaderRoute: typeof UAuthorSlugPProgramRefRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -748,8 +728,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   ApiTelegramRemindRoute: ApiTelegramRemindRoute,
   ApiTelegramWebhookRoute: ApiTelegramWebhookRoute,
-  UAuthorSlugPProgramIdRoute: UAuthorSlugPProgramIdRoute,
-  UAuthorSlugPProgramSlugRoute: UAuthorSlugPProgramSlugRoute,
+  UAuthorSlugPProgramRefRoute: UAuthorSlugPProgramRefRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

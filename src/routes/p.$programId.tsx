@@ -29,10 +29,10 @@ export const Route = createFileRoute("/p/$programId")({
         program.slug
       ) {
         throw redirect({
-          to: "/u/$authorSlug/p/$programSlug",
+          to: "/u/$authorSlug/p/$programRef",
           params: {
             authorSlug: program.author.authorSlug,
-            programSlug: program.slug,
+            programRef: program.slug,
           },
           statusCode: 301,
         });

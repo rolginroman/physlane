@@ -283,10 +283,10 @@ export function ProgramView({
               by{" "}
               {showProfileLink && program.author.authorSlug ? (
                 <Link
-                  to="/u/$authorSlug/p/$programSlug"
+                  to="/u/$authorSlug/p/$programRef"
                   params={{
                     authorSlug: program.author.authorSlug,
-                    programSlug: program.slug ?? "",
+                    programRef: program.slug ?? "",
                   }}
                   className="font-semibold text-foreground underline decoration-border underline-offset-4"
                 >
@@ -390,10 +390,10 @@ export function ProgramView({
             <>
               {" · "}
               <Link
-                to="/u/$authorSlug/p/$programSlug"
+                to="/u/$authorSlug/p/$programRef"
                 params={{
                   authorSlug: program.author.authorSlug,
-                  programSlug: program.slug,
+                  programRef: program.slug,
                 }}
                 className="font-medium text-brand-text underline underline-offset-2"
               >
