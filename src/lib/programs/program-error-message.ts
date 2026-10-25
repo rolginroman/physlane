@@ -23,7 +23,9 @@ export type ProgramAction =
   | "copy-link"
   | "create"
   | "delete"
-  | "load-list";
+  | "load-list"
+  | "fork"
+  | "report";
 
 const ACTION_MESSAGES: Record<ProgramAction, string> = {
   "change-visibility":
@@ -34,6 +36,8 @@ const ACTION_MESSAGES: Record<ProgramAction, string> = {
   create: "Could not create the program. Try again.",
   delete: "Couldn't delete this program. Nothing changed. Try again.",
   "load-list": "Your programs didn't load.",
+  fork: "Couldn't copy this program. Try again.",
+  report: "Couldn't send your report. Try again.",
 };
 
 /** Codes that carry their own fix; everything else gets the action's copy. */
@@ -41,6 +45,7 @@ const CODES_WITH_OWN_MESSAGE: readonly string[] = [
   "SLUG_TAKEN",
   "STALE_REVISION",
   "INVALID_ENTRY",
+  "REPORT_RATE_LIMITED",
 ];
 
 export function programActionErrorMessage(

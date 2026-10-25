@@ -500,6 +500,14 @@ export function listPublicProgramsByAuthor<T extends PublicProgramListRow>(
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 }
 
+/** Not-found suggestions: the author's newest public programs, capped so the page stays short. */
+export function suggestPublicPrograms<T extends PublicProgramListRow>(
+  programs: readonly T[],
+  limit = 3,
+): T[] {
+  return listPublicProgramsByAuthor(programs).slice(0, limit);
+}
+
 export type AuthorProfileInput = {
   displayName: string;
   authorSlug: string;
@@ -670,13 +678,23 @@ export function resolvePublicProgramView(
   return { kind: "ok" };
 }
 
-/** Removal page applies only to public programs that were deleted or hidden. */
-export function publicProgramRemovalVariant(program: {
-  deletedAt: Date | null;
-  hiddenAt: Date | null;
-  visibility: ProgramVisibility;
-}): "author" | "moderation" | null {
-  if (program.visibility !== "public") {
+/**
+ * Removal page applies to public programs that were deleted or hidden. An
+ * unlisted program qualifies only for a holder of its share token: the token
+ * is already the grant, so the page reveals nothing to them.
+ */
+export function publicProgramRemovalVariant(
+  program: {
+    deletedAt: Date | null;
+    hiddenAt: Date | null;
+    visibility: ProgramVisibility;
+  },
+  options: { tokenMatches?: boolean } = {},
+): "author" | "moderation" | null {
+  const eligible =
+    program.visibility === "public" ||
+    (program.visibility === "unlisted" && options.tokenMatches === true);
+  if (!eligible) {
     return null;
   }
   if (program.hiddenAt != null) {

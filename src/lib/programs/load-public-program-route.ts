@@ -1,4 +1,3 @@
-import { notFound } from "@tanstack/react-router";
 import {
   throwProgramPathHistoryRedirect,
   throwHistoryRedirect,
@@ -6,6 +5,7 @@ import {
 import {
   loadPublicProgramOrNotFound,
   loadPublicProgramRemovalForProgram,
+  throwProgramNotFound,
 } from "#/lib/programs/load-public-program";
 import type { PublicProgramRouteData } from "#/lib/programs/public-program-route-data";
 import {
@@ -25,9 +25,10 @@ async function loadProgramOrRemoval(
   load: () => Promise<PublicProgramDTO>,
   resolveProgramId: () => Promise<string | null>,
   variant: "public" | "unlisted",
+  authorSlug: string,
 ): Promise<PublicProgramRouteData> {
   try {
-    const program = await loadPublicProgramOrNotFound(load);
+    const program = await loadPublicProgramOrNotFound(load, authorSlug);
     return { kind: "program", program, variant };
   } catch (e) {
     if (
@@ -36,7 +37,7 @@ async function loadProgramOrRemoval(
     ) {
       const programId = await resolveProgramId();
       if (!programId) {
-        throw notFound();
+        return throwProgramNotFound(authorSlug);
       }
       const removal = await loadPublicProgramRemovalForProgram(programId);
       return { kind: "removed", removal };
@@ -86,7 +87,7 @@ export async function loadPublicSlugProgramRoute(args: {
   programSlug: string;
 }): Promise<PublicProgramRouteData> {
   if (isProgramIdRef(args.programSlug)) {
-    throw notFound();
+    return throwProgramNotFound(args.authorSlug);
   }
   try {
     const program = await getPublicProgramBySlug({
@@ -108,14 +109,14 @@ export async function loadPublicSlugProgramRoute(args: {
         },
       });
       if (!programId) {
-        throw notFound();
+        return throwProgramNotFound(args.authorSlug);
       }
       const removal = await loadPublicProgramRemovalForProgram(programId);
       return { kind: "removed", removal };
     }
     if (e instanceof Error && e.message === "PROGRAM_NOT_FOUND") {
       await tryResolveSlugHistoryRedirect(args);
-      throw notFound();
+      return throwProgramNotFound(args.authorSlug);
     }
     throw e;
   }
@@ -127,8 +128,9 @@ export async function loadShareTokenProgramRoute(args: {
   shareToken: string;
 }): Promise<PublicProgramRouteData> {
   try {
-    const program = await loadPublicProgramOrNotFound(() =>
-      getPublicProgramByToken({ data: { token: args.shareToken } }),
+    const program = await loadPublicProgramOrNotFound(
+      () => getPublicProgramByToken({ data: { token: args.shareToken } }),
+      args.authorSlug,
     );
     const currentAuthor = program.author.authorSlug;
     const currentSlug = program.slug;
@@ -148,7 +150,7 @@ export async function loadShareTokenProgramRoute(args: {
       }
     }
     if (program.visibility !== "unlisted") {
-      throw notFound();
+      return throwProgramNotFound(args.authorSlug);
     }
     return { kind: "program", program, variant: "unlisted" };
   } catch (e) {
@@ -160,9 +162,12 @@ export async function loadShareTokenProgramRoute(args: {
         data: { shareToken: args.shareToken, programRef: args.programSlug },
       });
       if (!programId) {
-        throw notFound();
+        return throwProgramNotFound(args.authorSlug);
       }
-      const removal = await loadPublicProgramRemovalForProgram(programId);
+      const removal = await loadPublicProgramRemovalForProgram(
+        programId,
+        args.shareToken,
+      );
       return { kind: "removed", removal };
     }
     throw e;
@@ -170,11 +175,13 @@ export async function loadShareTokenProgramRoute(args: {
 }
 
 export async function loadPermalinkProgramRoute(args: {
+  authorSlug: string;
   programId: string;
 }): Promise<PublicProgramRouteData> {
   return loadProgramOrRemoval(
     () => getPublicProgramById({ data: { programId: args.programId } }),
     async () => args.programId,
     "public",
+    args.authorSlug,
   );
 }

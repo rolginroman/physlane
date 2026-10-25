@@ -22,6 +22,7 @@ export const Route = createFileRoute("/u/$authorSlug/p/$programId")({
   }),
   loader: async ({ params, deps, location }) => {
     const route = await loadPermalinkProgramRoute({
+      authorSlug: params.authorSlug,
       programId: params.programId,
     });
     return {

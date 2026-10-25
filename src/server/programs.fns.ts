@@ -50,6 +50,7 @@ import {
   customExerciseInputSchema,
   isSlugHistoryReserved,
   listPublicProgramsByAuthor,
+  suggestPublicPrograms,
   nextRevision,
   normalizeExerciseName,
   planAuthorProfileSave,
@@ -103,6 +104,18 @@ export type ProgramExerciseRefDTO = {
   isCustom: boolean;
 };
 
+export type ExerciseAssetDTO = {
+  kind: schema.ExerciseAsset["kind"];
+  url: string;
+  title: string;
+};
+
+/** Public viewers get the catalog detail the exercise drawer shows. */
+export type PublicExerciseRefDTO = ProgramExerciseRefDTO & {
+  muscleSecondary: Muscle[];
+  assets: ExerciseAssetDTO[];
+};
+
 export type ProgramDTO = {
   id: string;
   title: string;
@@ -148,6 +161,15 @@ export type PublicProgramAuthorDTO = {
   userId: string;
   displayName: string | null;
   authorSlug: string | null;
+  /** Null unless the author has a live public profile; never leaks an unlisted-only author's bio. */
+  bio: string | null;
+  hasPublicProfile: boolean;
+};
+
+export type AuthorProgramSuggestionsDTO = {
+  authorSlug: string;
+  displayName: string;
+  programs: PublicAuthorProfileProgramDTO[];
 };
 
 export type PublicAuthorProfileProgramDTO = {
@@ -178,9 +200,9 @@ export type AuthorProfileSetupDTO = {
   slugRenameAllowedFrom: string | null;
 };
 
-export type PublicProgramDTO = ProgramDTO & {
+export type PublicProgramDTO = Omit<ProgramDTO, "exercises"> & {
   sessions: ProgramSessionDTO[];
-  exercises: Record<string, ProgramExerciseRefDTO>;
+  exercises: Record<string, PublicExerciseRefDTO>;
   author: PublicProgramAuthorDTO;
   forkable: boolean;
 };
@@ -316,9 +338,9 @@ async function inheritedForeignCustomIdsForProgram(
   );
 }
 
-async function loadProgramExerciseMap(
+async function selectProgramExercises(
   sessions: ProgramSessionDTO[],
-): Promise<Record<string, ProgramExerciseRefDTO>> {
+): Promise<schema.Exercise[]> {
   const ids = new Set<string>();
   for (const session of sessions) {
     for (const entry of session.entries) {
@@ -326,21 +348,62 @@ async function loadProgramExerciseMap(
     }
   }
   if (ids.size === 0) {
-    return {};
+    return [];
   }
-  const db = useDb();
-  const rows = await db
+  return useDb()
     .select()
     .from(schema.exercises)
     .where(inArray(schema.exercises.id, [...ids]));
+}
+
+const toExerciseRefDTO = (row: schema.Exercise): ProgramExerciseRefDTO => ({
+  name: row.name,
+  musclePrimary: row.musclePrimary,
+  equipment: row.equipment,
+  formNote: row.formNote,
+  isCustom: row.ownerUserId != null,
+});
+
+async function loadProgramExerciseMap(
+  sessions: ProgramSessionDTO[],
+): Promise<Record<string, ProgramExerciseRefDTO>> {
+  const rows = await selectProgramExercises(sessions);
   const map: Record<string, ProgramExerciseRefDTO> = {};
   for (const row of rows) {
+    map[row.id] = toExerciseRefDTO(row);
+  }
+  return map;
+}
+
+async function loadPublicExerciseMap(
+  sessions: ProgramSessionDTO[],
+): Promise<Record<string, PublicExerciseRefDTO>> {
+  const rows = await selectProgramExercises(sessions);
+  if (rows.length === 0) {
+    return {};
+  }
+  const assetRows = await useDb()
+    .select()
+    .from(schema.exerciseAssets)
+    .where(
+      inArray(
+        schema.exerciseAssets.exerciseId,
+        rows.map((row) => row.id),
+      ),
+    )
+    .orderBy(asc(schema.exerciseAssets.sortOrder));
+  const assetsByExercise = new Map<string, ExerciseAssetDTO[]>();
+  for (const asset of assetRows) {
+    const list = assetsByExercise.get(asset.exerciseId) ?? [];
+    list.push({ kind: asset.kind, url: asset.url, title: asset.title });
+    assetsByExercise.set(asset.exerciseId, list);
+  }
+  const map: Record<string, PublicExerciseRefDTO> = {};
+  for (const row of rows) {
     map[row.id] = {
-      name: row.name,
-      musclePrimary: row.musclePrimary,
-      equipment: row.equipment,
-      formNote: row.formNote,
-      isCustom: row.ownerUserId != null,
+      ...toExerciseRefDTO(row),
+      muscleSecondary: row.muscleSecondary,
+      assets: assetsByExercise.get(row.id) ?? [],
     };
   }
   return map;
@@ -590,8 +653,10 @@ async function buildPublicProgramDTO(
 ): Promise<PublicProgramDTO> {
   const author = await loadAuthorRow(program.userId);
   const sessions = await loadProgramSessionsDTO(program.id);
-  const exercises = await loadProgramExerciseMap(sessions);
+  const exercises = await loadPublicExerciseMap(sessions);
   const dto = toProgramDTO(program, sessions);
+  const hasPublicProfile =
+    author.profilePublishedAt != null && author.profileHiddenAt == null;
   return {
     ...dto,
     sessions,
@@ -600,6 +665,8 @@ async function buildPublicProgramDTO(
       userId: author.id,
       displayName: resolvePublicAuthorDisplayName(author),
       authorSlug: author.slug,
+      bio: hasPublicProfile ? author.bio : null,
+      hasPublicProfile,
     },
     forkable: program.forkable,
   };
@@ -1595,6 +1662,20 @@ function toProgramRedirectRow(row: schema.Program): ProgramRedirectRow {
   };
 }
 
+const toProfileProgramDTO = (
+  row: schema.Program,
+): PublicAuthorProfileProgramDTO => ({
+  id: row.id,
+  title: row.title,
+  description: row.description,
+  slug: row.slug!,
+  goal: row.goal,
+  level: row.level,
+  daysPerWeek: row.daysPerWeek,
+  weeks: row.weeks,
+  updatedAt: row.updatedAt.toISOString(),
+});
+
 const GetPublicAuthorProfileInputSchema = z.object({
   authorSlug: z.string().min(1),
 });
@@ -1626,18 +1707,8 @@ export const getPublicAuthorProfile = createServerFn({ method: "GET" })
       .select()
       .from(schema.programs)
       .where(eq(schema.programs.userId, author.id));
-    const publicRows = listPublicProgramsByAuthor(programRows);
-    const programs: PublicAuthorProfileProgramDTO[] = publicRows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      slug: row.slug!,
-      goal: row.goal,
-      level: row.level,
-      daysPerWeek: row.daysPerWeek,
-      weeks: row.weeks,
-      updatedAt: row.updatedAt.toISOString(),
-    }));
+    const programs =
+      listPublicProgramsByAuthor(programRows).map(toProfileProgramDTO);
     return {
       displayName: resolvePublicAuthorDisplayName(author) ?? "Author",
       authorSlug: lookup.currentAuthorSlug,
@@ -1646,6 +1717,32 @@ export const getPublicAuthorProfile = createServerFn({ method: "GET" })
       isOwner: viewer?.id === author.id,
       unavailable: false,
     } satisfies PublicAuthorProfileDTO;
+  });
+
+/** Null unless the author path resolves to a live public profile, so a miss never reveals more than the profile page would. */
+export const getAuthorProgramSuggestions = createServerFn({ method: "GET" })
+  .validator((d) => GetPublicAuthorProfileInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const { lookup } = await resolveAuthorSlugContext(
+      data.authorSlug,
+      new Date(),
+    );
+    if (!lookup) {
+      return null;
+    }
+    const author = await loadAuthorRow(lookup.userId);
+    if (author.profilePublishedAt == null || author.profileHiddenAt != null) {
+      return null;
+    }
+    const programRows = await useDb()
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.userId, author.id));
+    return {
+      authorSlug: lookup.currentAuthorSlug,
+      displayName: resolvePublicAuthorDisplayName(author) ?? "Author",
+      programs: suggestPublicPrograms(programRows).map(toProfileProgramDTO),
+    } satisfies AuthorProgramSuggestionsDTO;
   });
 
 export const getAuthorProfileSetup = createServerFn({ method: "GET" }).handler(
@@ -1986,6 +2083,7 @@ export const resolveProgramIdForPublicPath = createServerFn({ method: "GET" })
 
 const GetPublicProgramRemovalInputSchema = z.object({
   programId: z.string().min(1),
+  shareToken: z.string().min(1).optional(),
 });
 
 export const getPublicProgramRemoval = createServerFn({ method: "GET" })
@@ -1999,7 +2097,10 @@ export const getPublicProgramRemoval = createServerFn({ method: "GET" })
     if (!program) {
       throw appError("PROGRAM_NOT_FOUND");
     }
-    const variant = publicProgramRemovalVariant(program);
+    const variant = publicProgramRemovalVariant(program, {
+      tokenMatches:
+        data.shareToken != null && data.shareToken === program.shareToken,
+    });
     if (variant == null) {
       throw appError("PROGRAM_NOT_FOUND");
     }

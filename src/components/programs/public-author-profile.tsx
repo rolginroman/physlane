@@ -1,14 +1,20 @@
 import { Link } from "@tanstack/react-router";
-import { Globe, Pencil } from "lucide-react";
-import { Button } from "#/components/ui/button";
+import { Flag, Globe, Pencil } from "lucide-react";
+import { useState } from "react";
 import { PublicProgramShell } from "#/components/programs/public-program-shell";
+import { ReportSheet } from "#/components/programs/report-sheet";
+import { Button, buttonVariants } from "#/components/ui/button";
+import { cn } from "#/lib/cn";
 import {
   goalDisplayLabel,
   levelDisplayLabel,
   programMetaLine,
 } from "#/lib/programs/display-labels";
 import { publicProgramCanonicalPath } from "#/lib/programs/program-urls";
-import type { PublicAuthorProfileDTO } from "#/server/programs.fns";
+import {
+  reportProfile,
+  type PublicAuthorProfileDTO,
+} from "#/server/programs.fns";
 
 type PublicAuthorProfileProps = {
   profile: PublicAuthorProfileDTO;
@@ -19,18 +25,28 @@ export function PublicAuthorProfile({
   profile,
   onEditProfile,
 }: PublicAuthorProfileProps) {
+  const [reportOpen, setReportOpen] = useState(false);
   const initial = profile.displayName.slice(0, 1).toUpperCase();
 
   if (profile.unavailable) {
     return (
       <PublicProgramShell>
-        <main className="mx-auto max-w-3xl px-4 py-16 sm:px-8">
-          <h1 className="font-display text-3xl text-foreground">
-            Profile unavailable
+        <main className="mx-auto max-w-lg px-4 py-16 sm:px-8">
+          <h1 className="m-0 font-display text-4xl leading-tight text-foreground">
+            This profile is unavailable
           </h1>
-          <p className="mt-3 text-text-secondary">
-            This profile isn&apos;t available right now.
+          <p className="mt-4 text-sm leading-relaxed text-text-secondary">
+            It can&apos;t be viewed right now.
           </p>
+          <Link
+            to="/"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "touch" }),
+              "mt-6",
+            )}
+          >
+            Go to physlane
+          </Link>
         </main>
       </PublicProgramShell>
     );
@@ -72,16 +88,16 @@ export function PublicAuthorProfile({
           <h2 className="text-lg font-semibold text-foreground">
             Public programs
           </h2>
-          <span className="text-sm tabular-nums text-muted-foreground">
-            {profile.programs.length}
-          </span>
+          {profile.programs.length > 0 ? (
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {profile.programs.length}
+            </span>
+          ) : null}
         </div>
 
         {profile.programs.length === 0 ? (
           <p className="mt-6 rounded-xl border border-border bg-card p-8 text-center text-text-secondary">
-            {profile.isOwner
-              ? "No public programs yet. Programs you list publicly appear here."
-              : "No public programs yet."}
+            {profile.displayName} has no public programs right now.
           </p>
         ) : (
           <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -133,11 +149,33 @@ export function PublicAuthorProfile({
             .
           </p>
         ) : (
-          <footer className="mt-12 border-t border-border pt-6 text-sm text-muted-foreground">
+          <footer className="mt-12 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4 text-sm text-muted-foreground">
             Shared on physlane
+            <Button
+              type="button"
+              variant="link"
+              size="touch"
+              className="text-xs text-muted-foreground"
+              onClick={() => setReportOpen(true)}
+            >
+              <Flag className="size-3.5" aria-hidden />
+              Report this profile
+            </Button>
           </footer>
         )}
       </main>
+      {profile.isOwner ? null : (
+        <ReportSheet
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          title="Report this profile"
+          onSubmit={(reason) =>
+            reportProfile({
+              data: { authorSlug: profile.authorSlug, reason },
+            })
+          }
+        />
+      )}
     </PublicProgramShell>
   );
 }

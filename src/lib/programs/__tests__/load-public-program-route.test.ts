@@ -8,13 +8,14 @@ const serverMocks = vi.hoisted(() => ({
   resolvePublicProgramRedirect: vi.fn(),
   resolveProgramIdForPublicPath: vi.fn(),
   getPublicProgramRemoval: vi.fn(),
+  getAuthorProgramSuggestions: vi.fn(),
 }));
 
 vi.mock("#/server/programs.fns", () => serverMocks);
 
 vi.mock("@tanstack/react-router", () => ({
-  notFound: () => {
-    throw new Error("NOT_FOUND");
+  notFound: (options?: { data?: unknown }) => {
+    throw Object.assign(new Error("NOT_FOUND"), { data: options?.data });
   },
   redirect: (options: unknown) => {
     throw Object.assign(new Error("REDIRECT"), { redirect: options });
@@ -143,6 +144,24 @@ describe("loadShareTokenProgramRoute", () => {
     });
   });
 
+  it("shows the removed page to a token holder when the program was deleted", async () => {
+    serverMocks.getPublicProgramByToken.mockRejectedValue(
+      new Error("PROGRAM_REMOVED"),
+    );
+    serverMocks.resolveProgramIdForPublicPath.mockResolvedValue("p1");
+    const removal = { variant: "author" };
+    serverMocks.getPublicProgramRemoval.mockResolvedValue(removal);
+    const result = await loadShareTokenProgramRoute({
+      authorSlug: "tara",
+      programSlug: "hypertrophy",
+      shareToken: "tok",
+    });
+    expect(result).toEqual({ kind: "removed", removal });
+    expect(serverMocks.getPublicProgramRemoval).toHaveBeenCalledWith({
+      data: { programId: "p1", shareToken: "tok" },
+    });
+  });
+
   it("returns unlisted program when token and path match", async () => {
     serverMocks.getPublicProgramByToken.mockResolvedValue(
       program({ visibility: "unlisted", shareToken: "tok" }),
@@ -161,6 +180,7 @@ describe("loadPermalinkProgramRoute", () => {
     const dto = program();
     serverMocks.getPublicProgramById.mockResolvedValue(dto);
     const result = await loadPermalinkProgramRoute({
+      authorSlug: "tara",
       programId: dto.id,
     });
     expect(result).toMatchObject({ kind: "program", variant: "public" });
@@ -172,8 +192,50 @@ describe("loadPermalinkProgramRoute", () => {
     );
     await expect(
       loadPermalinkProgramRoute({
+        authorSlug: "tara",
         programId: "11111111-1111-4111-8111-111111111111",
       }),
     ).rejects.toThrow("NOT_FOUND");
+  });
+});
+
+describe("404 suggestions", () => {
+  const suggestions = {
+    authorSlug: "tara",
+    displayName: "Tara",
+    programs: [{ id: "p1", slug: "base", title: "Base" }],
+  };
+
+  it("attaches the author's public programs when the author path resolves", async () => {
+    serverMocks.getPublicProgramBySlug.mockRejectedValue(
+      new Error("PROGRAM_NOT_FOUND"),
+    );
+    serverMocks.resolvePublicProgramRedirect.mockResolvedValue({
+      kind: "not_found",
+    });
+    serverMocks.getAuthorProgramSuggestions.mockResolvedValue(suggestions);
+    await expect(
+      loadPublicSlugProgramRoute({ authorSlug: "tara", programSlug: "typo" }),
+    ).rejects.toMatchObject({ message: "NOT_FOUND", data: suggestions });
+    expect(serverMocks.getAuthorProgramSuggestions).toHaveBeenCalledWith({
+      data: { authorSlug: "tara" },
+    });
+  });
+
+  it("stays a plain 404 when the suggestion lookup fails or finds nobody", async () => {
+    serverMocks.getPublicProgramById.mockRejectedValue(
+      new Error("PROGRAM_NOT_FOUND"),
+    );
+    serverMocks.getAuthorProgramSuggestions.mockRejectedValue(
+      new Error("boom"),
+    );
+    await expect(
+      loadPermalinkProgramRoute({ authorSlug: "tara", programId: "x" }),
+    ).rejects.toMatchObject({ message: "NOT_FOUND", data: undefined });
+
+    serverMocks.getAuthorProgramSuggestions.mockResolvedValue(null);
+    await expect(
+      loadPermalinkProgramRoute({ authorSlug: "nobody", programId: "x" }),
+    ).rejects.toMatchObject({ message: "NOT_FOUND", data: undefined });
   });
 });

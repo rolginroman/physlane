@@ -26,6 +26,7 @@ import {
   programSlugHistoryRowsToKeep,
   resolveAuthorProfileRedirect,
   resolveAuthorSlugLookup,
+  suggestPublicPrograms,
   resolveProgramRedirect,
   suggestAuthorSlug,
   suggestProgramSlug,
@@ -742,13 +743,49 @@ describe("resolvePublicProgramView", () => {
 });
 
 describe("publicProgramRemovalVariant", () => {
-  it("returns null for non-public programs", () => {
+  const gone = {
+    visibility: "unlisted" as const,
+    deletedAt: new Date(),
+    hiddenAt: null,
+  };
+
+  it("returns null for non-public programs without a matching token", () => {
+    expect(publicProgramRemovalVariant(gone)).toBeNull();
     expect(
-      publicProgramRemovalVariant({
-        visibility: "unlisted",
-        deletedAt: new Date(),
-        hiddenAt: null,
-      }),
+      publicProgramRemovalVariant(gone, { tokenMatches: false }),
+    ).toBeNull();
+  });
+
+  it("serves a deleted or hidden unlisted program to its token holder", () => {
+    expect(publicProgramRemovalVariant(gone, { tokenMatches: true })).toBe(
+      "author",
+    );
+    expect(
+      publicProgramRemovalVariant(
+        { ...gone, deletedAt: null, hiddenAt: new Date() },
+        { tokenMatches: true },
+      ),
+    ).toBe("moderation");
+  });
+
+  it("never serves a draft, even with a token", () => {
+    expect(
+      publicProgramRemovalVariant(
+        { ...gone, visibility: "draft" },
+        { tokenMatches: true },
+      ),
+    ).toBeNull();
+  });
+
+  it("serves public programs without a token and ignores live ones", () => {
+    expect(publicProgramRemovalVariant({ ...gone, visibility: "public" })).toBe(
+      "author",
+    );
+    expect(
+      publicProgramRemovalVariant(
+        { ...gone, deletedAt: null },
+        { tokenMatches: true },
+      ),
     ).toBeNull();
   });
 });
@@ -925,5 +962,56 @@ describe("resolveEntryIds", () => {
       "a",
       "new-1",
     ]);
+  });
+});
+
+describe("suggestPublicPrograms", () => {
+  const row = (
+    id: string,
+    over: Partial<{
+      visibility: "draft" | "unlisted" | "public";
+      deletedAt: Date | null;
+      hiddenAt: Date | null;
+      slug: string | null;
+    }> = {},
+    day = 1,
+  ) => ({
+    id,
+    title: id,
+    description: null,
+    goal: "general" as const,
+    level: "beginner" as const,
+    daysPerWeek: 3,
+    weeks: 4,
+    visibility: "public" as const,
+    deletedAt: null,
+    hiddenAt: null,
+    slug: id,
+    updatedAt: new Date(2026, 0, day),
+    ...over,
+  });
+
+  it("returns only public, live programs, newest first, capped", () => {
+    const rows = [
+      row("old", {}, 1),
+      row("draft", { visibility: "draft" }, 9),
+      row("gone", { deletedAt: new Date() }, 9),
+      row("hidden", { hiddenAt: new Date() }, 9),
+      row("unlisted", { visibility: "unlisted" }, 9),
+      row("b", {}, 3),
+      row("c", {}, 4),
+      row("d", {}, 5),
+    ];
+    expect(suggestPublicPrograms(rows, 3).map((r) => r.id)).toEqual([
+      "d",
+      "c",
+      "b",
+    ]);
+  });
+
+  it("is empty when nothing is public", () => {
+    expect(suggestPublicPrograms([row("x", { visibility: "draft" })])).toEqual(
+      [],
+    );
   });
 });

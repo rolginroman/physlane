@@ -7,6 +7,7 @@ const serverMocks = vi.hoisted(() => ({
   resolvePublicProgramRedirect: vi.fn(),
   resolveProgramIdForPublicPath: vi.fn(),
   getPublicProgramRemoval: vi.fn(),
+  getAuthorProgramSuggestions: vi.fn(),
 }));
 
 vi.mock("#/server/programs.fns", () => serverMocks);
