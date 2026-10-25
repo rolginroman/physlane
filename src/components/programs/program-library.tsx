@@ -1,4 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
+import { Share2 } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
@@ -11,6 +12,7 @@ import {
   SheetTitle,
 } from "#/components/ui/sheet";
 import { ProgramVisibilityBadge } from "#/components/programs/program-visibility-badge";
+import { ShareDialog } from "#/components/programs/share-dialog";
 import { cn } from "#/lib/cn";
 import {
   goalDisplayLabel,
@@ -142,31 +144,47 @@ function EditedAtLabel({ updatedAt }: { updatedAt: string }) {
   );
 }
 
-function ProgramRow({ program }: { program: ProgramListItemDTO }) {
+function ProgramRow({
+  program,
+  onShare,
+}: {
+  program: ProgramListItemDTO;
+  onShare: () => void;
+}) {
   const meta = programMetaLine(program);
   return (
-    <li>
+    <li className="flex min-h-11 flex-col gap-2 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-4">
       <Link
         to="/programs/$programId"
         params={{ programId: program.id }}
-        className="flex min-h-11 flex-col gap-2 rounded-xl border border-border bg-card p-4 no-underline transition-colors hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:flex-row sm:items-center sm:gap-4"
+        className="min-w-0 flex-1 no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-base font-semibold text-foreground">
-              {program.title}
-            </span>
-            <ProgramVisibilityBadge visibility={program.visibility} />
-          </div>
-          <p className="mt-1 text-sm text-text-secondary">{meta}</p>
-          {program.forkSourceLabel ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Based on {program.forkSourceLabel}
-            </p>
-          ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-base font-semibold text-foreground">
+            {program.title}
+          </span>
+          <ProgramVisibilityBadge visibility={program.visibility} />
         </div>
-        <EditedAtLabel updatedAt={program.updatedAt} />
+        <p className="mt-1 text-sm text-text-secondary">{meta}</p>
+        {program.forkSourceLabel ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Based on {program.forkSourceLabel}
+          </p>
+        ) : null}
       </Link>
+      <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
+        <EditedAtLabel updatedAt={program.updatedAt} />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-lg"
+          className="min-h-11 min-w-11"
+          aria-label={`Share ${program.title}`}
+          onClick={onShare}
+        >
+          <Share2 className="size-4" aria-hidden />
+        </Button>
+      </div>
     </li>
   );
 }
@@ -201,6 +219,10 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareTarget, setShareTarget] = useState<ProgramListItemDTO | null>(
+    null,
+  );
 
   const openNewProgram = () => {
     setTitle("");
@@ -325,10 +347,41 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
       ) : (
         <ul className="mt-8 flex flex-col gap-3">
           {programs.map((p) => (
-            <ProgramRow key={p.id} program={p} />
+            <ProgramRow
+              key={p.id}
+              program={p}
+              onShare={() => {
+                setShareTarget(p);
+                setShareOpen(true);
+              }}
+            />
           ))}
         </ul>
       )}
+
+      {shareTarget ? (
+        <ShareDialog
+          open={shareOpen}
+          onOpenChange={(open) => {
+            setShareOpen(open);
+            if (!open) {
+              setShareTarget(null);
+            }
+          }}
+          program={{
+            id: shareTarget.id,
+            title: shareTarget.title,
+            visibility: shareTarget.visibility,
+            shareToken: shareTarget.shareToken,
+            slug: shareTarget.slug,
+            revision: shareTarget.revision,
+          }}
+          onProgramUpdated={(updated) => {
+            setShareTarget((prev) => (prev ? { ...prev, ...updated } : prev));
+            void router.invalidate();
+          }}
+        />
+      ) : null}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="max-h-[90dvh] sm:max-w-md">

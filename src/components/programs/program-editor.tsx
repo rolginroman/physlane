@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Settings, Share2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -9,6 +10,7 @@ import {
 } from "react";
 import { ExercisePicker } from "#/components/programs/exercise-picker";
 import { ProgramVisibilityBadge } from "#/components/programs/program-visibility-badge";
+import { ShareDialog } from "#/components/programs/share-dialog";
 import { Button } from "#/components/ui/button";
 import {
   Dialog,
@@ -175,6 +177,15 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
   const [staleRevision, setStaleRevision] = useState(false);
   const [offline, setOffline] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareProgram, setShareProgram] = useState({
+    id: initial.id,
+    title: initial.title,
+    visibility: initial.visibility,
+    shareToken: initial.shareToken,
+    slug: initial.slug,
+    revision: initial.revision,
+  });
   const [copyWeekOpen, setCopyWeekOpen] = useState(false);
   const [copyTargetWeek, setCopyTargetWeek] = useState(2);
   const [copyConfirmOpen, setCopyConfirmOpen] = useState(false);
@@ -588,12 +599,21 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
         <Button
           type="button"
           variant="outline"
+          className="min-h-11"
+          onClick={() => setShareOpen(true)}
+        >
+          <Share2 className="size-4" aria-hidden />
+          Share
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
           size="icon-lg"
           aria-label="Program settings"
           className="min-h-11 min-w-11"
           onClick={() => setSettingsOpen(true)}
         >
-          ⚙
+          <Settings className="size-5" aria-hidden />
         </Button>
       </div>
 
@@ -875,6 +895,25 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        program={shareProgram}
+        onProgramUpdated={(updated) => {
+          setShareProgram({
+            id: updated.id,
+            title: updated.title,
+            visibility: updated.visibility,
+            shareToken: updated.shareToken,
+            slug: updated.slug,
+            revision: updated.revision,
+          });
+          setMeta((m) => ({ ...m, visibility: updated.visibility }));
+          revisionRef.current = updated.revision;
+          setRevision(updated.revision);
+        }}
+      />
     </section>
   );
 }

@@ -95,6 +95,7 @@ export type ProgramListItemDTO = Pick<
 >;
 
 export type PublicProgramAuthorDTO = {
+  userId: string;
   displayName: string | null;
   authorSlug: string | null;
 };
@@ -352,6 +353,7 @@ async function buildPublicProgramDTO(
     sessions,
     exercises,
     author: {
+      userId: author.id,
       displayName: resolvePublicAuthorDisplayName(author),
       authorSlug: author.slug,
     },
@@ -1100,3 +1102,15 @@ export const getPublicProgramBySlug = createServerFn({ method: "GET" })
     assertViewerVisibility(program, "public-only");
     return buildPublicProgramDTO(program);
   });
+
+export const getMyAuthorSlug = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const me = await requireUser();
+    const [row] = await useDb()
+      .select({ slug: schema.user.slug })
+      .from(schema.user)
+      .where(eq(schema.user.id, me.id))
+      .limit(1);
+    return { authorSlug: row?.slug ?? null };
+  },
+);

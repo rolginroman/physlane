@@ -1,11 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseBlogFile } from "#/lib/blog/schema";
-import {
-  buildRssXml,
-  buildSitemapXml,
-  type SyndicationPost,
-} from "#/lib/blog/syndication";
+import { buildRssXml, type SyndicationPost } from "#/lib/blog/syndication";
 
 const contentDir = join(import.meta.dirname, "../content/blog");
 const publicDir = join(import.meta.dirname, "../public");
@@ -40,13 +36,9 @@ function loadPosts(): SyndicationPost[] {
 
 function main(): void {
   const posts = loadPosts();
-  const sitemapPath = join(publicDir, "sitemap.xml");
   const rssPath = join(publicDir, "rss.xml");
-  writeFileSync(sitemapPath, buildSitemapXml(posts), "utf8");
   writeFileSync(rssPath, buildRssXml(posts), "utf8");
-  console.log(
-    `build-content: ${posts.length} post(s) → ${sitemapPath}, ${rssPath}`,
-  );
+  console.log(`build-content: ${posts.length} post(s) → ${rssPath}`);
 }
 
 main();

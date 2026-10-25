@@ -4,6 +4,8 @@ export interface SeoArgs {
   title: string;
   description: string;
   path: string;
+  /** When set, used for rel=canonical and og:url instead of `path`. */
+  canonicalPath?: string;
   image: string;
   type?: "website" | "article";
   noindex?: boolean;
@@ -15,7 +17,8 @@ export function seoHead(a: SeoArgs): {
   links: Record<string, string>[];
   scripts?: { type: "application/ld+json"; children: string }[];
 } {
-  const canonical = `${SITE_URL}${a.path.startsWith("/") ? a.path : `/${a.path}`}`;
+  const canonicalRel = a.canonicalPath ?? a.path;
+  const canonical = `${SITE_URL}${canonicalRel.startsWith("/") ? canonicalRel : `/${canonicalRel}`}`;
   const ogType = a.type ?? "website";
   const robots = a.noindex
     ? "noindex, follow"

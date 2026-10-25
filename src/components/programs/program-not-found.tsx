@@ -1,0 +1,27 @@
+import { Link } from "@tanstack/react-router";
+import { PublicProgramShell } from "#/components/programs/public-program-shell";
+
+export function ProgramNotFound() {
+  return (
+    <PublicProgramShell>
+      <main className="mx-auto max-w-xl px-4 py-12 sm:py-16">
+        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Not found
+        </p>
+        <h1 className="mt-2 font-display text-4xl leading-tight text-balance text-foreground">
+          This program isn&apos;t available
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-text-secondary">
+          The link may have been replaced, or this program may be unlisted or
+          removed. If someone sent you the link, ask them for a new one.
+        </p>
+        <Link
+          to="/"
+          className="mt-8 inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 text-sm font-medium text-foreground no-underline hover:bg-muted"
+        >
+          Go to physlane
+        </Link>
+      </main>
+    </PublicProgramShell>
+  );
+}
