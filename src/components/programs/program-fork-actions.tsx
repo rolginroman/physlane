@@ -12,6 +12,7 @@ import {
 import { cn } from "#/lib/cn";
 import { isAppErrorCode } from "#/lib/app-error";
 import { programErrorMessage } from "#/lib/programs/program-error-message";
+import { withForkCopyIntent } from "#/lib/auth-redirect";
 import { forkProgram, reportProgram } from "#/server/programs.fns";
 
 type ProgramForkActionsProps = {
@@ -55,8 +56,9 @@ export function ProgramForkActions({
     return null;
   }
 
-  const signInHref = `/sign-in?redirect=${encodeURIComponent(returnPath)}`;
-  const signUpHref = `/sign-up?redirect=${encodeURIComponent(returnPath)}&copy=1`;
+  const authReturn = withForkCopyIntent(returnPath);
+  const signInHref = `/sign-in?redirect=${encodeURIComponent(authReturn)}`;
+  const signUpHref = `/sign-up?redirect=${encodeURIComponent(authReturn)}`;
 
   const runFork = async () => {
     setForkPending(true);

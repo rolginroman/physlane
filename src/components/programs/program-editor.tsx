@@ -49,8 +49,11 @@ import {
   type ProgramLevel,
 } from "#/lib/programs/taxonomy";
 import {
+  checkProgramSlugAvailable,
+  getMyAuthorSlug,
   getMyProgram,
   removeSession,
+  renameProgramSlug,
   updateProgramMeta,
   upsertSession,
   type ProgramDTO,
@@ -182,6 +185,14 @@ export function ProgramEditor({
   const [staleRevision, setStaleRevision] = useState(false);
   const [offline, setOffline] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [programSlug, setProgramSlug] = useState(initial.slug ?? "");
+  const [authorSlugPrefix, setAuthorSlugPrefix] = useState<string | null>(null);
+  const [programSlugStatus, setProgramSlugStatus] = useState<
+    "idle" | "checking" | "ok" | "error"
+  >("idle");
+  const [programSlugMessage, setProgramSlugMessage] = useState<string | null>(
+    null,
+  );
   const [shareOpen, setShareOpen] = useState(false);
   const [shareProgram, setShareProgram] = useState({
     id: initial.id,
@@ -253,9 +264,56 @@ export function ProgramEditor({
       }
       revisionRef.current = dto.revision;
       setRevision(dto.revision);
+      if (dto.slug != null) {
+        setProgramSlug(dto.slug);
+        setShareProgram((prev) => ({ ...prev, slug: dto.slug }));
+      }
     },
     [],
   );
+
+  useEffect(() => {
+    if (!settingsOpen || authorSlugPrefix != null) {
+      return;
+    }
+    void getMyAuthorSlug().then(({ authorSlug }) => {
+      setAuthorSlugPrefix(authorSlug);
+    });
+  }, [settingsOpen, authorSlugPrefix]);
+
+  useEffect(() => {
+    if (!shareProgram.slug || programSlug === shareProgram.slug) {
+      setProgramSlugStatus("idle");
+      setProgramSlugMessage(null);
+      return;
+    }
+    const candidate = programSlug.trim().toLowerCase();
+    if (candidate.length < 3) {
+      setProgramSlugStatus("error");
+      setProgramSlugMessage("Use at least 3 characters.");
+      return;
+    }
+    setProgramSlugStatus("checking");
+    const timer = window.setTimeout(() => {
+      void checkProgramSlugAvailable({
+        data: { programId, candidate },
+      })
+        .then((result) => {
+          if (result.ok) {
+            setProgramSlugStatus("ok");
+            setProgramSlugMessage("Available");
+            return;
+          }
+          setProgramSlugStatus("error");
+          setProgramSlugMessage(result.reason);
+        })
+        .catch(() => {
+          setProgramSlugStatus("error");
+          setProgramSlugMessage("Couldn't check that address. Try again.");
+        });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [programId, programSlug, shareProgram.slug]);
 
   const flushSave = useCallback(async () => {
     if (staleRevision || offline) return;
@@ -358,9 +416,16 @@ export function ProgramEditor({
 
   const saveSettings = async (e: FormEvent) => {
     e.preventDefault();
+    if (
+      shareProgram.slug &&
+      programSlug.trim().toLowerCase() !== shareProgram.slug &&
+      programSlugStatus !== "ok"
+    ) {
+      return;
+    }
     setSaveIndicator("saving");
     try {
-      const dto = await updateProgramMeta({
+      let dto = await updateProgramMeta({
         data: {
           programId,
           expectedRevision: revisionRef.current,
@@ -376,6 +441,19 @@ export function ProgramEditor({
         },
       });
       applyProgram(dto);
+      if (
+        shareProgram.slug &&
+        programSlug.trim().toLowerCase() !== shareProgram.slug
+      ) {
+        dto = await renameProgramSlug({
+          data: {
+            programId,
+            expectedRevision: revisionRef.current,
+            slug: programSlug.trim().toLowerCase(),
+          },
+        });
+        applyProgram(dto);
+      }
       setSettingsOpen(false);
       setSaveIndicator("saved");
     } catch (err) {
@@ -812,6 +890,47 @@ export function ProgramEditor({
               />
             </div>
             <MetaPickers meta={meta} setMeta={setMeta} />
+            {shareProgram.slug && authorSlugPrefix ? (
+              <div>
+                <Label htmlFor="set-program-slug">Program address</Label>
+                <div
+                  className={cn(
+                    "mt-1 flex min-h-11 overflow-hidden rounded-lg border bg-card",
+                    programSlugStatus === "error"
+                      ? "border-danger"
+                      : programSlugStatus === "ok"
+                        ? "border-data-positive"
+                        : "border-border",
+                  )}
+                >
+                  <span className="flex shrink-0 items-center border-r border-border bg-muted px-3 text-sm text-muted-foreground">
+                    /u/{authorSlugPrefix}/
+                  </span>
+                  <Input
+                    id="set-program-slug"
+                    className="min-h-11 border-0 shadow-none"
+                    value={programSlug}
+                    onChange={(e) => setProgramSlug(e.target.value)}
+                    aria-invalid={programSlugStatus === "error"}
+                  />
+                </div>
+                {programSlugStatus === "checking" ? (
+                  <p className="hint">Checking availability…</p>
+                ) : null}
+                {programSlugStatus === "ok" ? (
+                  <p className="text-sm text-data-positive">
+                    {programSlugMessage}
+                  </p>
+                ) : null}
+                {programSlugStatus === "error" && programSlugMessage ? (
+                  <p className="field-error">{programSlugMessage}</p>
+                ) : null}
+                <p className="hint">
+                  Old addresses redirect here after a change. Share links keep
+                  working.
+                </p>
+              </div>
+            ) : null}
             <Button type="submit" className="min-h-11" disabled={staleRevision}>
               Save settings
             </Button>

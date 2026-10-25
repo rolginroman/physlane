@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
+import { env } from "cloudflare:workers";
 import type { BatchItem } from "drizzle-orm/batch";
 import {
   and,
@@ -30,6 +31,11 @@ import {
   type Muscle,
 } from "#/lib/programs/taxonomy";
 import { newShareToken, publicFirstName } from "#/lib/share";
+import {
+  filterExercisesForSearch,
+  rankExercisesForSearch,
+} from "#/lib/programs/exercise-search";
+import { isProgramIdRef } from "#/lib/programs/program-id-ref";
 import { suggestSlug } from "#/lib/programs/slug";
 import { requireUser } from "./auth.fns";
 import {
@@ -64,7 +70,12 @@ import {
   publicProgramRemovalVariant,
   assertProgramWeeksCoversSessions,
   assertAnonymousReportRateAllowed,
+  assertNoDuplicateCustomExerciseName,
   authorSlugMintBase,
+  inheritedForeignCustomIdsFromExerciseOwners,
+  mintProgramSlugForShare,
+  planProgramSlugRename,
+  programSlugHistoryRowsToKeep,
   type ProgramRedirectRow,
 } from "./programs.core";
 import { loadSessionUser } from "#/server/auth.core";
@@ -292,13 +303,14 @@ async function inheritedForeignCustomIdsForProgram(
     })
     .from(schema.exercises)
     .where(inArray(schema.exercises.id, exerciseIds));
-  const inherited = new Set<string>();
-  for (const ex of exerciseRows) {
-    if (ex.ownerUserId != null && ex.ownerUserId !== programAuthorId) {
-      inherited.add(ex.id);
-    }
-  }
-  return inherited;
+  const owners = new Map(
+    exerciseRows.map((ex) => [ex.id, ex.ownerUserId] as const),
+  );
+  return inheritedForeignCustomIdsFromExerciseOwners(
+    entryRows,
+    owners,
+    programAuthorId,
+  );
 }
 
 async function loadProgramExerciseMap(
@@ -527,9 +539,20 @@ async function takenAuthorSlugsForShareMint(
 }
 
 async function hashReporterIp(rawIp: string): Promise<string> {
-  const data = new TextEncoder().encode(rawIp);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)]
+  const secret = env.AUTH_SECRET ?? "dev-insecure-secret-change-me";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(rawIp),
+  );
+  return [...new Uint8Array(sig)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 }
@@ -984,14 +1007,7 @@ export const upsertCustomExercise = createServerFn({ method: "POST" })
           eq(schema.exercises.ownerUserId, me.id),
         ),
       );
-    for (const row of candidates) {
-      if (row.deletedAt != null) {
-        continue;
-      }
-      if (normalizeExerciseName(row.name) === normalized) {
-        throw appError("INVALID_ENTRY");
-      }
-    }
+    assertNoDuplicateCustomExerciseName(normalized, candidates);
 
     const id = crypto.randomUUID();
     const [row] = await db
@@ -1028,32 +1044,6 @@ const SearchCatalogExercisesInputSchema = z.object({
   muscle: z.enum(MUSCLES).optional(),
 });
 
-function exerciseSearchRank(
-  row: {
-    name: string;
-    aliases: string[];
-  },
-  query: string,
-): number | null {
-  const q = query.trim().toLowerCase();
-  if (!q) {
-    return 2;
-  }
-  const name = row.name.toLowerCase();
-  if (name.startsWith(q)) {
-    return 0;
-  }
-  if (name.includes(q)) {
-    return 1;
-  }
-  for (const alias of row.aliases) {
-    if (alias.toLowerCase().includes(q)) {
-      return 2;
-    }
-  }
-  return null;
-}
-
 export const searchCatalogExercises = createServerFn({ method: "GET" })
   .validator((d) => SearchCatalogExercisesInputSchema.parse(d))
   .handler(async ({ data }) => {
@@ -1072,33 +1062,14 @@ export const searchCatalogExercises = createServerFn({ method: "GET" })
         ),
       );
 
-    const filtered = rows.filter((row) => {
-      if (data.equipment && row.equipment !== data.equipment) {
-        return false;
-      }
-      if (data.muscle) {
-        const hitsPrimary = row.musclePrimary === data.muscle;
-        const hitsSecondary = row.muscleSecondary.includes(data.muscle);
-        if (!hitsPrimary && !hitsSecondary) {
-          return false;
-        }
-      }
-      const rank = exerciseSearchRank(row, data.query);
-      return rank !== null;
+    const filtered = filterExercisesForSearch(rows, {
+      query: data.query,
+      equipment: data.equipment,
+      muscle: data.muscle,
     });
-
-    const ranked = filtered
-      .map((row) => ({
-        row,
-        rank: exerciseSearchRank(row, data.query) ?? 2,
-      }))
-      .sort((a, b) => {
-        if (a.rank !== b.rank) {
-          return a.rank - b.rank;
-        }
-        return a.row.name.localeCompare(b.row.name);
-      })
-      .slice(0, 50);
+    const ranked = rankExercisesForSearch(filtered, data.query, 50).map(
+      (row) => ({ row }),
+    );
 
     const rankedIds = ranked.map(({ row }) => row.id);
     const assetHints = new Map<
@@ -1175,16 +1146,7 @@ export const setVisibility = createServerFn({ method: "POST" })
     let nextProgramSlug = program.slug;
     if (effects.mintProgramSlug) {
       const taken = await takenProgramSlugsForAuthor(program.userId, now);
-      const candidate = suggestProgramSlug(program.title, taken);
-      if (!candidate) {
-        throw appError("SLUG_TAKEN");
-      }
-      const validated = validateSlug(candidate);
-      if (!validated.ok) {
-        throw appError("SLUG_TAKEN");
-      }
-      assertSlugAvailable(candidate, taken, []);
-      nextProgramSlug = candidate;
+      nextProgramSlug = mintProgramSlugForShare(program.title, taken);
     }
 
     let authorSlugUpdate: string | undefined;
@@ -1289,6 +1251,192 @@ export const rotateShareToken = createServerFn({ method: "POST" })
       })
       .where(eq(schema.programs.id, program.id));
     return { shareToken: token };
+  });
+
+const CheckProgramSlugInputSchema = z.object({
+  programId: z.string().min(1),
+  candidate: z.string().min(1),
+});
+
+export const checkProgramSlugAvailable = createServerFn({ method: "GET" })
+  .validator((d) => CheckProgramSlugInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const program = await loadAuthorProgram(data.programId, me.id);
+    if (!program.slug) {
+      return { ok: false as const, reason: "Share the program first." };
+    }
+    const validated = validateSlug(data.candidate.trim().toLowerCase());
+    if (!validated.ok) {
+      return { ok: false as const, reason: validated.reason };
+    }
+    const candidate = data.candidate.trim().toLowerCase();
+    if (program.slug === candidate) {
+      return { ok: true as const };
+    }
+    const now = new Date();
+    const taken = await takenProgramSlugsForAuthor(program.userId, now);
+    const historyRows = await useDb()
+      .select({
+        fromSlug: schema.programSlugHistory.fromSlug,
+        createdAt: schema.programSlugHistory.createdAt,
+        programId: schema.programSlugHistory.programId,
+      })
+      .from(schema.programSlugHistory)
+      .where(eq(schema.programSlugHistory.userId, program.userId));
+    const reclaiming = historyRows.some(
+      (row) => row.fromSlug === candidate && row.programId === program.id,
+    );
+    const historyForAssert = historyRows
+      .filter((row) => isSlugHistoryReserved(row.createdAt, now))
+      .filter((row) => !(reclaiming && row.fromSlug === candidate))
+      .map((row) => ({ slug: row.fromSlug, createdAt: row.createdAt }));
+    try {
+      assertSlugAvailable(candidate, taken, historyForAssert, now);
+    } catch (e) {
+      if (e instanceof Error && e.message === "SLUG_TAKEN") {
+        const takenSlugs = new Set(taken);
+        const base = suggestSlug(candidate) || candidate;
+        const suggestions = [
+          suggestProgramSlug(base, [...takenSlugs]),
+          suggestProgramSlug(`${base}-plan`, [...takenSlugs]),
+        ].filter((s): s is string => s != null && s !== candidate);
+        return {
+          ok: false as const,
+          reason: "That address is taken.",
+          suggestions: [...new Set(suggestions)].slice(0, 2),
+        };
+      }
+      throw e;
+    }
+    return { ok: true as const };
+  });
+
+const RenameProgramSlugInputSchema = z.object({
+  programId: z.string().min(1),
+  expectedRevision: z.number().int().min(0),
+  slug: z.string().min(3).max(40),
+});
+
+export const renameProgramSlug = createServerFn({ method: "POST" })
+  .validator((d) => RenameProgramSlugInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const program = await loadAuthorProgram(data.programId, me.id);
+    revisionGuard(data.expectedRevision, program.revision);
+    const validated = validateSlug(data.slug.trim().toLowerCase());
+    if (!validated.ok) {
+      throw appError("SLUG_TAKEN");
+    }
+    const now = new Date();
+    const taken = await takenProgramSlugsForAuthor(program.userId, now);
+    const db = useDb();
+    const historyWithProgram = await db
+      .select({
+        fromSlug: schema.programSlugHistory.fromSlug,
+        createdAt: schema.programSlugHistory.createdAt,
+        programId: schema.programSlugHistory.programId,
+      })
+      .from(schema.programSlugHistory)
+      .where(eq(schema.programSlugHistory.userId, program.userId));
+    const reclaiming = historyWithProgram.some(
+      (row) =>
+        row.fromSlug === data.slug.trim().toLowerCase() &&
+        row.programId === program.id,
+    );
+    const reservedHistory = historyWithProgram
+      .filter((row) => isSlugHistoryReserved(row.createdAt, now))
+      .map((row) => ({ slug: row.fromSlug, createdAt: row.createdAt }));
+    const planned = planProgramSlugRename(
+      program.slug,
+      data.slug,
+      taken,
+      reservedHistory,
+      reclaiming,
+      now,
+    );
+    if (!planned.ok) {
+      throw appError(planned.code);
+    }
+    if (!planned.rename) {
+      const sessions = await loadProgramSessionsDTO(program.id);
+      return toProgramDTO(program, sessions);
+    }
+
+    const batch: BatchItem<"sqlite">[] = [];
+    if (planned.rename.reclaimingOwnHistorySlug) {
+      batch.push(
+        db
+          .delete(schema.programSlugHistory)
+          .where(
+            and(
+              eq(schema.programSlugHistory.userId, program.userId),
+              eq(schema.programSlugHistory.fromSlug, planned.rename.toSlug),
+            ),
+          ),
+      );
+    }
+    batch.push(
+      db.insert(schema.programSlugHistory).values({
+        id: crypto.randomUUID(),
+        userId: program.userId,
+        programId: program.id,
+        fromSlug: planned.rename.fromSlug,
+        createdAt: now,
+      }),
+    );
+    const programHistory = historyWithProgram.filter(
+      (row) => row.programId === program.id,
+    );
+    const keep = programSlugHistoryRowsToKeep([
+      ...programHistory.map((row) => ({
+        fromSlug: row.fromSlug,
+        createdAt: row.createdAt,
+      })),
+      { fromSlug: planned.rename.fromSlug, createdAt: now },
+    ]);
+    for (const row of programHistory) {
+      if (!keep.has(row.fromSlug) && row.fromSlug !== planned.rename.toSlug) {
+        batch.push(
+          db
+            .delete(schema.programSlugHistory)
+            .where(
+              and(
+                eq(schema.programSlugHistory.userId, program.userId),
+                eq(schema.programSlugHistory.fromSlug, row.fromSlug),
+              ),
+            ),
+        );
+      }
+    }
+    const revision = nextRevision(program.revision);
+    batch.push(
+      db
+        .update(schema.programs)
+        .set({
+          slug: planned.rename.toSlug,
+          revision,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(schema.programs.id, program.id),
+            eq(schema.programs.revision, data.expectedRevision),
+          ),
+        ),
+    );
+    await runSlugSafeBatch(batch);
+
+    const [row] = await db
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.id, program.id))
+      .limit(1);
+    if (!row || row.revision === data.expectedRevision) {
+      throw appError("STALE_REVISION");
+    }
+    const sessions = await loadProgramSessionsDTO(program.id);
+    return toProgramDTO(row, sessions);
   });
 
 const GetPublicProgramByTokenInputSchema = z.object({
@@ -1660,9 +1808,7 @@ export const resolvePublicProgramRedirect = createServerFn({ method: "GET" })
   .validator((d) => ResolvePublicProgramRedirectInputSchema.parse(d))
   .handler(async ({ data }) => {
     const now = new Date();
-    const uuidRe =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const isProgramIdRef = uuidRe.test(data.programRef);
+    const programIdRef = isProgramIdRef(data.programRef);
     const { lookup } = await resolveAuthorSlugContext(data.authorSlug, now);
     if (!lookup) {
       return { kind: "not_found" as const };
@@ -1671,7 +1817,7 @@ export const resolvePublicProgramRedirect = createServerFn({ method: "GET" })
     let programBySlug: ProgramRedirectRow | null = null;
     let programFromHistory: ProgramRedirectRow | null = null;
 
-    if (!isProgramIdRef) {
+    if (!programIdRef) {
       const [bySlug] = await useDb()
         .select()
         .from(schema.programs)
@@ -1715,7 +1861,7 @@ export const resolvePublicProgramRedirect = createServerFn({ method: "GET" })
       programBySlug,
       programFromHistory,
       data.shareToken,
-      isProgramIdRef,
+      programIdRef,
     );
     if (resolution.kind === "redirect") {
       return {

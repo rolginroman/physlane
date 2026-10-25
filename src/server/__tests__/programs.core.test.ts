@@ -21,6 +21,8 @@ import {
   revisionGuard,
   authorSlugRenameAllowedAt,
   planAuthorProfileSave,
+  planProgramSlugRename,
+  programSlugHistoryRowsToKeep,
   resolveAuthorProfileRedirect,
   resolveAuthorSlugLookup,
   resolveProgramRedirect,
@@ -508,6 +510,48 @@ describe("planAuthorProfileSave", () => {
       ok: true,
       rename: { fromSlug: "tara", toSlug: "tara-lifts" },
     });
+  });
+});
+
+describe("planProgramSlugRename", () => {
+  const now = new Date("2026-06-01T00:00:00Z");
+
+  it("rejects rename before first share", () => {
+    expect(planProgramSlugRename(null, "new-slug", [], [], false, now)).toEqual(
+      { ok: false, code: "INVALID_TRANSITION" },
+    );
+  });
+
+  it("allows no-op when slug unchanged", () => {
+    expect(planProgramSlugRename("ppl", "ppl", [], [], false, now)).toEqual({
+      ok: true,
+      rename: null,
+    });
+  });
+
+  it("plans rename when slug is free", () => {
+    expect(
+      planProgramSlugRename("ppl", "push-pull-legs", ["upper"], [], false, now),
+    ).toEqual({
+      ok: true,
+      rename: {
+        fromSlug: "ppl",
+        toSlug: "push-pull-legs",
+        reclaimingOwnHistorySlug: false,
+      },
+    });
+  });
+});
+
+describe("programSlugHistoryRowsToKeep", () => {
+  it("keeps the three newest rows", () => {
+    const keep = programSlugHistoryRowsToKeep([
+      { fromSlug: "a", createdAt: new Date("2026-01-01") },
+      { fromSlug: "b", createdAt: new Date("2026-02-01") },
+      { fromSlug: "c", createdAt: new Date("2026-03-01") },
+      { fromSlug: "d", createdAt: new Date("2026-04-01") },
+    ]);
+    expect(keep).toEqual(new Set(["b", "c", "d"]));
   });
 });
 

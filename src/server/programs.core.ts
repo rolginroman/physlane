@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { appError, type AppErrorCode } from "#/lib/app-error";
-import { suggestSlug } from "#/lib/programs/slug";
+import { suggestSlug, validateSlug } from "#/lib/programs/slug";
 import {
   EQUIPMENT,
   MUSCLES,
@@ -177,7 +177,7 @@ export function mintAuthorSlugForShare(
 }
 
 const SLUG_UNIQUE_CONSTRAINT_RE =
-  /UNIQUE constraint failed:.*(?:user\.slug|programs\.|author_slug_history)/i;
+  /UNIQUE constraint failed:.*(?:user\.slug|programs\.|author_slug_history|program_slug_history)/i;
 
 /** Map D1/SQLite unique-index races on slug columns to SLUG_TAKEN. */
 export function throwIfSlugUniqueViolation(error: unknown): never {
@@ -321,6 +321,99 @@ export type SessionUpsertPayload = ProgramSession & {
 export const AUTHOR_SLUG_RENAME_COOLDOWN_MS = 90 * 24 * 60 * 60 * 1000;
 
 export const MAX_AUTHOR_SLUG_HISTORY_ROWS = 3;
+
+export const MAX_PROGRAM_SLUG_HISTORY_ROWS = 3;
+
+export function programSlugHistoryRowsToKeep(
+  rows: ReadonlyArray<{ fromSlug: string; createdAt: Date }>,
+  limit: number = MAX_PROGRAM_SLUG_HISTORY_ROWS,
+): Set<string> {
+  const sorted = [...rows].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+  return new Set(sorted.slice(0, limit).map((r) => r.fromSlug));
+}
+
+export type ProgramSlugRenamePlan = {
+  fromSlug: string;
+  toSlug: string;
+  reclaimingOwnHistorySlug: boolean;
+};
+
+export function planProgramSlugRename(
+  currentSlug: string | null,
+  nextSlug: string,
+  takenCurrent: ReadonlySet<string> | readonly string[],
+  takenHistory: ReadonlyArray<{ slug: string; createdAt: Date }>,
+  reclaimingOwnHistorySlug: boolean,
+  now: Date = new Date(),
+):
+  | { ok: true; rename: ProgramSlugRenamePlan | null }
+  | {
+      ok: false;
+      code: Extract<AppErrorCode, "SLUG_TAKEN" | "INVALID_TRANSITION">;
+    } {
+  if (currentSlug == null) {
+    return { ok: false, code: "INVALID_TRANSITION" };
+  }
+  const toSlug = nextSlug.trim().toLowerCase();
+  if (toSlug === currentSlug) {
+    return { ok: true, rename: null };
+  }
+  const historyForAssert = reclaimingOwnHistorySlug
+    ? takenHistory.filter((row) => row.slug !== toSlug)
+    : takenHistory;
+  try {
+    assertSlugAvailable(toSlug, takenCurrent, historyForAssert, now);
+  } catch (e) {
+    if (e instanceof Error && e.message === "SLUG_TAKEN") {
+      return { ok: false, code: "SLUG_TAKEN" };
+    }
+    throw e;
+  }
+  return {
+    ok: true,
+    rename: {
+      fromSlug: currentSlug,
+      toSlug,
+      reclaimingOwnHistorySlug,
+    },
+  };
+}
+
+/** Mint program slug at first share; maps validation failures to SLUG_TAKEN. */
+export function mintProgramSlugForShare(
+  title: string,
+  taken: readonly string[],
+): string {
+  const candidate = suggestProgramSlug(title, [...taken]);
+  if (!candidate) {
+    throw appError("SLUG_TAKEN");
+  }
+  const validated = validateSlug(candidate);
+  if (!validated.ok) {
+    throw appError("SLUG_TAKEN");
+  }
+  assertSlugAvailable(candidate, taken, []);
+  return candidate;
+}
+
+export function assertNoDuplicateCustomExerciseName(
+  normalized: string,
+  candidates: ReadonlyArray<{
+    name: string;
+    deletedAt: Date | null;
+  }>,
+): void {
+  for (const row of candidates) {
+    if (row.deletedAt != null) {
+      continue;
+    }
+    if (normalizeExerciseName(row.name) === normalized) {
+      throw appError("INVALID_ENTRY");
+    }
+  }
+}
 
 export type AuthorSlugLookup = {
   userId: string;

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { safeAuthRedirect } from "#/lib/auth-redirect";
+import { resolveAuthRedirectTarget } from "#/lib/auth-redirect";
 import { useState, type FormEvent } from "react";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -36,7 +36,7 @@ type FieldErrors = {
 
 function SignUpPage() {
   const navigate = useNavigate();
-  const { redirect: redirectTo } = Route.useSearch();
+  const { redirect: redirectTo, copy: copyIntent } = Route.useSearch();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -102,7 +102,9 @@ function SignUpPage() {
       setPending(false);
       return;
     }
-    await navigate({ to: safeAuthRedirect(redirectTo) });
+    await navigate({
+      to: resolveAuthRedirectTarget(redirectTo, copyIntent),
+    });
   }
 
   return (
@@ -298,6 +300,7 @@ function SignUpPage() {
           Already have an account?{" "}
           <Link
             to="/sign-in"
+            search={redirectTo ? { redirect: redirectTo } : {}}
             className="font-medium text-brand-text underline decoration-border underline-offset-2 hover:text-brand-hover"
           >
             Sign in

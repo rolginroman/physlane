@@ -17,12 +17,9 @@ import {
   type PublicProgramDTO,
 } from "#/server/programs.fns";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isProgramIdRef } from "#/lib/programs/program-id-ref";
 
-export function isProgramIdRef(ref: string): boolean {
-  return UUID_RE.test(ref);
-}
+export { isProgramIdRef };
 
 async function loadProgramOrRemoval(
   load: () => Promise<PublicProgramDTO>,

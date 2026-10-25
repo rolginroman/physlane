@@ -268,6 +268,7 @@ function SignInPage() {
           No account?{" "}
           <Link
             to="/sign-up"
+            search={redirectTo ? { redirect: redirectTo } : {}}
             className="font-medium text-brand-text underline decoration-border underline-offset-2 hover:text-brand-hover"
           >
             Create one
