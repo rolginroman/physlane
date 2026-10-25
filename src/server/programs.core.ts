@@ -7,7 +7,7 @@ import {
   type ProgramGoal,
   type ProgramLevel,
 } from "#/lib/programs/taxonomy";
-import type { ProgramSession } from "#/lib/programs/program-shape";
+import { entrySchema, type ProgramSession } from "#/lib/programs/program-shape";
 
 export type ProgramVisibility = "draft" | "unlisted" | "public";
 
@@ -115,10 +115,13 @@ export function suggestAuthorSlug(
     if (trimmedBase.length > maxBaseLen) {
       trimmedBase = trimmedBase.slice(0, maxBaseLen).replace(/-$/, "");
     }
-    if (trimmedBase.length < 3) {
+    const candidate = `${trimmedBase}${suffixPart}`;
+    if (candidate.length < 3) {
       return null;
     }
-    const candidate = `${trimmedBase}${suffixPart}`;
+    if (trimmedBase.length < 3 && suffixPart === "") {
+      return null;
+    }
     return candidate.length <= MAX_PROGRAM_SLUG_LEN ? candidate : null;
   };
 
@@ -139,6 +142,50 @@ export function suggestAuthorSlug(
     }
   }
   return null;
+}
+
+/** Mint base from display name; only empty slugify falls back to `author`. */
+export function authorSlugMintBase(label: string): string {
+  const base = suggestSlug(label);
+  if (!base) {
+    return "author";
+  }
+  return base;
+}
+
+/** First-share author slug mint; suffix loop then `author` fallback until free. */
+export function mintAuthorSlugForShare(
+  label: string,
+  taken: readonly string[],
+): string {
+  const takenSet = new Set(taken);
+  const bases = [authorSlugMintBase(label), "author"];
+  for (const base of bases) {
+    const candidate = suggestAuthorSlug(base, [...takenSet]);
+    if (candidate != null) {
+      return candidate;
+    }
+    takenSet.add(base);
+  }
+  for (let n = 2; n <= MAX_AUTHOR_SLUG_SUFFIX; n++) {
+    const candidate = `author-${n}`;
+    if (!takenSet.has(candidate)) {
+      return candidate;
+    }
+  }
+  throw appError("SLUG_TAKEN");
+}
+
+const SLUG_UNIQUE_CONSTRAINT_RE =
+  /UNIQUE constraint failed:.*(?:user\.slug|programs\.|author_slug_history)/i;
+
+/** Map D1/SQLite unique-index races on slug columns to SLUG_TAKEN. */
+export function throwIfSlugUniqueViolation(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error);
+  if (SLUG_UNIQUE_CONSTRAINT_RE.test(message)) {
+    throw appError("SLUG_TAKEN");
+  }
+  throw error;
 }
 
 export function planVisibilityTransition(
@@ -590,6 +637,24 @@ export type ForkSessionSource = {
 };
 
 /** Fresh ids; exercise ids unchanged so fork-inherited foreign customs keep rendering. */
+/** Entry columns for insert; validates fork snapshot against editor schema. */
+export function forkEntryPayloadFromPlan(entry: ForkEntryPlan) {
+  return entrySchema.parse({
+    exerciseId: entry.exerciseId,
+    groupTag: entry.groupTag,
+    sets: entry.sets,
+    repsType: entry.repsType,
+    repsValue: entry.repsValue,
+    loadType: entry.loadType,
+    loadValue: entry.loadValue,
+    intensityType: entry.intensityType,
+    intensityValue: entry.intensityValue,
+    restSeconds: entry.restSeconds,
+    cues: entry.cues,
+    refUrl: entry.refUrl,
+  });
+}
+
 export function planForkSessionCopies(
   sessions: readonly ForkSessionSource[],
   newId: () => string,

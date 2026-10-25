@@ -22,8 +22,13 @@ import {
   resolveProgramRedirect,
   suggestAuthorSlug,
   suggestProgramSlug,
+  authorSlugMintBase,
+  mintAuthorSlugForShare,
+  forkEntryPayloadFromPlan,
+  throwIfSlugUniqueViolation,
   validateSessionEntries,
 } from "../programs.core";
+import { entrySchema } from "#/lib/programs/program-shape";
 
 describe("assertAuthor", () => {
   it("allows the program author", () => {
@@ -371,12 +376,57 @@ describe("suggestAuthorSlug", () => {
     expect(suggestAuthorSlug("", [])).toBeNull();
   });
 
+  it("suffixes two-letter bases", () => {
+    expect(suggestAuthorSlug("jo", [])).toBe("jo-2");
+  });
+
   it("returns null when all suffix candidates are taken", () => {
     const taken = ["alex"];
     for (let n = 2; n <= 99; n++) {
       taken.push(`alex-${n}`);
     }
     expect(suggestAuthorSlug("alex", taken)).toBeNull();
+  });
+});
+
+describe("authorSlugMintBase", () => {
+  it("falls back when slugify yields empty", () => {
+    expect(authorSlugMintBase("Роман")).toBe("author");
+  });
+
+  it("keeps short slugify bases for suffix minting", () => {
+    expect(authorSlugMintBase("Jo").length).toBe(2);
+    expect(suggestAuthorSlug(authorSlugMintBase("Jo"), [])).toMatch(/jo-/);
+  });
+
+  it("strips Latin diacritics before slugify", () => {
+    expect(authorSlugMintBase("José")).toBe("jose");
+  });
+});
+
+describe("mintAuthorSlugForShare", () => {
+  it("mints for short display names via suffix", () => {
+    expect(mintAuthorSlugForShare("Jo", [])).toMatch(/^jo-\d+$/);
+  });
+
+  it("mints for non-Latin names via author fallback", () => {
+    expect(mintAuthorSlugForShare("Роман", [])).toBe("author");
+  });
+});
+
+describe("throwIfSlugUniqueViolation", () => {
+  it("maps slug unique races to SLUG_TAKEN", () => {
+    expect(() =>
+      throwIfSlugUniqueViolation(
+        new Error("UNIQUE constraint failed: user.slug"),
+      ),
+    ).toThrow("SLUG_TAKEN");
+  });
+
+  it("rethrows unrelated errors", () => {
+    expect(() => throwIfSlugUniqueViolation(new Error("other"))).toThrow(
+      "other",
+    );
   });
 });
 
@@ -653,6 +703,43 @@ describe("planForkSessionCopies", () => {
     );
     expect(plans[0]?.entries[0]?.exerciseId).toBe("foreign-custom");
     expect(plans[0]?.newSessionId).toBe("new-id");
+  });
+
+  it("fork entry payloads round-trip through entrySchema", () => {
+    const plans = planForkSessionCopies(
+      [
+        {
+          id: "s1",
+          weekNumber: 1,
+          orderIndex: 0,
+          title: "Day A",
+          notes: null,
+          entries: [
+            {
+              orderIndex: 0,
+              exerciseId: "ex-1",
+              groupTag: null,
+              sets: 3,
+              repsType: "count",
+              repsValue: 8,
+              loadType: "kg",
+              loadValue: 80,
+              intensityType: "rpe",
+              intensityValue: 8,
+              restSeconds: 120,
+              cues: "3-1-1",
+              refUrl: null,
+            },
+          ],
+        },
+      ],
+      () => "new-id",
+    );
+    const entry = plans[0]?.entries[0];
+    expect(entry).toBeDefined();
+    const parsed = forkEntryPayloadFromPlan(entry!);
+    expect(entrySchema.parse(parsed)).toEqual(parsed);
+    expect(parsed.intensityValue).toBe(8);
   });
 });
 

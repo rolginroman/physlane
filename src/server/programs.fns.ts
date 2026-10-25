@@ -37,6 +37,9 @@ import {
   assertForkAllowed,
   buildForkSourceLabel,
   planForkSessionCopies,
+  forkEntryPayloadFromPlan,
+  mintAuthorSlugForShare,
+  throwIfSlugUniqueViolation,
   resolveAuthorProfileRedirect,
   resolveAuthorSlugLookup,
   resolveProgramRedirect,
@@ -336,12 +339,7 @@ async function takenProgramSlugsForAuthor(
   const programRows = await db
     .select({ slug: schema.programs.slug })
     .from(schema.programs)
-    .where(
-      and(
-        eq(schema.programs.userId, authorUserId),
-        isNull(schema.programs.deletedAt),
-      ),
-    );
+    .where(eq(schema.programs.userId, authorUserId));
   const historyRows = await db
     .select({
       fromSlug: schema.programSlugHistory.fromSlug,
@@ -362,6 +360,70 @@ async function takenProgramSlugsForAuthor(
     }
   }
   return [...taken];
+}
+
+async function runSlugSafeBatch(batch: BatchItem<"sqlite">[]): Promise<void> {
+  const db = useDb();
+  try {
+    await db.batch(batch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+  } catch (error) {
+    throwIfSlugUniqueViolation(error);
+  }
+}
+
+async function bumpProgramRevisionIfMatch(
+  programId: string,
+  expectedRevision: number,
+  now: Date,
+): Promise<schema.Program> {
+  const [row] = await useDb()
+    .update(schema.programs)
+    .set({
+      revision: nextRevision(expectedRevision),
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(schema.programs.id, programId),
+        eq(schema.programs.revision, expectedRevision),
+      ),
+    )
+    .returning();
+  if (!row) {
+    throw appError("STALE_REVISION");
+  }
+  return row;
+}
+
+async function revertProgramRevisionBump(
+  programId: string,
+  expectedRevision: number,
+): Promise<void> {
+  await useDb()
+    .update(schema.programs)
+    .set({ revision: expectedRevision })
+    .where(
+      and(
+        eq(schema.programs.id, programId),
+        eq(schema.programs.revision, nextRevision(expectedRevision)),
+      ),
+    );
+}
+
+/** Bump revision as a lock, run mutation batch, revert revision if batch fails. */
+async function withRevisionBumpThenBatch(
+  programId: string,
+  expectedRevision: number,
+  now: Date,
+  runBatch: () => Promise<void>,
+): Promise<void> {
+  await bumpProgramRevisionIfMatch(programId, expectedRevision, now);
+  try {
+    await runBatch();
+  } catch (error) {
+    await revertProgramRevisionBump(programId, expectedRevision);
+    throw error;
+  }
 }
 
 async function takenAuthorSlugsGlobally(now: Date): Promise<{
@@ -588,10 +650,15 @@ export const updateProgramMeta = createServerFn({ method: "POST" })
         revision,
         updatedAt: now,
       })
-      .where(eq(schema.programs.id, program.id))
+      .where(
+        and(
+          eq(schema.programs.id, program.id),
+          eq(schema.programs.revision, data.expectedRevision),
+        ),
+      )
       .returning();
     if (!row) {
-      throw appError("PROGRAM_NOT_FOUND");
+      throw appError("STALE_REVISION");
     }
     const sessions = await loadProgramSessionsDTO(row.id);
     return toProgramDTO(row, sessions);
@@ -646,7 +713,6 @@ export const upsertSession = createServerFn({ method: "POST" })
     });
 
     const now = new Date();
-    const revision = nextRevision(program.revision);
 
     const upsertBatch: BatchItem<"sqlite">[] = [];
     if (existingSession) {
@@ -701,16 +767,19 @@ export const upsertSession = createServerFn({ method: "POST" })
       );
     }
 
-    upsertBatch.push(
-      db
-        .update(schema.programs)
-        .set({ revision, updatedAt: now })
-        .where(eq(schema.programs.id, program.id)),
-    );
-
-    // D1 batch API requires a non-empty tuple; length is always ≥2 here.
-    await db.batch(
-      upsertBatch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]],
+    await withRevisionBumpThenBatch(
+      program.id,
+      data.expectedRevision,
+      now,
+      async () => {
+        if (upsertBatch.length === 1) {
+          await upsertBatch[0];
+        } else {
+          await db.batch(
+            upsertBatch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]],
+          );
+        }
+      },
     );
 
     const sessions = await loadProgramSessionsDTO(program.id);
@@ -755,20 +824,21 @@ export const removeSession = createServerFn({ method: "POST" })
     }
 
     const now = new Date();
-    const revision = nextRevision(program.revision);
-
-    await db.batch([
-      db
-        .delete(schema.programEntries)
-        .where(eq(schema.programEntries.sessionId, data.sessionId)),
-      db
-        .delete(schema.programSessions)
-        .where(eq(schema.programSessions.id, data.sessionId)),
-      db
-        .update(schema.programs)
-        .set({ revision, updatedAt: now })
-        .where(eq(schema.programs.id, program.id)),
-    ]);
+    await withRevisionBumpThenBatch(
+      program.id,
+      data.expectedRevision,
+      now,
+      async () => {
+        await db.batch([
+          db
+            .delete(schema.programEntries)
+            .where(eq(schema.programEntries.sessionId, data.sessionId)),
+          db
+            .delete(schema.programSessions)
+            .where(eq(schema.programSessions.id, data.sessionId)),
+        ]);
+      },
+    );
 
     const sessions = await loadProgramSessionsDTO(program.id);
     const [updatedProgram] = await db
@@ -1008,18 +1078,11 @@ export const setVisibility = createServerFn({ method: "POST" })
     let authorSlugUpdate: string | undefined;
     let authorDisplayNameUpdate: string | null | undefined;
     if (effects.mintAuthorSlug) {
-      const base = suggestSlug(
-        author.displayName ?? publicFirstName(author.name) ?? "author",
-      );
-      if (!base) {
-        throw appError("SLUG_TAKEN");
-      }
+      const label =
+        author.displayName ?? publicFirstName(author.name) ?? "author";
       const { current, history } = await takenAuthorSlugsGlobally(now);
       const taken = [...current, ...history.map((row) => row.slug)];
-      const candidate = suggestAuthorSlug(base, taken);
-      if (candidate == null) {
-        throw appError("SLUG_TAKEN");
-      }
+      const candidate = mintAuthorSlugForShare(label, taken);
       assertSlugAvailable(candidate, current, history, now);
       authorSlugUpdate = candidate;
       if (author.displayName == null) {
@@ -1038,6 +1101,13 @@ export const setVisibility = createServerFn({ method: "POST" })
     }
     if (data.target === "public" && author.profilePublishedAt == null) {
       userPatch.profilePublishedAt = now;
+    }
+    if (authorSlugUpdate != null) {
+      visibilityBatch.push(
+        db
+          .delete(schema.authorSlugHistory)
+          .where(eq(schema.authorSlugHistory.fromSlug, authorSlugUpdate)),
+      );
     }
     if (Object.keys(userPatch).length > 0) {
       visibilityBatch.push(
@@ -1059,9 +1129,7 @@ export const setVisibility = createServerFn({ method: "POST" })
         })
         .where(eq(schema.programs.id, program.id)),
     );
-    await db.batch(
-      visibilityBatch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]],
-    );
+    await runSlugSafeBatch(visibilityBatch);
 
     const [row] = await db
       .select()
@@ -1438,16 +1506,17 @@ export const saveAuthorProfile = createServerFn({ method: "POST" })
       db.update(schema.user).set(userPatch).where(eq(schema.user.id, me.id)),
     );
 
+    if (planned.next.authorSlug !== author.slug) {
+      batch.push(
+        db
+          .delete(schema.authorSlugHistory)
+          .where(
+            eq(schema.authorSlugHistory.fromSlug, planned.next.authorSlug),
+          ),
+      );
+    }
+
     if (planned.rename) {
-      if (planned.rename.reclaimingOwnHistorySlug) {
-        batch.push(
-          db
-            .delete(schema.authorSlugHistory)
-            .where(
-              eq(schema.authorSlugHistory.fromSlug, planned.rename.toSlug),
-            ),
-        );
-      }
       batch.push(
         db.insert(schema.authorSlugHistory).values({
           fromSlug: planned.rename.fromSlug,
@@ -1473,7 +1542,7 @@ export const saveAuthorProfile = createServerFn({ method: "POST" })
       }
     }
 
-    await db.batch(batch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+    await runSlugSafeBatch(batch);
 
     return {
       authorSlug: planned.next.authorSlug,
@@ -1786,23 +1855,13 @@ export const forkProgram = createServerFn({ method: "POST" })
         }),
       );
       for (const entry of sessionPlan.entries) {
+        const payload = forkEntryPayloadFromPlan(entry);
         batch.push(
           db.insert(schema.programEntries).values({
             id: entry.newEntryId,
             sessionId: sessionPlan.newSessionId,
             orderIndex: entry.orderIndex,
-            exerciseId: entry.exerciseId,
-            groupTag: entry.groupTag,
-            sets: entry.sets,
-            repsType: entry.repsType as schema.ProgramEntry["repsType"],
-            repsValue: entry.repsValue,
-            loadType: entry.loadType as schema.ProgramEntry["loadType"],
-            loadValue: entry.loadValue,
-            intensityType:
-              entry.intensityType as schema.ProgramEntry["intensityType"],
-            restSeconds: entry.restSeconds,
-            cues: entry.cues,
-            refUrl: entry.refUrl,
+            ...payload,
           }),
         );
       }

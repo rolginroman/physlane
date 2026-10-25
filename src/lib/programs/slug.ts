@@ -52,7 +52,7 @@ export function suggestSlug(name: string): string {
   const normalized = name
     .trim()
     .toLowerCase()
-    .normalize("NFD")
+    .normalize("NFKD")
     .replace(/\p{M}/gu, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/-+/g, "-")
