@@ -19,6 +19,7 @@ import {
   assertAnonymousReportRateAllowed,
   ANONYMOUS_REPORTS_PER_IP_PER_DAY,
   revisionGuard,
+  resolveEntryIds,
   authorSlugRenameAllowedAt,
   planAuthorProfileSave,
   planProgramSlugRename,
@@ -895,5 +896,34 @@ describe("buildForkSourceLabel", () => {
     expect(buildForkSourceLabel("Tara", "Hypertrophy Base")).toBe(
       "Tara · Hypertrophy Base",
     );
+  });
+});
+
+describe("resolveEntryIds", () => {
+  const mint = () => {
+    let n = 0;
+    return () => `new-${++n}`;
+  };
+
+  it("keeps free client ids and mints ids for missing ones", () => {
+    expect(resolveEntryIds(["a", undefined, "b"], new Set(), mint())).toEqual([
+      "a",
+      "new-1",
+      "b",
+    ]);
+  });
+
+  it("does not reuse an id held by another session's entry", () => {
+    expect(resolveEntryIds(["a", "b"], new Set(["a"]), mint())).toEqual([
+      "new-1",
+      "b",
+    ]);
+  });
+
+  it("mints a fresh id for a duplicate within one payload", () => {
+    expect(resolveEntryIds(["a", "a"], new Set(), mint())).toEqual([
+      "a",
+      "new-1",
+    ]);
   });
 });

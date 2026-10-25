@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "#/components/ui/button";
 import {
   Dialog,
@@ -54,17 +54,6 @@ function useDebouncedValue<T>(value: T, ms: number): T {
   return debounced;
 }
 
-function regionMatches(
-  row: ExercisePickerRowDTO,
-  region: MuscleRegion,
-): boolean {
-  const muscles: readonly Muscle[] = MUSCLE_GROUPS[region];
-  if (muscles.some((m) => m === row.musclePrimary)) {
-    return true;
-  }
-  return row.muscleSecondary.some((m) => muscles.some((rm) => rm === m));
-}
-
 export function ExercisePicker({
   open,
   onOpenChange,
@@ -79,6 +68,7 @@ export function ExercisePicker({
   const [regionMenu, setRegionMenu] = useState<MuscleRegion | null>(null);
   const [rows, setRows] = useState<ExercisePickerRowDTO[]>([]);
   const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState(false);
   const [creating, setCreating] = useState(false);
   const [customName, setCustomName] = useState("");
@@ -89,30 +79,36 @@ export function ExercisePicker({
   const [customError, setCustomError] = useState<string | null>(null);
   const [customPending, setCustomPending] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const data = await searchCatalogExercises({
-        data: {
-          query: debouncedQuery,
-          equipment: equipment ?? undefined,
-          muscle: muscle ?? undefined,
-        },
-      });
-      setRows(data);
-    } catch {
-      setError(true);
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedQuery, equipment, muscle]);
-
   useEffect(() => {
     if (!open) return;
-    void load();
-  }, [open, load]);
+    // Ignore responses from superseded filters so a slow reply can't overwrite a newer one.
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    searchCatalogExercises({
+      data: {
+        query: debouncedQuery,
+        equipment: equipment ?? undefined,
+        muscle: muscle ?? undefined,
+        region: region ?? undefined,
+        source: tab === "mine" ? "mine" : "all",
+      },
+    })
+      .then((data) => {
+        if (!cancelled) setRows(data);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError(true);
+        setRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, debouncedQuery, equipment, muscle, region, tab, reloadKey]);
 
   useEffect(() => {
     if (!open) {
@@ -127,20 +123,9 @@ export function ExercisePicker({
     }
   }, [open]);
 
-  const filteredRows = useMemo(() => {
-    let list = rows;
-    if (tab === "mine") {
-      list = list.filter((r) => r.isCustom);
-    }
-    if (region && !muscle) {
-      list = list.filter((r) => regionMatches(r, region));
-    }
-    return list;
-  }, [rows, tab, region, muscle]);
-
   const showCreateRow =
     debouncedQuery.trim().length > 0 &&
-    !filteredRows.some(
+    !rows.some(
       (r) => r.name.toLowerCase() === debouncedQuery.trim().toLowerCase(),
     );
 
@@ -461,12 +446,12 @@ export function ExercisePicker({
                   type="button"
                   variant="outline"
                   className="mt-2 min-h-11"
-                  onClick={() => void load()}
+                  onClick={() => setReloadKey((k) => k + 1)}
                 >
                   Try again
                 </Button>
               </div>
-            ) : filteredRows.length === 0 && !showCreateRow ? (
+            ) : rows.length === 0 && !showCreateRow ? (
               <p className="text-sm text-muted-foreground">
                 {tab === "mine"
                   ? "No custom exercises yet. Search the catalog or create one below."
@@ -474,7 +459,7 @@ export function ExercisePicker({
               </p>
             ) : (
               <ul className="m-0 flex list-none flex-col gap-1 p-0">
-                {filteredRows.map((row) => (
+                {rows.map((row) => (
                   <li key={row.id}>
                     <button
                       type="button"

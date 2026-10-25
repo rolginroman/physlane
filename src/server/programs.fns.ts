@@ -11,6 +11,7 @@ import {
   inArray,
   isNull,
   max,
+  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -26,6 +27,7 @@ import {
 } from "#/lib/programs/program-shape";
 import {
   EQUIPMENT,
+  MUSCLE_REGIONS,
   MUSCLES,
   type Equipment,
   type Muscle,
@@ -52,6 +54,7 @@ import {
   normalizeExerciseName,
   planAuthorProfileSave,
   planVisibilityTransition,
+  resolveEntryIds,
   assertForkAllowed,
   buildForkSourceLabel,
   planForkSessionCopies,
@@ -847,6 +850,27 @@ export const upsertSession = createServerFn({ method: "POST" })
       inheritedForeignCustomIds,
     });
 
+    const requestedEntryIds = parsedSession.entries.map((e) => e.id);
+    const claimedIds = requestedEntryIds.filter(
+      (id): id is string => id !== undefined,
+    );
+    const takenElsewhere = new Set<string>();
+    if (claimedIds.length > 0) {
+      const taken = await db
+        .select({ id: schema.programEntries.id })
+        .from(schema.programEntries)
+        .where(
+          and(
+            inArray(schema.programEntries.id, claimedIds),
+            ne(schema.programEntries.sessionId, sessionId),
+          ),
+        );
+      for (const row of taken) takenElsewhere.add(row.id);
+    }
+    const entryIds = resolveEntryIds(requestedEntryIds, takenElsewhere, () =>
+      crypto.randomUUID(),
+    );
+
     const now = new Date();
 
     const upsertBatch: BatchItem<"sqlite">[] = [];
@@ -883,7 +907,7 @@ export const upsertSession = createServerFn({ method: "POST" })
       const validated = entrySchema.parse(entry);
       upsertBatch.push(
         db.insert(schema.programEntries).values({
-          id: crypto.randomUUID(),
+          id: entryIds[i] ?? crypto.randomUUID(),
           sessionId,
           orderIndex: i,
           exerciseId: validated.exerciseId,
@@ -1042,6 +1066,8 @@ const SearchCatalogExercisesInputSchema = z.object({
   query: z.string().default(""),
   equipment: z.enum(EQUIPMENT).optional(),
   muscle: z.enum(MUSCLES).optional(),
+  region: z.enum(MUSCLE_REGIONS).optional(),
+  source: z.enum(["all", "mine"]).default("all"),
 });
 
 export const searchCatalogExercises = createServerFn({ method: "GET" })
@@ -1066,6 +1092,8 @@ export const searchCatalogExercises = createServerFn({ method: "GET" })
       query: data.query,
       equipment: data.equipment,
       muscle: data.muscle,
+      region: data.region,
+      source: data.source,
     });
     const ranked = rankExercisesForSearch(filtered, data.query, 50).map(
       (row) => ({ row }),
@@ -1250,7 +1278,7 @@ export const rotateShareToken = createServerFn({ method: "POST" })
         updatedAt: now,
       })
       .where(eq(schema.programs.id, program.id));
-    return { shareToken: token };
+    return { shareToken: token, revision };
   });
 
 const CheckProgramSlugInputSchema = z.object({

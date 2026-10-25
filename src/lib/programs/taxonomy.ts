@@ -37,6 +37,17 @@ export const MUSCLE_GROUPS = {
   neck: ["neck"],
 } as const;
 
+export const MUSCLE_REGIONS = [
+  "chest",
+  "back",
+  "shoulders",
+  "arms",
+  "core",
+  "hips",
+  "legs",
+  "neck",
+] as const satisfies readonly (keyof typeof MUSCLE_GROUPS)[];
+
 export const EQUIPMENT = [
   "barbell",
   "dumbbell",

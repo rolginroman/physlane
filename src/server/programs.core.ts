@@ -293,6 +293,27 @@ export function validateSessionEntries(
   }
 }
 
+/**
+ * Keeps client-supplied entry ids so rows stay stable across saves. An id is
+ * reused only when it is unique in the payload and not held by an entry of
+ * another session; otherwise a fresh id is minted, so ids can't be hijacked.
+ */
+export function resolveEntryIds(
+  requested: ReadonlyArray<string | undefined>,
+  takenElsewhere: ReadonlySet<string>,
+  newId: () => string,
+): string[] {
+  const used = new Set<string>();
+  return requested.map((id) => {
+    const resolved =
+      id !== undefined && !takenElsewhere.has(id) && !used.has(id)
+        ? id
+        : newId();
+    used.add(resolved);
+    return resolved;
+  });
+}
+
 export const customExerciseInputSchema = z.object({
   name: z.string().min(1).max(80),
   aliases: z.array(z.string().min(1).max(80)).max(8).default([]),

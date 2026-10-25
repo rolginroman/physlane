@@ -26,6 +26,8 @@ const httpUrlSchema = z
 
 export const entrySchema = z
   .object({
+    /** Client-held row id; the server keeps it when it is free to use. */
+    id: z.string().min(1).max(64).optional(),
     exerciseId: z.string().min(1),
     groupTag: z.string().max(MAX_ENTRY_GROUP_TAG_LENGTH).nullable().optional(),
     sets: z.number().int().min(1).max(20),

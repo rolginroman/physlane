@@ -34,6 +34,8 @@ type ShareDialogProps = {
   onOpenChange: (open: boolean) => void;
   program: ShareDialogProgram;
   onProgramUpdated: (program: ProgramDTO | ShareDialogProgram) => void;
+  /** Serializes revision-bumping writes with the host's other saves. */
+  runExclusive?: <T>(job: () => Promise<T>) => Promise<T>;
 };
 
 export function ShareDialog({
@@ -41,6 +43,7 @@ export function ShareDialog({
   onOpenChange,
   program,
   onProgramUpdated,
+  runExclusive = (job) => job(),
 }: ShareDialogProps) {
   const [local, setLocal] = useState(program);
   const [authorSlug, setAuthorSlug] = useState<string | null>(null);
@@ -103,14 +106,17 @@ export function ShareDialog({
     setPending(true);
     setError(null);
     try {
-      const updated = await setVisibility({
-        data: {
-          programId: local.id,
-          target,
-        },
+      const updated = await runExclusive(async () => {
+        const result = await setVisibility({
+          data: {
+            programId: local.id,
+            target,
+          },
+        });
+        onProgramUpdated(result);
+        return result;
       });
       setLocal(updated);
-      onProgramUpdated(updated);
       if (target === "unlisted" || target === "public") {
         const slug = await getMyAuthorSlug();
         setAuthorSlug(slug.authorSlug);
@@ -132,14 +138,15 @@ export function ShareDialog({
     setPending(true);
     setError(null);
     try {
-      const { shareToken } = await rotateShareToken({
-        data: { programId: local.id },
+      const next = await runExclusive(async () => {
+        const { shareToken, revision } = await rotateShareToken({
+          data: { programId: local.id },
+        });
+        const updated = { ...local, shareToken, revision };
+        onProgramUpdated(updated);
+        return updated;
       });
-      setLocal((prev) => {
-        const next = { ...prev, shareToken };
-        onProgramUpdated(next);
-        return next;
-      });
+      setLocal(next);
     } catch (e) {
       const code = e instanceof Error ? e.message : "";
       setError(
