@@ -141,6 +141,7 @@ type ProgramEditorProps = {
     sessions: ProgramSessionDTO[];
     exercises: Record<string, ProgramExerciseRefDTO>;
   };
+  showForkBanner?: boolean;
 };
 
 type MetaState = {
@@ -155,8 +156,12 @@ type MetaState = {
   forkSourceLabel: string | null;
 };
 
-export function ProgramEditor({ initial }: ProgramEditorProps) {
+export function ProgramEditor({
+  initial,
+  showForkBanner = false,
+}: ProgramEditorProps) {
   const programId = initial.id;
+  const [forkBannerOpen, setForkBannerOpen] = useState(showForkBanner);
   const [meta, setMeta] = useState<MetaState>({
     title: initial.title,
     description: initial.description ?? "",
@@ -526,6 +531,32 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
 
   return (
     <section className="pt-4 pb-8">
+      {forkBannerOpen ? (
+        <div
+          className="mb-4 flex flex-col gap-2 rounded-xl border border-border bg-brand-soft p-4 sm:flex-row sm:items-start"
+          role="status"
+        >
+          <div className="flex-1 text-sm">
+            <p className="m-0 font-semibold text-foreground">
+              Copied to your programs
+            </p>
+            <p className="m-0 mt-1 text-text-secondary">
+              This is your copy: a draft only you can see. Edit anything.
+              Changes the author makes to theirs don't reach it.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-lg"
+            className="shrink-0"
+            aria-label="Dismiss"
+            onClick={() => setForkBannerOpen(false)}
+          >
+            ×
+          </Button>
+        </div>
+      ) : null}
       {staleRevision ? (
         <div
           className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-brand-soft p-4 sm:flex-row sm:items-center"

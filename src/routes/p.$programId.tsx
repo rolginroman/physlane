@@ -1,28 +1,37 @@
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { ProgramNotFound } from "#/components/programs/program-not-found";
+import { ProgramRemovedPage } from "#/components/programs/program-removed";
 import { PublicProgramPage } from "#/components/programs/public-program-page";
-import { loadPublicProgramOrNotFound } from "#/lib/programs/load-public-program";
+import {
+  loadProgramOrRemovalFromId,
+  loadTokenProgramRoute,
+} from "#/lib/programs/load-public-program-route";
 import { publicProgramSeoHead } from "#/lib/programs/public-program-seo";
 import { publicProgramCanonicalPath } from "#/lib/programs/program-urls";
-import {
-  getPublicProgramById,
-  getPublicProgramByToken,
-} from "#/server/programs.fns";
 
 const searchSchema = z.object({
   t: z.string().optional(),
+  copy: z.coerce.boolean().optional(),
 });
 
 export const Route = createFileRoute("/p/$programId")({
   staticData: { appChrome: false },
   validateSearch: (search) => searchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ token: search.t }),
-  loader: async ({ params, deps }) => {
+  loaderDeps: ({ search }) => ({ token: search.t, copy: search.copy }),
+  loader: async ({ params, deps, location }) => {
+    const returnPath = location.pathname + (location.searchStr ?? "");
+    const pendingCopyIntent = Boolean(deps.copy);
+
     if (deps.token) {
-      const program = await loadPublicProgramOrNotFound(() =>
-        getPublicProgramByToken({ data: { token: deps.token! } }),
-      );
+      const data = await loadTokenProgramRoute({
+        programId: params.programId,
+        token: deps.token,
+      });
+      if (data.kind === "removed") {
+        return { route: data, returnPath, pendingCopyIntent };
+      }
+      const { program } = data;
       if (
         program.visibility === "public" &&
         program.author.authorSlug &&
@@ -40,17 +49,25 @@ export const Route = createFileRoute("/p/$programId")({
       if (program.visibility !== "unlisted") {
         throw notFound();
       }
-      return { program, variant: "unlisted" as const };
+      return { route: data, returnPath, pendingCopyIntent };
     }
-    const program = await loadPublicProgramOrNotFound(() =>
-      getPublicProgramById({ data: { programId: params.programId } }),
-    );
-    return { program, variant: "public" as const };
+
+    const data = await loadProgramOrRemovalFromId(params.programId);
+    return { route: data, returnPath, pendingCopyIntent };
   },
   head: ({ loaderData }) => {
-    if (!loaderData) return {};
-    const { program, variant } = loaderData;
+    if (!loaderData || loaderData.route.kind === "removed") {
+      return { meta: [{ name: "robots", content: "noindex" }] };
+    }
+    const { program, variant } = loaderData.route;
     const path = `/p/${program.id}${variant === "unlisted" && program.shareToken ? `?t=${encodeURIComponent(program.shareToken)}` : ""}`;
+    if (variant === "unlisted") {
+      return publicProgramSeoHead(program, {
+        path,
+        canonicalPath: path,
+        noindex: true,
+      });
+    }
     const canonicalPath =
       program.author.authorSlug && program.slug
         ? publicProgramCanonicalPath(program.author.authorSlug, program.slug)
@@ -58,7 +75,6 @@ export const Route = createFileRoute("/p/$programId")({
     return publicProgramSeoHead(program, {
       path,
       canonicalPath,
-      noindex: variant === "unlisted",
     });
   },
   notFoundComponent: ProgramNotFound,
@@ -66,6 +82,16 @@ export const Route = createFileRoute("/p/$programId")({
 });
 
 function TokenProgramPage() {
-  const { program, variant } = Route.useLoaderData();
-  return <PublicProgramPage program={program} variant={variant} />;
+  const { route, returnPath, pendingCopyIntent } = Route.useLoaderData();
+  if (route.kind === "removed") {
+    return <ProgramRemovedPage removal={route.removal} />;
+  }
+  return (
+    <PublicProgramPage
+      program={route.program}
+      variant={route.variant}
+      returnPath={returnPath}
+      pendingCopyIntent={pendingCopyIntent}
+    />
+  );
 }

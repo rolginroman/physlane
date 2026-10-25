@@ -4,6 +4,8 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
+import { z } from "zod";
+import { safeAuthRedirect } from "#/lib/auth-redirect";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -14,7 +16,12 @@ import { getWebApp } from "#/lib/telegram-web";
 import { signInEmailWithOAuthContinuation } from "./-oauth-flow-client";
 import { hasOAuthContinuation } from "./-oauth-signed-query";
 
+const signInSearchSchema = z.object({
+  redirect: z.string().optional(),
+});
+
 export const Route = createFileRoute("/sign-in")({
+  validateSearch: (search) => signInSearchSchema.parse(search),
   head: () => ({
     meta: [
       { title: "Sign in · physlane" },
@@ -38,6 +45,7 @@ let miniAppSignInAttempted = false;
 function SignInPage() {
   const navigate = useNavigate();
   const router = useRouter();
+  const { redirect: redirectTo } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -134,7 +142,7 @@ function SignInPage() {
         window.location.href = result.redirectUrl;
         return;
       }
-      await navigate({ to: "/dashboard" });
+      await navigate({ to: safeAuthRedirect(redirectTo) });
       return;
     }
     const { error } = await signIn.email({ email: trimmedEmail, password });
@@ -143,7 +151,7 @@ function SignInPage() {
       setPending(false);
       return;
     }
-    await navigate({ to: "/dashboard" });
+    await navigate({ to: safeAuthRedirect(redirectTo) });
   }
 
   return (

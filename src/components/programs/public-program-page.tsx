@@ -5,9 +5,13 @@ import type { PublicProgramDTO } from "#/server/programs.fns";
 export function PublicProgramPage({
   program,
   variant,
+  returnPath,
+  pendingCopyIntent,
 }: {
   program: PublicProgramDTO;
   variant: "public" | "unlisted";
+  returnPath: string;
+  pendingCopyIntent?: boolean;
 }) {
   const { data: session } = useSession();
   return (
@@ -15,6 +19,8 @@ export function PublicProgramPage({
       program={program}
       variant={variant}
       viewerUserId={session?.user?.id ?? null}
+      returnPath={returnPath}
+      pendingCopyIntent={pendingCopyIntent}
     />
   );
 }

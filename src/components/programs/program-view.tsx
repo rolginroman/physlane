@@ -14,6 +14,7 @@ import {
   formatEntrySetsReps,
   formatRestSeconds,
 } from "#/lib/programs/entry-display";
+import { ProgramForkActions } from "#/components/programs/program-fork-actions";
 import type {
   ProgramEntryDTO,
   ProgramSessionDTO,
@@ -24,6 +25,8 @@ export type ProgramViewProps = {
   program: PublicProgramDTO;
   variant: "public" | "unlisted";
   viewerUserId?: string | null;
+  returnPath: string;
+  pendingCopyIntent?: boolean;
 };
 
 function equipmentLine(tags: PublicProgramDTO["equipmentTags"]): string {
@@ -216,6 +219,8 @@ export function ProgramView({
   program,
   variant,
   viewerUserId,
+  returnPath,
+  pendingCopyIntent = false,
 }: ProgramViewProps) {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const authorName = program.author.displayName ?? "Author";
@@ -383,6 +388,19 @@ export function ProgramView({
             ))}
           </div>
         )}
+
+        <div className="mt-8">
+          <ProgramForkActions
+            programId={program.id}
+            programTitle={program.title}
+            shareToken={program.shareToken}
+            forkable={program.forkable}
+            isOwner={isOwner}
+            isSignedIn={viewerUserId != null}
+            returnPath={returnPath}
+            pendingCopyIntent={pendingCopyIntent}
+          />
+        </div>
 
         <footer className="mt-8 border-t border-border pt-4 text-[0.8125rem] text-muted-foreground">
           Shared on physlane

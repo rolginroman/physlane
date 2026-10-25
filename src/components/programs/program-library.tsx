@@ -28,6 +28,7 @@ import {
 } from "#/lib/programs/taxonomy";
 import {
   createProgram,
+  deleteProgram,
   listMyPrograms,
   type ProgramListItemDTO,
 } from "#/server/programs.fns";
@@ -147,9 +148,11 @@ function EditedAtLabel({ updatedAt }: { updatedAt: string }) {
 function ProgramRow({
   program,
   onShare,
+  onRemove,
 }: {
   program: ProgramListItemDTO;
   onShare: () => void;
+  onRemove: () => void;
 }) {
   const meta = programMetaLine(program);
   return (
@@ -183,6 +186,14 @@ function ProgramRow({
           onClick={onShare}
         >
           <Share2 className="size-4" aria-hidden />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={onRemove}
+        >
+          Remove
         </Button>
       </div>
     </li>
@@ -223,6 +234,10 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
   const [shareTarget, setShareTarget] = useState<ProgramListItemDTO | null>(
     null,
   );
+  const [removeTarget, setRemoveTarget] = useState<ProgramListItemDTO | null>(
+    null,
+  );
+  const [removePending, setRemovePending] = useState(false);
 
   const openNewProgram = () => {
     setTitle("");
@@ -354,10 +369,53 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
                 setShareTarget(p);
                 setShareOpen(true);
               }}
+              onRemove={() => setRemoveTarget(p)}
             />
           ))}
         </ul>
       )}
+
+      <Sheet
+        open={removeTarget != null}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+      >
+        <SheetContent side="bottom" className="pb-8">
+          <SheetHeader>
+            <SheetTitle>Remove {removeTarget?.title ?? "program"}?</SheetTitle>
+          </SheetHeader>
+          <p className="text-sm text-text-secondary">
+            {removeTarget?.visibility === "public"
+              ? "It leaves your profile and your programs. People who open its links see a page saying the author removed it. Copies other people made stay theirs. You can't undo this."
+              : "It leaves your programs. People who open its links see a page saying the author removed it. You can't undo this."}
+          </p>
+          <Button
+            type="button"
+            variant="destructive"
+            className="mt-4 min-h-11 w-full"
+            disabled={removePending}
+            onClick={() => {
+              if (!removeTarget) return;
+              setRemovePending(true);
+              void deleteProgram({ data: { programId: removeTarget.id } })
+                .then(async () => {
+                  setRemoveTarget(null);
+                  await router.invalidate();
+                })
+                .finally(() => setRemovePending(false));
+            }}
+          >
+            Remove program
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-2 min-h-11 w-full"
+            onClick={() => setRemoveTarget(null)}
+          >
+            Cancel
+          </Button>
+        </SheetContent>
+      </Sheet>
 
       {shareTarget ? (
         <ShareDialog

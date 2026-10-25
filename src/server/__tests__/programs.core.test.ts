@@ -9,6 +9,11 @@ import {
   normalizeExerciseName,
   nextRevision,
   planVisibilityTransition,
+  assertForkAllowed,
+  buildForkSourceLabel,
+  inheritedForeignCustomIdsFromExerciseOwners,
+  planForkSessionCopies,
+  resolvePublicProgramView,
   revisionGuard,
   authorSlugRenameAllowedAt,
   planAuthorProfileSave,
@@ -575,5 +580,135 @@ describe("customExerciseInputSchema", () => {
       equipment: "barbell",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("resolvePublicProgramView", () => {
+  const live = {
+    deletedAt: null as Date | null,
+    hiddenAt: null as Date | null,
+    visibility: "public" as const,
+  };
+
+  it("returns removed_by_author when deleted", () => {
+    expect(
+      resolvePublicProgramView(
+        { ...live, deletedAt: new Date() },
+        "public-only",
+      ).kind,
+    ).toBe("removed_by_author");
+  });
+
+  it("returns unavailable when hidden", () => {
+    expect(
+      resolvePublicProgramView({ ...live, hiddenAt: new Date() }, "token").kind,
+    ).toBe("unavailable");
+  });
+
+  it("allows unlisted via token mode", () => {
+    expect(
+      resolvePublicProgramView({ ...live, visibility: "unlisted" }, "token")
+        .kind,
+    ).toBe("ok");
+  });
+
+  it("rejects draft on public-only paths", () => {
+    expect(
+      resolvePublicProgramView({ ...live, visibility: "draft" }, "public-only")
+        .kind,
+    ).toBe("not_found");
+  });
+});
+
+describe("planForkSessionCopies", () => {
+  it("keeps foreign custom exercise ids on entries", () => {
+    const plans = planForkSessionCopies(
+      [
+        {
+          id: "s1",
+          weekNumber: 1,
+          orderIndex: 0,
+          title: "Day A",
+          notes: null,
+          entries: [
+            {
+              orderIndex: 0,
+              exerciseId: "foreign-custom",
+              groupTag: null,
+              sets: 3,
+              repsType: "count",
+              repsValue: 10,
+              loadType: "kg",
+              loadValue: 60,
+              intensityType: "none",
+              intensityValue: null,
+              restSeconds: 90,
+              cues: null,
+              refUrl: null,
+            },
+          ],
+        },
+      ],
+      () => "new-id",
+    );
+    expect(plans[0]?.entries[0]?.exerciseId).toBe("foreign-custom");
+    expect(plans[0]?.newSessionId).toBe("new-id");
+  });
+});
+
+describe("inheritedForeignCustomIdsFromExerciseOwners", () => {
+  it("marks exercises owned by someone other than the program author", () => {
+    const owners = new Map<string, string | null>([
+      ["cat", null],
+      ["mine", "author-1"],
+      ["theirs", "author-2"],
+    ]);
+    const inherited = inheritedForeignCustomIdsFromExerciseOwners(
+      [{ exerciseId: "cat" }, { exerciseId: "mine" }, { exerciseId: "theirs" }],
+      owners,
+      "author-1",
+    );
+    expect([...inherited]).toEqual(["theirs"]);
+  });
+});
+
+describe("assertForkAllowed", () => {
+  const base = {
+    visibility: "public" as const,
+    deletedAt: null as Date | null,
+    hiddenAt: null as Date | null,
+    forkable: true,
+  };
+
+  it("allows public programs without a token", () => {
+    expect(() =>
+      assertForkAllowed(base, { grantedByToken: false }),
+    ).not.toThrow();
+  });
+
+  it("allows unlisted when token grant matches", () => {
+    expect(() =>
+      assertForkAllowed(
+        { ...base, visibility: "unlisted" },
+        { grantedByToken: true },
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects non-forkable programs", () => {
+    expect(() =>
+      assertForkAllowed(
+        { ...base, forkable: false },
+        { grantedByToken: false },
+      ),
+    ).toThrow("INVALID_TRANSITION");
+  });
+});
+
+describe("buildForkSourceLabel", () => {
+  it("joins author and title with a middle dot", () => {
+    expect(buildForkSourceLabel("Tara", "Hypertrophy Base")).toBe(
+      "Tara · Hypertrophy Base",
+    );
   });
 });

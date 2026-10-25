@@ -34,10 +34,15 @@ import {
   normalizeExerciseName,
   planAuthorProfileSave,
   planVisibilityTransition,
+  assertForkAllowed,
+  buildForkSourceLabel,
+  planForkSessionCopies,
   resolveAuthorProfileRedirect,
   resolveAuthorSlugLookup,
   resolveProgramRedirect,
+  resolvePublicProgramView,
   revisionGuard,
+  reportProgramReasonSchema,
   suggestAuthorSlug,
   suggestProgramSlug,
   validateSessionEntries,
@@ -142,6 +147,14 @@ export type PublicProgramDTO = ProgramDTO & {
   sessions: ProgramSessionDTO[];
   exercises: Record<string, ProgramExerciseRefDTO>;
   author: PublicProgramAuthorDTO;
+  forkable: boolean;
+};
+
+export type PublicProgramRemovalDTO = {
+  variant: "author" | "moderation";
+  authorSlug: string | null;
+  authorDisplayName: string | null;
+  hasPublicProfile: boolean;
 };
 
 export type ExercisePickerRowDTO = {
@@ -395,6 +408,22 @@ async function buildPublicProgramDTO(
       displayName: resolvePublicAuthorDisplayName(author),
       authorSlug: author.slug,
     },
+    forkable: program.forkable,
+  };
+}
+
+async function buildRemovalDTO(
+  program: schema.Program,
+  variant: "author" | "moderation",
+): Promise<PublicProgramRemovalDTO> {
+  const author = await loadAuthorRow(program.userId);
+  const hasPublicProfile =
+    author.profilePublishedAt != null && author.profileHiddenAt == null;
+  return {
+    variant,
+    authorSlug: author.slug,
+    authorDisplayName: resolvePublicAuthorDisplayName(author),
+    hasPublicProfile,
   };
 }
 
@@ -402,17 +431,14 @@ function assertViewerVisibility(
   program: schema.Program,
   mode: "token" | "public-only",
 ): void {
-  if (program.deletedAt != null || program.hiddenAt != null) {
-    throw appError("PROGRAM_NOT_FOUND");
+  const outcome = resolvePublicProgramView(program, mode);
+  if (outcome.kind === "removed_by_author") {
+    throw appError("PROGRAM_REMOVED");
   }
-  if (mode === "public-only" && program.visibility !== "public") {
-    throw appError("PROGRAM_NOT_FOUND");
+  if (outcome.kind === "unavailable") {
+    throw appError("PROGRAM_UNAVAILABLE");
   }
-  if (
-    mode === "token" &&
-    program.visibility !== "public" &&
-    program.visibility !== "unlisted"
-  ) {
+  if (outcome.kind === "not_found") {
     throw appError("PROGRAM_NOT_FOUND");
   }
 }
@@ -1564,3 +1590,272 @@ export const getMyAuthorSlug = createServerFn({ method: "GET" }).handler(
     return { authorSlug: row?.slug ?? null };
   },
 );
+
+const ResolveProgramIdForPublicPathInputSchema = z.object({
+  authorSlug: z.string().min(1).optional(),
+  programRef: z.string().min(1),
+  shareToken: z.string().optional(),
+});
+
+export const resolveProgramIdForPublicPath = createServerFn({ method: "GET" })
+  .validator((d) => ResolveProgramIdForPublicPathInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    if (data.shareToken) {
+      const [program] = await useDb()
+        .select({ id: schema.programs.id })
+        .from(schema.programs)
+        .where(eq(schema.programs.shareToken, data.shareToken))
+        .limit(1);
+      return program?.id ?? null;
+    }
+    const uuidRe =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRe.test(data.programRef)) {
+      return data.programRef;
+    }
+    if (!data.authorSlug) {
+      return null;
+    }
+    const [author] = await useDb()
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.slug, data.authorSlug))
+      .limit(1);
+    if (!author) {
+      return null;
+    }
+    const [program] = await useDb()
+      .select({ id: schema.programs.id })
+      .from(schema.programs)
+      .where(
+        and(
+          eq(schema.programs.userId, author.id),
+          eq(schema.programs.slug, data.programRef),
+        ),
+      )
+      .limit(1);
+    return program?.id ?? null;
+  });
+
+const GetPublicProgramRemovalInputSchema = z.object({
+  programId: z.string().min(1),
+});
+
+export const getPublicProgramRemoval = createServerFn({ method: "GET" })
+  .validator((d) => GetPublicProgramRemovalInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const [program] = await useDb()
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.id, data.programId))
+      .limit(1);
+    if (!program) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    if (program.hiddenAt != null) {
+      return buildRemovalDTO(program, "moderation");
+    }
+    if (program.deletedAt != null) {
+      return buildRemovalDTO(program, "author");
+    }
+    throw appError("PROGRAM_NOT_FOUND");
+  });
+
+const ForkProgramInputSchema = z.object({
+  programId: z.string().min(1),
+  shareToken: z.string().optional(),
+});
+
+export const forkProgram = createServerFn({ method: "POST" })
+  .validator((d) => ForkProgramInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const [program] = await useDb()
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.id, data.programId))
+      .limit(1);
+    if (!program) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    let grantedByToken = false;
+    if (data.shareToken) {
+      if (program.shareToken !== data.shareToken) {
+        throw appError("PROGRAM_NOT_FOUND");
+      }
+      grantedByToken = true;
+    }
+    assertForkAllowed(program, { grantedByToken });
+
+    const author = await loadAuthorRow(program.userId);
+    const forkSourceLabel = buildForkSourceLabel(
+      resolvePublicAuthorDisplayName(author) ?? "Author",
+      program.title,
+    );
+
+    const sessionRows = await useDb()
+      .select()
+      .from(schema.programSessions)
+      .where(eq(schema.programSessions.programId, program.id))
+      .orderBy(
+        asc(schema.programSessions.weekNumber),
+        asc(schema.programSessions.orderIndex),
+      );
+    const sessionIds = sessionRows.map((s) => s.id);
+    const entryRows =
+      sessionIds.length === 0
+        ? []
+        : await useDb()
+            .select()
+            .from(schema.programEntries)
+            .where(inArray(schema.programEntries.sessionId, sessionIds))
+            .orderBy(
+              asc(schema.programEntries.sessionId),
+              asc(schema.programEntries.orderIndex),
+            );
+
+    const entriesBySession = new Map<string, (typeof entryRows)[number][]>();
+    for (const entry of entryRows) {
+      const list = entriesBySession.get(entry.sessionId) ?? [];
+      list.push(entry);
+      entriesBySession.set(entry.sessionId, list);
+    }
+
+    const forkSources = sessionRows.map((s) => ({
+      id: s.id,
+      weekNumber: s.weekNumber,
+      orderIndex: s.orderIndex,
+      title: s.title,
+      notes: s.notes,
+      entries: (entriesBySession.get(s.id) ?? []).map((e) => ({
+        orderIndex: e.orderIndex,
+        exerciseId: e.exerciseId,
+        groupTag: e.groupTag,
+        sets: e.sets,
+        repsType: e.repsType,
+        repsValue: e.repsValue,
+        loadType: e.loadType,
+        loadValue: e.loadValue,
+        intensityType: e.intensityType,
+        intensityValue: e.intensityValue,
+        restSeconds: e.restSeconds,
+        cues: e.cues,
+        refUrl: e.refUrl,
+      })),
+    }));
+
+    const newProgramId = crypto.randomUUID();
+    const now = new Date();
+    const sessionPlans = planForkSessionCopies(forkSources, () =>
+      crypto.randomUUID(),
+    );
+    const db = useDb();
+    const batch: BatchItem<"sqlite">[] = [
+      db.insert(schema.programs).values({
+        id: newProgramId,
+        userId: me.id,
+        title: program.title,
+        description: program.description,
+        visibility: "draft",
+        weeks: program.weeks,
+        goal: program.goal,
+        level: program.level,
+        daysPerWeek: program.daysPerWeek,
+        equipmentTags: program.equipmentTags,
+        slug: null,
+        shareToken: null,
+        forkedFromProgramId: program.id,
+        forkSourceLabel,
+        forkable: true,
+        hiddenAt: null,
+        revision: 0,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      }),
+    ];
+    for (const sessionPlan of sessionPlans) {
+      batch.push(
+        db.insert(schema.programSessions).values({
+          id: sessionPlan.newSessionId,
+          programId: newProgramId,
+          weekNumber: sessionPlan.weekNumber,
+          orderIndex: sessionPlan.orderIndex,
+          title: sessionPlan.title,
+          notes: sessionPlan.notes,
+        }),
+      );
+      for (const entry of sessionPlan.entries) {
+        batch.push(
+          db.insert(schema.programEntries).values({
+            id: entry.newEntryId,
+            sessionId: sessionPlan.newSessionId,
+            orderIndex: entry.orderIndex,
+            exerciseId: entry.exerciseId,
+            groupTag: entry.groupTag,
+            sets: entry.sets,
+            repsType: entry.repsType as schema.ProgramEntry["repsType"],
+            repsValue: entry.repsValue,
+            loadType: entry.loadType as schema.ProgramEntry["loadType"],
+            loadValue: entry.loadValue,
+            intensityType:
+              entry.intensityType as schema.ProgramEntry["intensityType"],
+            restSeconds: entry.restSeconds,
+            cues: entry.cues,
+            refUrl: entry.refUrl,
+          }),
+        );
+      }
+    }
+    await db.batch(batch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+    return { programId: newProgramId };
+  });
+
+const ReportProgramInputSchema = z.object({
+  programId: z.string().min(1),
+  reason: reportProgramReasonSchema,
+});
+
+export const reportProgram = createServerFn({ method: "POST" })
+  .validator((d) => ReportProgramInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const [program] = await useDb()
+      .select({ id: schema.programs.id })
+      .from(schema.programs)
+      .where(eq(schema.programs.id, data.programId))
+      .limit(1);
+    if (!program) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    const reporter = await loadSessionUser();
+    const now = new Date();
+    await useDb()
+      .insert(schema.programReports)
+      .values({
+        id: crypto.randomUUID(),
+        programId: data.programId,
+        reportedUserId: null,
+        reporterUserId: reporter?.id ?? null,
+        reason: data.reason ?? "",
+        createdAt: now,
+        handledAt: null,
+      });
+    return { ok: true as const };
+  });
+
+const DeleteProgramInputSchema = z.object({
+  programId: z.string().min(1),
+});
+
+export const deleteProgram = createServerFn({ method: "POST" })
+  .validator((d) => DeleteProgramInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const program = await loadAuthorProgram(data.programId, me.id);
+    const now = new Date();
+    await useDb()
+      .update(schema.programs)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(eq(schema.programs.id, program.id));
+    return { ok: true as const };
+  });

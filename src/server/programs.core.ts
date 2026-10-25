@@ -476,6 +476,166 @@ export type ProgramRedirectResolution =
   | { kind: "redirect"; path: string; search: Record<string, string> };
 
 /** Flatten stale author/program segments to the current id permalink (token query preserved). */
+export type PublicProgramViewOutcome =
+  | { kind: "ok" }
+  | { kind: "removed_by_author" }
+  | { kind: "unavailable" }
+  | { kind: "not_found" };
+
+export function resolvePublicProgramView(
+  program: {
+    deletedAt: Date | null;
+    hiddenAt: Date | null;
+    visibility: ProgramVisibility;
+  },
+  mode: "token" | "public-only",
+): PublicProgramViewOutcome {
+  if (program.deletedAt != null) {
+    return { kind: "removed_by_author" };
+  }
+  if (program.hiddenAt != null) {
+    return { kind: "unavailable" };
+  }
+  if (mode === "public-only" && program.visibility !== "public") {
+    return { kind: "not_found" };
+  }
+  if (
+    mode === "token" &&
+    program.visibility !== "public" &&
+    program.visibility !== "unlisted"
+  ) {
+    return { kind: "not_found" };
+  }
+  return { kind: "ok" };
+}
+
+export function buildForkSourceLabel(
+  authorDisplayName: string,
+  programTitle: string,
+): string {
+  return `${authorDisplayName} · ${programTitle}`;
+}
+
+export function assertForkAllowed(
+  program: {
+    visibility: ProgramVisibility;
+    deletedAt: Date | null;
+    hiddenAt: Date | null;
+    forkable: boolean;
+  },
+  access: { grantedByToken: boolean },
+): void {
+  if (program.deletedAt != null || program.hiddenAt != null) {
+    throw appError("PROGRAM_NOT_FOUND");
+  }
+  if (!program.forkable) {
+    throw appError("INVALID_TRANSITION");
+  }
+  if (program.visibility === "public") {
+    return;
+  }
+  if (access.grantedByToken && program.visibility === "unlisted") {
+    return;
+  }
+  throw appError("PROGRAM_NOT_FOUND");
+}
+
+export type ForkEntryPlan = {
+  newEntryId: string;
+  orderIndex: number;
+  exerciseId: string;
+  groupTag: string | null;
+  sets: number;
+  repsType: string;
+  repsValue: number | null;
+  loadType: string;
+  loadValue: number | null;
+  intensityType: string;
+  intensityValue: number | null;
+  restSeconds: number | null;
+  cues: string | null;
+  refUrl: string | null;
+};
+
+export type ForkSessionPlan = {
+  newSessionId: string;
+  weekNumber: number;
+  orderIndex: number;
+  title: string;
+  notes: string | null;
+  entries: ForkEntryPlan[];
+};
+
+export type ForkSessionSource = {
+  id: string;
+  weekNumber: number;
+  orderIndex: number;
+  title: string;
+  notes: string | null;
+  entries: ReadonlyArray<{
+    orderIndex: number;
+    exerciseId: string;
+    groupTag: string | null;
+    sets: number;
+    repsType: string;
+    repsValue: number | null;
+    loadType: string;
+    loadValue: number | null;
+    intensityType: string;
+    intensityValue: number | null;
+    restSeconds: number | null;
+    cues: string | null;
+    refUrl: string | null;
+  }>;
+};
+
+/** Fresh ids; exercise ids unchanged so fork-inherited foreign customs keep rendering. */
+export function planForkSessionCopies(
+  sessions: readonly ForkSessionSource[],
+  newId: () => string,
+): ForkSessionPlan[] {
+  return sessions.map((session) => ({
+    newSessionId: newId(),
+    weekNumber: session.weekNumber,
+    orderIndex: session.orderIndex,
+    title: session.title,
+    notes: session.notes,
+    entries: session.entries.map((entry) => ({
+      newEntryId: newId(),
+      orderIndex: entry.orderIndex,
+      exerciseId: entry.exerciseId,
+      groupTag: entry.groupTag,
+      sets: entry.sets,
+      repsType: entry.repsType,
+      repsValue: entry.repsValue,
+      loadType: entry.loadType,
+      loadValue: entry.loadValue,
+      intensityType: entry.intensityType,
+      intensityValue: entry.intensityValue,
+      restSeconds: entry.restSeconds,
+      cues: entry.cues,
+      refUrl: entry.refUrl,
+    })),
+  }));
+}
+
+export function inheritedForeignCustomIdsFromExerciseOwners(
+  entries: ReadonlyArray<{ exerciseId: string }>,
+  exerciseOwners: ReadonlyMap<string, string | null>,
+  programAuthorId: string,
+): Set<string> {
+  const inherited = new Set<string>();
+  for (const entry of entries) {
+    const owner = exerciseOwners.get(entry.exerciseId);
+    if (owner != null && owner !== programAuthorId) {
+      inherited.add(entry.exerciseId);
+    }
+  }
+  return inherited;
+}
+
+export const reportProgramReasonSchema = z.string().trim().max(500).optional();
+
 export function resolveProgramRedirect(
   authorSlugFromPath: string,
   programRef: string,

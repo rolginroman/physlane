@@ -71,5 +71,7 @@ guilt, fear, or guaranteed outcomes. Numbers use stable tabular figures.
 
 ## Surfaces
 
-Web app (mobile-first, Light Editorial + Dark Performance themes per DESIGN.md §3) + SEO landing. Telegram Mini App is post-launch
-(M9). Deploy: physlane.workers.dev.
+Web app (mobile-first, Light Editorial + Dark Performance themes per DESIGN.md §3) + SEO landing.
+**Programs** (`/programs`, public `/u/…` program pages, share links): author structured training
+programs, share by profile or unlisted link, visitors copy with "Copy to my programs" (J4). Telegram
+Mini App is post-launch (M9). Deploy: physlane.workers.dev.

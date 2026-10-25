@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
+import { safeAuthRedirect } from "#/lib/auth-redirect";
 import { useState, type FormEvent } from "react";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -6,7 +8,13 @@ import { Button } from "#/components/ui/button";
 import { signUp } from "#/lib/auth-client";
 import { authErrorMessage } from "#/lib/auth-error";
 
+const signUpSearchSchema = z.object({
+  redirect: z.string().optional(),
+  copy: z.coerce.boolean().optional(),
+});
+
 export const Route = createFileRoute("/sign-up")({
+  validateSearch: (search) => signUpSearchSchema.parse(search),
   head: () => ({
     meta: [
       { title: "Create account · physlane" },
@@ -28,6 +36,7 @@ type FieldErrors = {
 
 function SignUpPage() {
   const navigate = useNavigate();
+  const { redirect: redirectTo } = Route.useSearch();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,7 +102,7 @@ function SignUpPage() {
       setPending(false);
       return;
     }
-    await navigate({ to: "/dashboard" });
+    await navigate({ to: safeAuthRedirect(redirectTo) });
   }
 
   return (
