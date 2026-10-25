@@ -19,3 +19,4 @@ public/og/*.png
 .dev.vars*
 !.dev.vars.example
 !.env.example
+scripts/.import-cache/
