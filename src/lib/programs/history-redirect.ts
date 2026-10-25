@@ -25,17 +25,22 @@ export function throwAuthorProfileHistoryRedirect(currentSlug: string): never {
   });
 }
 
-export function throwProgramPathHistoryRedirect(
-  path: string,
-  search: Record<string, string>,
-): never {
-  const match = /^\/u\/([^/]+)\/p\/([^/]+)$/.exec(path);
+export function throwProgramPathHistoryRedirect(path: string): never {
+  const match = /^\/u\/([^/]+)\/([^/]+)(?:\/([^/]+))?$/.exec(path);
   if (!match) {
     throw new Error("Invalid program redirect path");
   }
+  const authorSlug = match[1]!;
+  const programRef = match[2]!;
+  const shareToken = match[3];
+  if (shareToken) {
+    throwHistoryRedirect({
+      to: "/u/$authorSlug/$programRef/$shareToken",
+      params: { authorSlug, programRef, shareToken },
+    });
+  }
   throwHistoryRedirect({
-    to: "/u/$authorSlug/p/$programRef",
-    params: { authorSlug: match[1]!, programRef: match[2]! },
-    search,
+    to: "/u/$authorSlug/$programRef",
+    params: { authorSlug, programRef },
   });
 }

@@ -484,8 +484,8 @@ describe("resolveProgramRedirect", () => {
     );
     expect(result).toEqual({
       kind: "redirect",
-      path: "/u/tara/p/p1",
-      search: { t: "share-token-abc" },
+      path: "/u/tara/hypertrophy/share-token-abc",
+      search: {},
     });
   });
 

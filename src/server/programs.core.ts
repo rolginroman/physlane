@@ -475,7 +475,7 @@ export type ProgramRedirectResolution =
   | { kind: "not_found" }
   | { kind: "redirect"; path: string; search: Record<string, string> };
 
-/** Flatten stale author/program segments to the current id permalink (token query preserved). */
+/** Flatten stale author/program slug segments to the current canonical path (token suffix preserved). */
 export type PublicProgramViewOutcome =
   | { kind: "ok" }
   | { kind: "removed_by_author" }
@@ -666,12 +666,9 @@ export function resolveProgramRedirect(
     return { kind: "not_found" };
   }
 
-  const path = `/u/${author.currentAuthorSlug}/p/${program.id}`;
-  const search: Record<string, string> = {};
-  if (shareToken) {
-    search.t = shareToken;
-  }
-  return { kind: "redirect", path, search };
+  const base = `/u/${author.currentAuthorSlug}/${program.slug}`;
+  const path = shareToken ? `${base}/${shareToken}` : base;
+  return { kind: "redirect", path, search: {} };
 }
 
 export function resolveAuthorProfileRedirect(

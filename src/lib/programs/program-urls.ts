@@ -4,7 +4,7 @@ export function publicProgramCanonicalPath(
   authorSlug: string,
   programSlug: string,
 ): string {
-  return `/u/${authorSlug}/p/${programSlug}`;
+  return `/u/${authorSlug}/${programSlug}`;
 }
 
 export function publicProgramCanonicalUrl(
@@ -21,20 +21,29 @@ export function publicProgramIdPermalinkPath(
   return `/u/${authorSlug}/p/${programId}`;
 }
 
-export function shareLinkPath(programId: string, shareToken: string): string {
-  return `/p/${programId}?t=${encodeURIComponent(shareToken)}`;
+export function shareLinkPath(
+  authorSlug: string,
+  programSlug: string,
+  shareToken: string,
+): string {
+  return `/u/${authorSlug}/${programSlug}/${shareToken}`;
 }
 
-export function shareLinkUrl(programId: string, shareToken: string): string {
-  return `${SITE_URL}${shareLinkPath(programId, shareToken)}`;
+export function shareLinkUrl(
+  authorSlug: string,
+  programSlug: string,
+  shareToken: string,
+): string {
+  return `${SITE_URL}${shareLinkPath(authorSlug, programSlug, shareToken)}`;
 }
 
 export function shareLinkUrlFromOrigin(
   origin: string,
-  programId: string,
+  authorSlug: string,
+  programSlug: string,
   shareToken: string,
 ): string {
-  return `${origin.replace(/\/$/, "")}${shareLinkPath(programId, shareToken)}`;
+  return `${origin.replace(/\/$/, "")}${shareLinkPath(authorSlug, programSlug, shareToken)}`;
 }
 
 export function publicProgramCanonicalUrlFromOrigin(

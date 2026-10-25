@@ -3,33 +3,28 @@ import { z } from "zod";
 import { ProgramNotFound } from "#/components/programs/program-not-found";
 import { ProgramRemovedPage } from "#/components/programs/program-removed";
 import { PublicProgramPage } from "#/components/programs/public-program-page";
-import {
-  isProgramIdRef,
-  loadUserProgramRoute,
-} from "#/lib/programs/load-public-program-route";
+import { loadShareTokenProgramRoute } from "#/lib/programs/load-public-program-route";
 import { publicProgramSeoHead } from "#/lib/programs/public-program-seo";
-import { publicProgramCanonicalPath } from "#/lib/programs/program-urls";
+import { shareLinkPath } from "#/lib/programs/program-urls";
 
 const searchSchema = z.object({
-  t: z.string().optional(),
   copy: z.coerce.boolean().optional(),
 });
 
-export const Route = createFileRoute("/u/$authorSlug/p/$programRef")({
+export const Route = createFileRoute("/u/$authorSlug/$programRef/$shareToken")({
   staticData: { appChrome: false },
   validateSearch: (search) => searchSchema.parse(search),
   loaderDeps: ({ search }) => ({
-    shareToken: search.t,
     copy: search.copy,
   }),
   loader: async ({ params, deps, location }) => {
-    const data = await loadUserProgramRoute({
+    const route = await loadShareTokenProgramRoute({
       authorSlug: params.authorSlug,
-      programRef: params.programRef,
-      shareToken: deps.shareToken,
+      programSlug: params.programRef,
+      shareToken: params.shareToken,
     });
     return {
-      route: data,
+      route,
       returnPath: location.pathname + (location.searchStr ?? ""),
       pendingCopyIntent: Boolean(deps.copy),
     };
@@ -38,29 +33,22 @@ export const Route = createFileRoute("/u/$authorSlug/p/$programRef")({
     if (!loaderData || loaderData.route.kind === "removed") {
       return { meta: [{ name: "robots", content: "noindex" }] };
     }
-    const { program } = loaderData.route;
-    if (isProgramIdRef(params.programRef)) {
-      const path = `/u/${params.authorSlug}/p/${params.programRef}`;
-      const canonicalPath =
-        program.author.authorSlug && program.slug
-          ? publicProgramCanonicalPath(program.author.authorSlug, program.slug)
-          : path;
-      return publicProgramSeoHead(loaderData.route.program, {
-        path,
-        canonicalPath,
-      });
-    }
-    const path = publicProgramCanonicalPath(
+    const path = shareLinkPath(
       params.authorSlug,
       params.programRef,
+      params.shareToken,
     );
-    return publicProgramSeoHead(loaderData.route.program, { path });
+    return publicProgramSeoHead(loaderData.route.program, {
+      path,
+      canonicalPath: path,
+      noindex: true,
+    });
   },
   notFoundComponent: ProgramNotFound,
-  component: PublicUserProgramPage,
+  component: ShareTokenProgramPage,
 });
 
-function PublicUserProgramPage() {
+function ShareTokenProgramPage() {
   const { route, returnPath, pendingCopyIntent } = Route.useLoaderData();
   if (route.kind === "removed") {
     return <ProgramRemovedPage removal={route.removal} />;
@@ -68,7 +56,7 @@ function PublicUserProgramPage() {
   return (
     <PublicProgramPage
       program={route.program}
-      variant="public"
+      variant="unlisted"
       returnPath={returnPath}
       pendingCopyIntent={pendingCopyIntent}
     />

@@ -86,8 +86,13 @@ export function ShareDialog({
         local.slug,
       );
     }
-    if (local.shareToken) {
-      return shareLinkUrlFromOrigin(origin, local.id, local.shareToken);
+    if (local.shareToken && authorSlug && local.slug) {
+      return shareLinkUrlFromOrigin(
+        origin,
+        authorSlug,
+        local.slug,
+        local.shareToken,
+      );
     }
     return "";
   }, [authorSlug, local, origin]);

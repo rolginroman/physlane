@@ -288,7 +288,7 @@ export function ProgramView({
               by{" "}
               {showProfileLink && program.author.authorSlug ? (
                 <Link
-                  to="/u/$authorSlug/p/$programRef"
+                  to="/u/$authorSlug/$programRef"
                   params={{
                     authorSlug: program.author.authorSlug,
                     programRef: program.slug ?? "",
@@ -408,7 +408,7 @@ export function ProgramView({
             <>
               {" · "}
               <Link
-                to="/u/$authorSlug/p/$programRef"
+                to="/u/$authorSlug/$programRef"
                 params={{
                   authorSlug: program.author.authorSlug,
                   programRef: program.slug,
