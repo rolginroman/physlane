@@ -1,14 +1,15 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { Flag } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "#/components/ui/button";
+import { Button, buttonVariants } from "#/components/ui/button";
 import { Label } from "#/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "#/components/ui/sheet";
+  ResponsiveSheetBody,
+  ResponsiveSheetContent,
+  ResponsiveSheetHeader,
+} from "#/components/ui/responsive-sheet";
+import { Sheet, SheetTitle } from "#/components/ui/sheet";
+import { Textarea } from "#/components/ui/textarea";
 import { cn } from "#/lib/cn";
 import { isAppErrorCode } from "#/lib/app-error";
 import { programErrorMessage } from "#/lib/programs/program-error-message";
@@ -112,7 +113,7 @@ export function ProgramForkActions({
     <>
       {postAuthBanner && isSignedIn ? (
         <div
-          className="border-b border-border bg-brand-soft px-4 py-3 text-sm sm:px-8"
+          className="border-t border-border bg-brand-soft px-4 py-3 text-sm lg:mb-3 lg:rounded-xl lg:border"
           role="status"
         >
           <p className="m-0 font-medium text-foreground">
@@ -120,7 +121,8 @@ export function ProgramForkActions({
           </p>
           <Button
             type="button"
-            className="mt-2 min-h-11"
+            size="touch"
+            className="mt-2"
             onClick={() => setConfirmOpen(true)}
           >
             Copy to my programs
@@ -130,157 +132,175 @@ export function ProgramForkActions({
 
       {forkError ? (
         <div
-          className="border-b border-destructive/30 bg-muted px-4 py-2 text-sm text-foreground sm:px-8"
+          className="flex flex-wrap items-center border-t border-destructive/30 bg-muted px-4 py-2 text-sm text-foreground lg:mb-3 lg:rounded-xl lg:border"
           role="alert"
         >
           {forkError}
-          <button
+          <Button
             type="button"
-            className="ml-2 font-medium text-brand-text underline"
+            variant="link"
+            size="touch"
+            className="text-brand-text"
             onClick={() => setForkError(null)}
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       ) : null}
 
       <section
-        className="sticky bottom-0 z-10 border-t border-border bg-background/95 px-4 py-4 backdrop-blur-sm sm:static sm:border-0 sm:bg-transparent sm:px-0 sm:py-0"
+        className="border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm lg:rounded-xl lg:border lg:bg-card lg:p-4"
         aria-label="Copy program"
       >
-        <div className="mx-auto max-w-3xl sm:max-w-5xl">
-          <Button
-            type="button"
-            className="min-h-11 w-full"
-            disabled={forkPending}
-            onClick={onCopyClick}
-          >
-            {forkPending ? "Copying…" : "Copy to my programs"}
-          </Button>
-          <p className="mt-2 text-center text-xs text-muted-foreground sm:text-left">
-            {isSignedIn
-              ? "Only you can see your copy until you share it. It does not change when the author edits theirs."
-              : "Reading needs no account. Copying needs one."}
-          </p>
-          <button
-            type="button"
-            className="mx-auto mt-3 flex min-h-11 items-center gap-1.5 text-xs font-medium text-muted-foreground underline decoration-border underline-offset-2 sm:mx-0"
-            onClick={() => {
-              setReportSent(false);
-              setReportReason("");
-              setReportOpen(true);
-            }}
-          >
-            <Flag className="size-3.5" aria-hidden />
-            Report this program
-          </button>
-        </div>
+        <Button
+          type="button"
+          size="touch"
+          className="w-full"
+          disabled={forkPending}
+          onClick={onCopyClick}
+        >
+          {forkPending ? "Copying…" : "Copy to my programs"}
+        </Button>
+        <p className="mt-2 mb-0 text-center text-xs text-muted-foreground lg:text-left">
+          {isSignedIn
+            ? "Only you can see your copy until you share it. It does not change when the author edits theirs."
+            : "Reading needs no account. Copying needs one."}
+        </p>
+        <Button
+          type="button"
+          variant="link"
+          size="touch"
+          className="mx-auto mt-1 flex text-xs text-muted-foreground lg:mx-0 lg:px-0"
+          onClick={() => {
+            setReportSent(false);
+            setReportReason("");
+            setReportOpen(true);
+          }}
+        >
+          <Flag className="size-3.5" aria-hidden />
+          Report this program
+        </Button>
       </section>
 
       <Sheet open={authSheetOpen} onOpenChange={setAuthSheetOpen}>
-        <SheetContent side="bottom" className="pb-8">
-          <SheetHeader>
+        <ResponsiveSheetContent>
+          <ResponsiveSheetHeader>
             <SheetTitle className="font-display text-2xl">
               Copy {programTitle}
             </SheetTitle>
-          </SheetHeader>
-          <p className="text-sm text-text-secondary">
-            Copies go into your programs on a physlane account. Only you can see
-            your copy until you share it, and you can change anything in it.
-          </p>
-          <div className="mt-4 flex flex-col gap-2">
-            <Link
-              to={signUpHref}
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground no-underline"
+          </ResponsiveSheetHeader>
+          <ResponsiveSheetBody>
+            <p className="m-0 text-sm text-text-secondary">
+              Copies go into your programs on a physlane account. Only you can
+              see your copy until you share it, and you can change anything in
+              it.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Link
+                to={signUpHref}
+                className={cn(buttonVariants({ size: "touch" }), "w-full")}
+              >
+                Create account
+              </Link>
+              <Link
+                to={signInHref}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "touch" }),
+                  "w-full",
+                )}
+              >
+                Sign in
+              </Link>
+            </div>
+            <p className="m-0 text-xs text-muted-foreground">
+              You come back to this program after signing in.
+            </p>
+            <Button
+              type="button"
+              variant="link"
+              size="touch"
+              className="self-start px-0 text-xs text-muted-foreground"
+              onClick={() => setAuthSheetOpen(false)}
             >
-              Create account
-            </Link>
-            <Link
-              to={signInHref}
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground no-underline"
-            >
-              Sign in
-            </Link>
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            You come back to this program after signing in.
-          </p>
-          <button
-            type="button"
-            className="mt-2 text-xs font-medium text-muted-foreground underline"
-            onClick={() => setAuthSheetOpen(false)}
-          >
-            Keep reading
-          </button>
-        </SheetContent>
+              Keep reading
+            </Button>
+          </ResponsiveSheetBody>
+        </ResponsiveSheetContent>
       </Sheet>
 
       <Sheet open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <SheetContent side="bottom" className="pb-8">
-          <SheetHeader>
+        <ResponsiveSheetContent>
+          <ResponsiveSheetHeader>
             <SheetTitle>Copy to my programs</SheetTitle>
-          </SheetHeader>
-          <p className="text-sm text-text-secondary">
-            You get a new draft with the same sessions, exercises, and sets.
-            Custom exercises from the author are included as snapshots in your
-            copy. Analytics and sharing settings are not copied.
-          </p>
-          <Button
-            type="button"
-            className="mt-4 min-h-11 w-full"
-            disabled={forkPending}
-            onClick={() => void runFork()}
-          >
-            {forkPending ? "Copying…" : "Copy to my programs"}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="mt-2 min-h-11 w-full"
-            onClick={() => setConfirmOpen(false)}
-          >
-            Cancel
-          </Button>
-        </SheetContent>
+          </ResponsiveSheetHeader>
+          <ResponsiveSheetBody>
+            <p className="m-0 text-sm text-text-secondary">
+              You get a new draft with the same sessions, exercises, and sets.
+              Custom exercises from the author are included as snapshots in your
+              copy. Analytics and sharing settings are not copied.
+            </p>
+            <Button
+              type="button"
+              size="touch"
+              className="w-full"
+              disabled={forkPending}
+              onClick={() => void runFork()}
+            >
+              {forkPending ? "Copying…" : "Copy to my programs"}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="touch"
+              className="w-full"
+              onClick={() => setConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+          </ResponsiveSheetBody>
+        </ResponsiveSheetContent>
       </Sheet>
 
       <Sheet open={reportOpen} onOpenChange={setReportOpen}>
-        <SheetContent side="bottom" className="pb-8">
-          <SheetHeader>
+        <ResponsiveSheetContent>
+          <ResponsiveSheetHeader>
             <SheetTitle>Report this program</SheetTitle>
-          </SheetHeader>
-          {reportSent ? (
-            <p className="text-sm text-data-positive" role="status">
-              Thanks for letting us know. physlane reviews every report.
-            </p>
-          ) : (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="report-reason">What's wrong? (optional)</Label>
-                <textarea
-                  id="report-reason"
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  placeholder="For example: copied from someone else, unsafe advice, spam"
-                  rows={4}
-                  className={cn(
-                    "min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground",
-                  )}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                physlane reviews every report. You don't need an account.
+          </ResponsiveSheetHeader>
+          <ResponsiveSheetBody>
+            {reportSent ? (
+              <p className="m-0 text-sm text-data-positive" role="status">
+                Thanks for letting us know. physlane reviews every report.
               </p>
-              <Button
-                type="button"
-                className="mt-4 min-h-11 w-full"
-                onClick={() => void onReport()}
-              >
-                Send report
-              </Button>
-            </>
-          )}
-        </SheetContent>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="report-reason">
+                    What's wrong? (optional)
+                  </Label>
+                  <Textarea
+                    id="report-reason"
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    placeholder="For example: copied from someone else, unsafe advice, spam"
+                    rows={4}
+                    className="min-h-24"
+                  />
+                </div>
+                <p className="m-0 text-xs text-muted-foreground">
+                  physlane reviews every report. You don't need an account.
+                </p>
+                <Button
+                  type="button"
+                  size="touch"
+                  className="w-full"
+                  onClick={() => void onReport()}
+                >
+                  Send report
+                </Button>
+              </>
+            )}
+          </ResponsiveSheetBody>
+        </ResponsiveSheetContent>
       </Sheet>
     </>
   );

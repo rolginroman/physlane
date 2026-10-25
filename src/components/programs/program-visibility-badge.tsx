@@ -19,7 +19,7 @@ export function ProgramVisibilityBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+        "inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
         badgeClass[visibility],
         className,
       )}

@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown, Link2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PublicProgramShell } from "#/components/programs/public-program-shell";
+import { buttonVariants } from "#/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
 import { cn } from "#/lib/cn";
 import { groupEntryBlocks } from "#/lib/programs/entry-ops";
 import {
@@ -48,6 +50,36 @@ function sessionSummary(session: ProgramSessionDTO): {
   return { exercises: session.entries.length, sets };
 }
 
+function FactChip({
+  children,
+  numeric = false,
+}: {
+  children: React.ReactNode;
+  numeric?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex min-h-7 items-center rounded-md border border-border bg-card px-2.5 text-sm font-medium text-text-secondary",
+        numeric && "tabular-nums",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function AuthorAvatar({ name }: { name: string }) {
+  return (
+    <span
+      className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-xs font-semibold"
+      aria-hidden
+    >
+      {name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
 function EntryBlock({
   entry,
   exerciseName,
@@ -62,7 +94,7 @@ function EntryBlock({
   return (
     <li className="rounded-lg border border-border bg-card px-3 pb-3 pt-1">
       <div className="flex min-h-11 items-center justify-between gap-2">
-        <span className="text-[0.9375rem] font-semibold leading-snug text-foreground">
+        <span className="font-semibold leading-snug text-foreground">
           {exerciseName}
         </span>
         {entry.refUrl ? (
@@ -88,7 +120,7 @@ function EntryBlock({
         {rest ? <span>{rest}</span> : null}
       </div>
       {entry.cues ? (
-        <p className="mt-1.5 text-[0.8125rem] text-text-secondary">
+        <p className="mt-1.5 text-sm text-text-secondary">
           <span className="text-muted-foreground">Cue: </span>
           {entry.cues}
         </p>
@@ -123,16 +155,16 @@ function SessionAccordion({
         onClick={() => setOpen((v) => !v)}
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-[1.0625rem] font-semibold leading-snug">
+          <span className="block text-lg font-semibold leading-snug break-words">
             {session.title}
           </span>
-          <span className="mt-0.5 block text-[0.8125rem] tabular-nums text-muted-foreground">
+          <span className="mt-0.5 block text-sm tabular-nums text-muted-foreground">
             {summary.exercises} exercises · {summary.sets} sets
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "size-[1.125rem] shrink-0 text-muted-foreground transition-transform duration-200",
+            "size-4.5 shrink-0 text-muted-foreground transition-transform duration-200",
             open && "rotate-180",
           )}
           aria-hidden
@@ -200,8 +232,8 @@ export function ProgramView({
   const [selectedWeek, setSelectedWeek] = useState(1);
   const authorName = program.author.displayName ?? "Author";
   const equipment = equipmentLine(program.equipmentTags);
-  const showProfileLink =
-    variant === "public" && program.author.authorSlug != null;
+  const authorSlug =
+    variant === "public" ? (program.author.authorSlug ?? null) : null;
 
   const weekSessions = useMemo(
     () =>
@@ -218,10 +250,10 @@ export function ProgramView({
     <PublicProgramShell>
       {variant === "unlisted" ? (
         <div
-          className="flex items-start gap-3 border-b border-border bg-muted px-4 py-3 text-sm leading-snug"
+          className="flex items-start gap-3 border-b border-border bg-muted px-4 py-3 text-sm leading-snug sm:px-8"
           role="note"
         >
-          <Link2 className="mt-0.5 size-[1.125rem] shrink-0" aria-hidden />
+          <Link2 className="mt-0.5 size-4.5 shrink-0" aria-hidden />
           <p className="m-0">
             Opened with a share link. This program isn&apos;t listed publicly.
           </p>
@@ -234,158 +266,173 @@ export function ProgramView({
           <Link
             to="/programs/$programId"
             params={{ programId: program.id }}
-            className="inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground no-underline"
+            className={buttonVariants({ variant: "outline", size: "touch" })}
           >
             Edit
           </Link>
         </div>
       ) : null}
 
-      <main className="mx-auto max-w-3xl px-4 pb-12 sm:max-w-5xl sm:px-8">
-        <section className="py-6 sm:py-10" aria-labelledby="program-title">
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Program
-          </p>
-          <h1
-            id="program-title"
-            className="mt-2 font-display text-4xl leading-tight text-balance text-foreground sm:text-5xl"
-          >
-            {program.title}
-          </h1>
-          <p className="mt-3 flex min-h-11 items-center gap-2 text-sm text-text-secondary">
-            <span
-              className="flex size-8 items-center justify-center rounded-full border border-border bg-muted text-xs font-semibold"
-              aria-hidden
-            >
-              {authorName.slice(0, 1).toUpperCase()}
-            </span>
-            <span>
-              by{" "}
-              {showProfileLink && program.author.authorSlug ? (
-                <Link
-                  to="/u/$authorSlug/$programRef"
-                  params={{
-                    authorSlug: program.author.authorSlug,
-                    programRef: program.slug ?? "",
-                  }}
-                  className="font-semibold text-foreground underline decoration-border underline-offset-4"
-                >
-                  {authorName}
-                </Link>
-              ) : (
-                <strong className="font-semibold text-foreground">
-                  {authorName}
-                </strong>
-              )}
-            </span>
-          </p>
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            <span className="inline-flex min-h-7 items-center rounded-md border border-border bg-card px-2.5 text-[0.8125rem] font-medium text-text-secondary">
-              {goalDisplayLabel(program.goal)}
-            </span>
-            <span className="inline-flex min-h-7 items-center rounded-md border border-border bg-card px-2.5 text-[0.8125rem] font-medium text-text-secondary">
-              {levelDisplayLabel(program.level)}
-            </span>
-            <span className="inline-flex min-h-7 items-center rounded-md border border-border bg-card px-2.5 text-[0.8125rem] font-medium tabular-nums text-text-secondary">
-              {program.daysPerWeek} sessions / week
-            </span>
-            <span className="inline-flex min-h-7 items-center rounded-md border border-border bg-card px-2.5 text-[0.8125rem] font-medium tabular-nums text-text-secondary">
-              {program.weeks} weeks
-            </span>
-          </div>
-          {equipment ? (
-            <p className="mt-3 text-[0.8125rem] text-muted-foreground">
-              Equipment: {equipment}
-            </p>
-          ) : null}
-          {program.description ? (
-            <p className="mt-4 max-w-prose text-[0.9375rem] leading-relaxed text-text-secondary">
-              {program.description}
-            </p>
-          ) : null}
-          {program.forkSourceLabel ? (
-            <p className="mt-2 text-[0.8125rem] text-muted-foreground">
-              Based on {program.forkSourceLabel}
-            </p>
-          ) : null}
-        </section>
-
-        {program.weeks > 1 ? (
-          <div
-            className="-mx-4 flex gap-0 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:px-0"
-            role="tablist"
-            aria-label="Weeks"
-          >
-            {Array.from({ length: program.weeks }, (_, i) => i + 1).map((w) => (
-              <button
-                key={w}
-                type="button"
-                role="tab"
-                aria-selected={selectedWeek === w}
-                onClick={() => setSelectedWeek(w)}
-                className={cn(
-                  "min-h-11 shrink-0 px-3.5 text-sm font-medium",
-                  selectedWeek === w
-                    ? "border-b-2 border-primary font-semibold text-foreground"
-                    : "text-text-secondary",
-                )}
+      <main className="mx-auto max-w-3xl px-4 pb-12 sm:px-8 lg:max-w-6xl">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
+          <div className="min-w-0">
+            <section className="py-6 sm:py-10" aria-labelledby="program-title">
+              <p className="m-0 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Program
+              </p>
+              <h1
+                id="program-title"
+                className="mt-2 font-display text-4xl leading-tight text-balance break-words text-foreground sm:text-5xl"
               >
-                Week {w}
-              </button>
-            ))}
-          </div>
-        ) : null}
+                {program.title}
+              </h1>
+              <p className="mt-3 flex min-h-11 items-center gap-2 text-sm text-text-secondary lg:hidden">
+                <AuthorAvatar name={authorName} />
+                <span className="min-w-0 break-words">
+                  by{" "}
+                  {authorSlug ? (
+                    <Link
+                      to="/u/$authorSlug"
+                      params={{ authorSlug }}
+                      className="font-semibold text-foreground underline decoration-border underline-offset-4"
+                    >
+                      {authorName}
+                    </Link>
+                  ) : (
+                    <strong className="font-semibold text-foreground">
+                      {authorName}
+                    </strong>
+                  )}
+                </span>
+              </p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                <FactChip>{goalDisplayLabel(program.goal)}</FactChip>
+                <FactChip>{levelDisplayLabel(program.level)}</FactChip>
+                <FactChip numeric>
+                  {program.daysPerWeek} sessions / week
+                </FactChip>
+                <FactChip numeric>{program.weeks} weeks</FactChip>
+              </div>
+              {equipment ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Equipment: {equipment}
+                </p>
+              ) : null}
+              {program.description ? (
+                <p className="mt-4 max-w-prose text-base leading-relaxed break-words text-text-secondary">
+                  {program.description}
+                </p>
+              ) : null}
+              {program.forkSourceLabel ? (
+                <p className="mt-2 text-sm break-words text-muted-foreground">
+                  Based on {program.forkSourceLabel}
+                </p>
+              ) : null}
+            </section>
 
-        <div className="flex items-center justify-between py-3 text-[0.8125rem] tabular-nums text-muted-foreground">
-          <span>
-            {program.weeks > 1
-              ? `Week ${selectedWeek} of ${program.weeks}`
-              : null}
-            {weekSessions.length > 0
-              ? `${program.weeks > 1 ? " · " : ""}${weekSessions.length} session${weekSessions.length === 1 ? "" : "s"}`
-              : null}
-          </span>
+            <Tabs
+              value={selectedWeek}
+              onValueChange={(week) => setSelectedWeek(Number(week))}
+              className="gap-0"
+            >
+              {program.weeks > 1 ? (
+                <div className="-mx-4 sm:mx-0">
+                  <TabsList
+                    variant="line"
+                    aria-label="Weeks"
+                    className="px-4 sm:px-0"
+                  >
+                    {Array.from({ length: program.weeks }, (_, i) => i + 1).map(
+                      (w) => (
+                        <TabsTrigger key={w} value={w}>
+                          Week {w}
+                        </TabsTrigger>
+                      ),
+                    )}
+                  </TabsList>
+                </div>
+              ) : null}
+
+              <div className="flex items-center justify-between py-3 text-sm tabular-nums text-muted-foreground">
+                <span>
+                  {program.weeks > 1
+                    ? `Week ${selectedWeek} of ${program.weeks}`
+                    : null}
+                  {weekSessions.length > 0
+                    ? `${program.weeks > 1 ? " · " : ""}${weekSessions.length} session${weekSessions.length === 1 ? "" : "s"}`
+                    : null}
+                </span>
+              </div>
+
+              <TabsContent value={selectedWeek}>
+                {weekSessions.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    (no sessions)
+                  </p>
+                ) : (
+                  <div className="border-b border-border">
+                    {weekSessions.map((session, index) => (
+                      <SessionAccordion
+                        key={session.id}
+                        session={session}
+                        exercises={program.exercises}
+                        defaultOpen={index === 0}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <aside className="sticky bottom-0 z-10 -mx-4 sm:-mx-8 lg:top-6 lg:bottom-auto lg:mx-0 lg:self-start lg:pt-10">
+            <div className="hidden flex-col gap-3 rounded-xl border border-border bg-card p-4 lg:mb-3 lg:flex">
+              <div className="flex min-w-0 items-center gap-3">
+                <AuthorAvatar name={authorName} />
+                <span className="min-w-0 text-sm break-words">
+                  <span className="block text-xs text-muted-foreground">
+                    Program by
+                  </span>
+                  <strong className="font-semibold text-foreground">
+                    {authorName}
+                  </strong>
+                </span>
+              </div>
+              {authorSlug ? (
+                <Link
+                  to="/u/$authorSlug"
+                  params={{ authorSlug }}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "touch" }),
+                    "w-full",
+                  )}
+                >
+                  View profile
+                </Link>
+              ) : null}
+            </div>
+            <ProgramForkActions
+              programId={program.id}
+              programTitle={program.title}
+              shareToken={program.shareToken}
+              forkable={program.forkable}
+              isOwner={isOwner}
+              isSignedIn={viewerUserId != null}
+              returnPath={returnPath}
+              pendingCopyIntent={pendingCopyIntent}
+            />
+          </aside>
         </div>
 
-        {weekSessions.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            (no sessions)
-          </p>
-        ) : (
-          <div className="border-b border-border">
-            {weekSessions.map((session, index) => (
-              <SessionAccordion
-                key={session.id}
-                session={session}
-                exercises={program.exercises}
-                defaultOpen={index === 0}
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="mt-8">
-          <ProgramForkActions
-            programId={program.id}
-            programTitle={program.title}
-            shareToken={program.shareToken}
-            forkable={program.forkable}
-            isOwner={isOwner}
-            isSignedIn={viewerUserId != null}
-            returnPath={returnPath}
-            pendingCopyIntent={pendingCopyIntent}
-          />
-        </div>
-
-        <footer className="mt-8 border-t border-border pt-4 text-[0.8125rem] text-muted-foreground">
+        <footer className="mt-8 border-t border-border pt-4 text-sm text-muted-foreground">
           Shared on physlane
-          {showProfileLink && program.author.authorSlug && program.slug ? (
+          {authorSlug && program.slug ? (
             <>
               {" · "}
               <Link
                 to="/u/$authorSlug/$programRef"
                 params={{
-                  authorSlug: program.author.authorSlug,
+                  authorSlug,
                   programRef: program.slug,
                 }}
                 className="font-medium text-brand-text underline underline-offset-2"

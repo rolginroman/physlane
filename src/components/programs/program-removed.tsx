@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { buttonVariants } from "#/components/ui/button";
+import { cn } from "#/lib/cn";
 import { PublicProgramShell } from "#/components/programs/public-program-shell";
 import type { PublicProgramRemovalDTO } from "#/server/programs.fns";
 
@@ -34,14 +36,20 @@ export function ProgramRemovedPage({
           <Link
             to="/u/$authorSlug"
             params={{ authorSlug: removal.authorSlug! }}
-            className="mt-6 inline-flex min-h-11 items-center text-sm font-medium text-brand-text underline underline-offset-4"
+            className={cn(
+              buttonVariants({ variant: "link", size: "touch" }),
+              "mt-6 px-0 text-brand-text",
+            )}
           >
             See {removal.authorDisplayName}'s public programs
           </Link>
         ) : (
           <Link
             to="/"
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-card px-4 text-sm font-medium text-foreground no-underline"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "touch" }),
+              "mt-6",
+            )}
           >
             Go to physlane
           </Link>

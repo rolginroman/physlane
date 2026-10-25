@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "#/components/ui/dialog";
 import { Input } from "#/components/ui/input";
+import { Textarea } from "#/components/ui/textarea";
 import { isAppErrorCode } from "#/lib/app-error";
 import { SITE_URL } from "#/lib/seo";
 import {
@@ -142,7 +143,7 @@ export function AuthorProfileSetup({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {mode === "go-public" ? "Your public profile" : "Edit profile"}
@@ -176,7 +177,7 @@ export function AuthorProfileSetup({
             </label>
             <Input
               id="profile-display-name"
-              className="mt-1.5 min-h-11"
+              className="mt-1.5"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               aria-invalid={displayName.trim() === ""}
@@ -207,7 +208,7 @@ export function AuthorProfileSetup({
               </span>
               <Input
                 id="profile-author-slug"
-                className="min-h-11 border-0 bg-transparent shadow-none"
+                className="border-0 bg-transparent shadow-none"
                 value={authorSlug}
                 disabled={slugLocked}
                 onChange={(e) => setAuthorSlug(e.target.value)}
@@ -236,7 +237,7 @@ export function AuthorProfileSetup({
                     key={s}
                     type="button"
                     variant="outline"
-                    className="min-h-11"
+                    size="touch"
                     onClick={() => setAuthorSlug(s)}
                   >
                     {s}
@@ -269,9 +270,9 @@ export function AuthorProfileSetup({
                 (optional)
               </span>
             </label>
-            <textarea
+            <Textarea
               id="profile-bio"
-              className="mt-1.5 flex min-h-[76px] w-full rounded-lg border border-border bg-muted px-3 py-2 text-base text-foreground"
+              className="mt-1.5 bg-muted"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="One or two lines about you"
@@ -282,7 +283,8 @@ export function AuthorProfileSetup({
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           <Button
             type="button"
-            className="min-h-11 w-full"
+            size="touch"
+            className="w-full"
             disabled={!canSubmit}
             onClick={() => void onSubmit()}
           >

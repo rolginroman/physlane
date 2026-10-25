@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "#/components/ui/button";
 import {
   Dialog,
@@ -8,7 +8,9 @@ import {
 } from "#/components/ui/dialog";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
-import { cn } from "#/lib/cn";
+import { OptionSelect } from "#/components/ui/option-select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "#/components/ui/toggle-group";
 import {
   equipmentDisplayLabel,
   muscleDisplayLabel,
@@ -30,6 +32,8 @@ import {
 
 type PickerTab = "catalog" | "mine";
 
+const ALL_MUSCLES = "all" as const;
+
 export type ExercisePickerSelection = {
   id: string;
   name: string;
@@ -44,15 +48,6 @@ type ExercisePickerProps = {
   onOpenChange: (open: boolean) => void;
   onSelect: (exercise: ExercisePickerSelection) => void;
 };
-
-function chipClass(pressed: boolean): string {
-  return cn(
-    "min-h-11 rounded-lg border px-3 text-sm font-medium",
-    pressed
-      ? "border-primary bg-brand-soft text-foreground"
-      : "border-border bg-card text-text-secondary",
-  );
-}
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -197,127 +192,117 @@ export function ExercisePicker({
   };
 
   const regions = Object.keys(MUSCLE_GROUPS) as MuscleRegion[];
+  const muscleOptions = useMemo(
+    () => MUSCLES.map((m) => ({ value: m, label: muscleDisplayLabel(m) })),
+    [],
+  );
+  const equipmentOptions = useMemo(
+    () =>
+      EQUIPMENT.map((eq) => ({ value: eq, label: equipmentDisplayLabel(eq) })),
+    [],
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[min(90dvh,720px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader className="border-b border-border px-4 py-3">
+        <DialogHeader className="border-b border-border px-4 py-3 pr-12">
           <DialogTitle>Choose exercise</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-3 overflow-y-auto px-4 py-3">
+        <Tabs
+          value={tab}
+          onValueChange={setTab}
+          className="flex flex-col gap-3 overflow-y-auto px-4 py-3"
+        >
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search exercises"
             aria-label="Search exercises"
             autoFocus
-            className="min-h-11"
           />
-          <div
-            role="tablist"
-            aria-label="Exercise source"
-            className="flex gap-1 rounded-lg border border-border bg-muted p-1"
-          >
-            {(
-              [
-                ["catalog", "Catalog"],
-                ["mine", "My exercises"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={tab === id}
-                onClick={() => setTab(id)}
-                className={cn(
-                  "min-h-11 flex-1 rounded-md text-sm font-medium",
-                  tab === id
-                    ? "bg-card text-foreground shadow-sm ring-1 ring-border"
-                    : "text-text-secondary",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <TabsList aria-label="Exercise source">
+            <TabsTrigger value="catalog">Catalog</TabsTrigger>
+            <TabsTrigger value="mine">My exercises</TabsTrigger>
+          </TabsList>
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Region
             </span>
             <div className="flex flex-wrap gap-2">
-              {regions.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  aria-pressed={region === r}
-                  onClick={() => {
-                    setRegion(region === r ? null : r);
-                    setMuscle(null);
-                  }}
-                  className={chipClass(region === r)}
-                >
-                  {regionDisplayLabel(r)}
-                </button>
-              ))}
+              <ToggleGroup<MuscleRegion>
+                aria-label="Region"
+                variant="chip"
+                size="touch"
+                value={region ? [region] : []}
+                onValueChange={(next) => {
+                  setRegion(next[0] ?? null);
+                  setMuscle(null);
+                }}
+              >
+                {regions.map((r) => (
+                  <ToggleGroupItem key={r} value={r}>
+                    {regionDisplayLabel(r)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
               {region || muscle ? (
-                <button
+                <Button
                   type="button"
-                  className="min-h-11 text-sm text-brand-text underline"
+                  variant="link"
+                  size="touch"
+                  className="text-brand-text"
                   onClick={() => {
                     setRegion(null);
                     setMuscle(null);
                   }}
                 >
                   Clear
-                </button>
+                </Button>
               ) : null}
             </div>
             {region ? (
-              <div
-                role="group"
+              <ToggleGroup<Muscle | typeof ALL_MUSCLES>
                 aria-label={`Muscle in ${regionDisplayLabel(region)}`}
-                className="flex flex-wrap gap-2"
+                variant="chip"
+                size="touch"
+                value={[muscle ?? ALL_MUSCLES]}
+                onValueChange={(next) => {
+                  const picked = next[0];
+                  setMuscle(
+                    picked === undefined || picked === ALL_MUSCLES
+                      ? null
+                      : picked,
+                  );
+                }}
               >
-                <button
-                  type="button"
-                  aria-pressed={muscle === null}
-                  onClick={() => setMuscle(null)}
-                  className={chipClass(muscle === null)}
-                >
+                <ToggleGroupItem value={ALL_MUSCLES}>
                   All {regionDisplayLabel(region)}
-                </button>
+                </ToggleGroupItem>
                 {MUSCLE_GROUPS[region].map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    aria-pressed={muscle === m}
-                    onClick={() => setMuscle(muscle === m ? null : m)}
-                    className={chipClass(muscle === m)}
-                  >
+                  <ToggleGroupItem key={m} value={m}>
                     {muscleDisplayLabel(m)}
-                  </button>
+                  </ToggleGroupItem>
                 ))}
-              </div>
+              </ToggleGroup>
             ) : null}
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               Equipment
             </span>
-            <div className="flex flex-wrap gap-2">
+            <ToggleGroup<Equipment>
+              aria-label="Equipment"
+              variant="chip"
+              size="touch"
+              value={equipment ? [equipment] : []}
+              onValueChange={(next) => setEquipment(next[0] ?? null)}
+            >
               {EQUIPMENT.map((eq) => (
-                <button
-                  key={eq}
-                  type="button"
-                  aria-pressed={equipment === eq}
-                  onClick={() => setEquipment(equipment === eq ? null : eq)}
-                  className={chipClass(equipment === eq)}
-                >
+                <ToggleGroupItem key={eq} value={eq}>
                   {equipmentDisplayLabel(eq)}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
 
           {creating ? (
@@ -330,43 +315,26 @@ export function ExercisePicker({
                     id="custom-ex-name"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
-                    className="mt-1 min-h-11"
                   />
                 </div>
                 <div>
                   <Label htmlFor="custom-ex-muscle">Primary muscle</Label>
-                  <select
+                  <OptionSelect
                     id="custom-ex-muscle"
-                    value={customMuscle}
-                    onChange={(e) =>
-                      setCustomMuscle(e.target.value as Muscle | "")
-                    }
-                    className="mt-1 flex h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-                  >
-                    <option value="">Select…</option>
-                    {MUSCLES.map((m) => (
-                      <option key={m} value={m}>
-                        {muscleDisplayLabel(m)}
-                      </option>
-                    ))}
-                  </select>
+                    value={customMuscle || null}
+                    options={muscleOptions}
+                    placeholder="Select…"
+                    onValueChange={setCustomMuscle}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="custom-ex-eq">Equipment</Label>
-                  <select
+                  <OptionSelect
                     id="custom-ex-eq"
                     value={customEquipment}
-                    onChange={(e) =>
-                      setCustomEquipment(e.target.value as Equipment)
-                    }
-                    className="mt-1 flex h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-                  >
-                    {EQUIPMENT.map((eq) => (
-                      <option key={eq} value={eq}>
-                        {equipmentDisplayLabel(eq)}
-                      </option>
-                    ))}
-                  </select>
+                    options={equipmentOptions}
+                    onValueChange={setCustomEquipment}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="custom-ex-aliases">
@@ -377,7 +345,6 @@ export function ExercisePicker({
                     value={customAliases}
                     onChange={(e) => setCustomAliases(e.target.value)}
                     placeholder="Comma-separated"
-                    className="mt-1 min-h-11"
                   />
                 </div>
                 <div>
@@ -388,7 +355,6 @@ export function ExercisePicker({
                     id="custom-ex-note"
                     value={customFormNote}
                     onChange={(e) => setCustomFormNote(e.target.value)}
-                    className="mt-1 min-h-11"
                   />
                 </div>
                 {customError ? (
@@ -398,14 +364,16 @@ export function ExercisePicker({
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11 flex-1"
+                    size="touch"
+                    className="flex-1"
                     onClick={() => setCreating(false)}
                   >
                     Cancel
                   </Button>
                   <Button
                     type="button"
-                    className="min-h-11 flex-1"
+                    size="touch"
+                    className="flex-1"
                     disabled={customPending}
                     onClick={() => void submitCustom()}
                   >
@@ -416,7 +384,11 @@ export function ExercisePicker({
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-1" aria-live="polite">
+          <TabsContent
+            value={tab}
+            className="flex flex-col gap-1"
+            aria-live="polite"
+          >
             {loading ? (
               <ul className="flex flex-col gap-2" aria-busy="true">
                 {[0, 1, 2, 3].map((i) => (
@@ -432,7 +404,8 @@ export function ExercisePicker({
                 <Button
                   type="button"
                   variant="outline"
-                  className="mt-2 min-h-11"
+                  size="touch"
+                  className="mt-2"
                   onClick={() => setReloadKey((k) => k + 1)}
                 >
                   Try again
@@ -491,8 +464,8 @@ export function ExercisePicker({
                 ) : null}
               </ul>
             )}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

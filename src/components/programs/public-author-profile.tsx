@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Globe, Pencil } from "lucide-react";
+import { Button } from "#/components/ui/button";
 import { PublicProgramShell } from "#/components/programs/public-program-shell";
 import {
   goalDisplayLabel,
@@ -38,7 +39,7 @@ export function PublicAuthorProfile({
   return (
     <PublicProgramShell>
       {profile.isOwner ? (
-        <div className="flex min-h-[52px] flex-wrap items-center gap-2 border-b border-border bg-muted px-4 py-2 sm:px-8">
+        <div className="flex min-h-13 flex-wrap items-center gap-2 border-b border-border bg-muted px-4 py-2 sm:px-8">
           <Globe className="size-4 text-text-secondary" aria-hidden />
           <span className="flex-1 text-sm text-foreground">
             Your public profile
@@ -50,7 +51,7 @@ export function PublicAuthorProfile({
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
         <section className="flex flex-col gap-6 sm:flex-row sm:items-start">
           <span
-            className="flex size-[72px] shrink-0 items-center justify-center rounded-full border border-border bg-muted font-display text-3xl text-text-secondary"
+            className="flex size-18 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-display text-3xl text-text-secondary"
             aria-hidden
           >
             {initial}
@@ -93,7 +94,7 @@ export function PublicAuthorProfile({
                   )}
                   className="flex min-h-11 flex-col gap-2 rounded-xl border border-border bg-card p-4 no-underline transition-colors hover:border-primary/30 hover:bg-muted/40"
                 >
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold break-words text-foreground">
                     {program.title}
                   </span>
                   {program.description ? (
@@ -143,13 +144,9 @@ export function PublicAuthorProfile({
 
 function ButtonEditProfile({ onClick }: { onClick?: () => void }) {
   return (
-    <button
-      type="button"
-      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground"
-      onClick={onClick}
-    >
+    <Button type="button" variant="outline" size="touch" onClick={onClick}>
       <Pencil className="size-4" aria-hidden />
       Edit profile
-    </button>
+    </Button>
   );
 }

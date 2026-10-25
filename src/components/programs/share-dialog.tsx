@@ -165,7 +165,7 @@ export function ShareDialog({
   return (
     <>
       <Dialog open={open && !replaceConfirm} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Share &ldquo;{local.title}&rdquo;</DialogTitle>
             {local.visibility === "draft" ? (
@@ -185,7 +185,8 @@ export function ShareDialog({
             <div className="flex flex-col gap-3">
               <Button
                 type="button"
-                className="min-h-11 w-full"
+                size="touch"
+                className="w-full"
                 disabled={pending}
                 onClick={() => void runVisibility("unlisted")}
               >
@@ -209,13 +210,14 @@ export function ShareDialog({
                   <Input
                     readOnly
                     value={url}
-                    className="min-h-10 border-0 bg-transparent shadow-none"
+                    className="border-0 bg-transparent shadow-none"
                     aria-label="Share link"
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0"
+                    size="touch"
+                    className="shrink-0"
                     onClick={() => void copyUrl()}
                     aria-live="polite"
                   >
@@ -236,7 +238,8 @@ export function ShareDialog({
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11 justify-start px-0"
+                size="touch"
+                className="justify-start px-0"
                 onClick={() => setReplaceConfirm(true)}
                 disabled={pending}
               >
@@ -245,7 +248,8 @@ export function ShareDialog({
               </Button>
               <Button
                 type="button"
-                className="min-h-11 w-full"
+                size="touch"
+                className="w-full"
                 disabled={pending}
                 onClick={() => setProfileSetupOpen(true)}
               >
@@ -269,13 +273,14 @@ export function ShareDialog({
                   <Input
                     readOnly
                     value={url}
-                    className="min-h-10 border-0 bg-transparent shadow-none"
+                    className="border-0 bg-transparent shadow-none"
                     aria-label="Public address"
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-10 shrink-0"
+                    size="touch"
+                    className="shrink-0"
                     onClick={() => void copyUrl()}
                     aria-live="polite"
                   >
@@ -299,7 +304,8 @@ export function ShareDialog({
               <Button
                 type="button"
                 variant="destructive"
-                className="min-h-11 w-full"
+                size="touch"
+                className="w-full"
                 disabled={pending}
                 onClick={() => void runVisibility("unlisted")}
               >
@@ -336,7 +342,8 @@ export function ShareDialog({
             <Button
               type="button"
               variant="destructive"
-              className="min-h-11 w-full"
+              size="touch"
+              className="w-full"
               disabled={pending}
               onClick={() => void onReplaceLink()}
             >
@@ -345,7 +352,8 @@ export function ShareDialog({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 w-full"
+              size="touch"
+              className="w-full"
               onClick={() => setReplaceConfirm(false)}
             >
               Cancel

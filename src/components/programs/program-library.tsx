@@ -6,14 +6,14 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "#/components/ui/sheet";
+  ResponsiveSheetBody,
+  ResponsiveSheetContent,
+  ResponsiveSheetHeader,
+} from "#/components/ui/responsive-sheet";
+import { Sheet, SheetTitle } from "#/components/ui/sheet";
+import { ProgramChoiceGroup } from "#/components/programs/program-choice-group";
 import { ProgramVisibilityBadge } from "#/components/programs/program-visibility-badge";
 import { ShareDialog } from "#/components/programs/share-dialog";
-import { cn } from "#/lib/cn";
 import {
   goalDisplayLabel,
   levelDisplayLabel,
@@ -38,48 +38,6 @@ type LibraryProps = {
   loadError?: boolean;
 };
 
-function SegmentedControl<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-  optionLabel,
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
-  optionLabel: (v: T) => string;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <div
-        role="group"
-        aria-label={label}
-        className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted p-1"
-      >
-        {options.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            aria-pressed={value === opt}
-            onClick={() => onChange(opt)}
-            className={cn(
-              "min-h-11 flex-1 rounded-md px-2 text-sm font-medium transition-colors",
-              value === opt
-                ? "bg-card text-foreground shadow-sm ring-1 ring-border"
-                : "text-text-secondary hover:text-foreground",
-            )}
-          >
-            {optionLabel(opt)}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function SessionsStepper({
   value,
   onChange,
@@ -103,7 +61,7 @@ function SessionsStepper({
         <Button
           type="button"
           variant="outline"
-          size="icon-lg"
+          size="icon-touch"
           aria-label="Fewer sessions per week"
           disabled={value <= 1}
           onClick={() => onChange(Math.max(1, value - 1))}
@@ -116,7 +74,7 @@ function SessionsStepper({
         <Button
           type="button"
           variant="outline"
-          size="icon-lg"
+          size="icon-touch"
           aria-label="More sessions per week"
           disabled={value >= 7}
           onClick={() => onChange(Math.min(7, value + 1))}
@@ -156,14 +114,14 @@ function ProgramRow({
 }) {
   const meta = programMetaLine(program);
   return (
-    <li className="flex min-h-11 flex-col gap-2 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-4">
+    <li className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-4">
       <Link
         to="/programs/$programId"
         params={{ programId: program.id }}
         className="min-w-0 flex-1 no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-base font-semibold text-foreground">
+          <span className="text-base font-semibold break-words text-foreground">
             {program.title}
           </span>
           <ProgramVisibilityBadge visibility={program.visibility} />
@@ -180,19 +138,13 @@ function ProgramRow({
         <Button
           type="button"
           variant="outline"
-          size="icon-lg"
-          className="min-h-11 min-w-11"
+          size="icon-touch"
           aria-label={`Share ${program.title}`}
           onClick={onShare}
         >
           <Share2 className="size-4" aria-hidden />
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          onClick={onRemove}
-        >
+        <Button type="button" variant="outline" size="touch" onClick={onRemove}>
           Remove
         </Button>
       </div>
@@ -299,7 +251,7 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
     programs.length === 1 ? "1 program" : `${programs.length} programs`;
 
   return (
-    <section className="pt-8">
+    <section className="pt-8 lg:pt-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 font-display text-4xl font-normal tracking-tight text-foreground sm:text-5xl">
@@ -312,7 +264,7 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
           ) : null}
         </div>
         {programs.length > 0 ? (
-          <Button type="button" className="min-h-11" onClick={openNewProgram}>
+          <Button type="button" size="touch" onClick={openNewProgram}>
             New program
           </Button>
         ) : null}
@@ -329,7 +281,8 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
           <Button
             type="button"
             variant="outline"
-            className="mt-3 min-h-11"
+            size="touch"
+            className="mt-3"
             disabled={retrying}
             onClick={() => void onRetryLoad()}
           >
@@ -350,7 +303,8 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
           </p>
           <Button
             type="button"
-            className="min-h-11 w-full sm:w-auto"
+            size="touch"
+            className="w-full sm:w-auto sm:self-start"
             onClick={openNewProgram}
           >
             New program
@@ -379,42 +333,46 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
         open={removeTarget != null}
         onOpenChange={(open) => !open && setRemoveTarget(null)}
       >
-        <SheetContent side="bottom" className="pb-8">
-          <SheetHeader>
+        <ResponsiveSheetContent>
+          <ResponsiveSheetHeader>
             <SheetTitle>Remove {removeTarget?.title ?? "program"}?</SheetTitle>
-          </SheetHeader>
-          <p className="text-sm text-text-secondary">
-            {removeTarget?.visibility === "public"
-              ? "It leaves your profile and your programs. People who open its links see a page saying the author removed it. Copies other people made stay theirs. You can't undo this."
-              : "It leaves your programs. People who open its links see a page saying the author removed it. You can't undo this."}
-          </p>
-          <Button
-            type="button"
-            variant="destructive"
-            className="mt-4 min-h-11 w-full"
-            disabled={removePending}
-            onClick={() => {
-              if (!removeTarget) return;
-              setRemovePending(true);
-              void deleteProgram({ data: { programId: removeTarget.id } })
-                .then(async () => {
-                  setRemoveTarget(null);
-                  await router.invalidate();
-                })
-                .finally(() => setRemovePending(false));
-            }}
-          >
-            Remove program
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="mt-2 min-h-11 w-full"
-            onClick={() => setRemoveTarget(null)}
-          >
-            Cancel
-          </Button>
-        </SheetContent>
+          </ResponsiveSheetHeader>
+          <ResponsiveSheetBody>
+            <p className="m-0 text-sm text-text-secondary">
+              {removeTarget?.visibility === "public"
+                ? "It leaves your profile and your programs. People who open its links see a page saying the author removed it. Copies other people made stay theirs. You can't undo this."
+                : "It leaves your programs. People who open its links see a page saying the author removed it. You can't undo this."}
+            </p>
+            <Button
+              type="button"
+              variant="destructive"
+              size="touch"
+              className="w-full"
+              disabled={removePending}
+              onClick={() => {
+                if (!removeTarget) return;
+                setRemovePending(true);
+                void deleteProgram({ data: { programId: removeTarget.id } })
+                  .then(async () => {
+                    setRemoveTarget(null);
+                    await router.invalidate();
+                  })
+                  .finally(() => setRemovePending(false));
+              }}
+            >
+              Remove program
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="touch"
+              className="w-full"
+              onClick={() => setRemoveTarget(null)}
+            >
+              Cancel
+            </Button>
+          </ResponsiveSheetBody>
+        </ResponsiveSheetContent>
       </Sheet>
 
       {shareTarget ? (
@@ -442,10 +400,10 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
       ) : null}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="bottom" className="max-h-[90dvh] sm:max-w-md">
-          <SheetHeader>
+        <ResponsiveSheetContent>
+          <ResponsiveSheetHeader>
             <SheetTitle>New program</SheetTitle>
-          </SheetHeader>
+          </ResponsiveSheetHeader>
           <form className="flex flex-col gap-4 px-4 pb-6" onSubmit={onCreate}>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-program-title">Title</Label>
@@ -468,24 +426,27 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
                 </p>
               ) : null}
             </div>
-            <SegmentedControl
+            <ProgramChoiceGroup
               label="Goal"
               options={PROGRAM_GOALS}
               value={goal}
               onChange={setGoal}
               optionLabel={goalDisplayLabel}
+              variant="segment"
             />
-            <SegmentedControl
+            <ProgramChoiceGroup
               label="Level"
               options={PROGRAM_LEVELS}
               value={level}
               onChange={setLevel}
               optionLabel={levelDisplayLabel}
+              variant="segment"
             />
             <SessionsStepper value={daysPerWeek} onChange={setDaysPerWeek} />
             <Button
               type="submit"
-              className="min-h-11 w-full"
+              size="touch"
+              className="w-full"
               disabled={pending}
             >
               {pending ? "Creating…" : "Create program"}
@@ -494,7 +455,7 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
               Everything else is optional and can wait.
             </p>
           </form>
-        </SheetContent>
+        </ResponsiveSheetContent>
       </Sheet>
     </section>
   );

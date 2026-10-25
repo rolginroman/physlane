@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { buttonVariants } from "#/components/ui/button";
+import { cn } from "#/lib/cn";
 import { PublicProgramShell } from "#/components/programs/public-program-shell";
 
 export function ProgramNotFound() {
@@ -17,7 +19,10 @@ export function ProgramNotFound() {
         </p>
         <Link
           to="/"
-          className="mt-8 inline-flex min-h-11 items-center justify-center rounded-lg border border-border bg-transparent px-4 text-sm font-medium text-foreground no-underline hover:bg-muted"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "touch" }),
+            "mt-8",
+          )}
         >
           Go to physlane
         </Link>
