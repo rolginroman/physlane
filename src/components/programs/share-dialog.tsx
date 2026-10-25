@@ -11,6 +11,7 @@ import {
 } from "#/components/ui/dialog";
 import { Input } from "#/components/ui/input";
 import { isAppErrorCode } from "#/lib/app-error";
+import { programErrorMessage } from "#/lib/programs/program-error-message";
 import {
   publicProgramCanonicalUrlFromOrigin,
   shareLinkUrlFromOrigin,
@@ -34,17 +35,6 @@ type ShareDialogProps = {
   program: ShareDialogProgram;
   onProgramUpdated: (program: ProgramDTO | ShareDialogProgram) => void;
 };
-
-function shareErrorMessage(code: string): string {
-  switch (code) {
-    case "SLUG_TAKEN":
-      return "That address is already taken. Try again in a moment.";
-    case "INVALID_TRANSITION":
-      return "Couldn't change who can open this program. Nothing changed.";
-    default:
-      return "Something went wrong. Nothing changed. Try again.";
-  }
-}
 
 export function ShareDialog({
   open,
@@ -128,7 +118,9 @@ export function ShareDialog({
     } catch (e) {
       const code = e instanceof Error ? e.message : "";
       setError(
-        isAppErrorCode(code) ? shareErrorMessage(code) : shareErrorMessage(""),
+        isAppErrorCode(code)
+          ? programErrorMessage(code)
+          : programErrorMessage(""),
       );
     } finally {
       setPending(false);
@@ -151,7 +143,9 @@ export function ShareDialog({
     } catch (e) {
       const code = e instanceof Error ? e.message : "";
       setError(
-        isAppErrorCode(code) ? shareErrorMessage(code) : shareErrorMessage(""),
+        isAppErrorCode(code)
+          ? programErrorMessage(code)
+          : programErrorMessage(""),
       );
     } finally {
       setPending(false);

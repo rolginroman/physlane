@@ -122,7 +122,6 @@ export function AuthorProfileSetup({
           displayName: displayName.trim(),
           authorSlug: authorSlug.trim().toLowerCase(),
           bio: bio.trim() ? bio.trim() : null,
-          publishProfile: mode === "go-public",
         },
       });
       await onSaved(result.authorSlug);

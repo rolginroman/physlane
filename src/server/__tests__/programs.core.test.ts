@@ -14,6 +14,10 @@ import {
   inheritedForeignCustomIdsFromExerciseOwners,
   planForkSessionCopies,
   resolvePublicProgramView,
+  publicProgramRemovalVariant,
+  assertProgramWeeksCoversSessions,
+  assertAnonymousReportRateAllowed,
+  ANONYMOUS_REPORTS_PER_IP_PER_DAY,
   revisionGuard,
   authorSlugRenameAllowedAt,
   planAuthorProfileSave,
@@ -667,6 +671,56 @@ describe("resolvePublicProgramView", () => {
       resolvePublicProgramView({ ...live, visibility: "draft" }, "public-only")
         .kind,
     ).toBe("not_found");
+  });
+
+  it("returns not_found for deleted unlisted on public-only paths", () => {
+    expect(
+      resolvePublicProgramView(
+        {
+          ...live,
+          visibility: "unlisted",
+          deletedAt: new Date(),
+        },
+        "public-only",
+      ).kind,
+    ).toBe("not_found");
+  });
+
+  it("still shows removed for deleted public programs on public-only paths", () => {
+    expect(
+      resolvePublicProgramView(
+        { ...live, deletedAt: new Date() },
+        "public-only",
+      ).kind,
+    ).toBe("removed_by_author");
+  });
+});
+
+describe("publicProgramRemovalVariant", () => {
+  it("returns null for non-public programs", () => {
+    expect(
+      publicProgramRemovalVariant({
+        visibility: "unlisted",
+        deletedAt: new Date(),
+        hiddenAt: null,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("assertProgramWeeksCoversSessions", () => {
+  it("rejects weeks below existing session weeks", () => {
+    expect(() => assertProgramWeeksCoversSessions(4, 12)).toThrow(
+      "INVALID_ENTRY",
+    );
+  });
+});
+
+describe("assertAnonymousReportRateAllowed", () => {
+  it("rejects at the daily cap", () => {
+    expect(() =>
+      assertAnonymousReportRateAllowed(ANONYMOUS_REPORTS_PER_IP_PER_DAY),
+    ).toThrow("REPORT_RATE_LIMITED");
   });
 });
 

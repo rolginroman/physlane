@@ -23,6 +23,7 @@ export const Route = createFileRoute("/sitemap.xml")({
               isNull(schema.programs.hiddenAt),
               isNotNull(schema.programs.slug),
               isNotNull(schema.user.slug),
+              isNull(schema.user.profileHiddenAt),
             ),
           );
         const programs = rows
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/sitemap.xml")({
               isNull(schema.programs.hiddenAt),
               isNotNull(schema.user.slug),
               isNotNull(schema.user.profilePublishedAt),
+              isNull(schema.user.profileHiddenAt),
             ),
           )
           .groupBy(schema.user.slug);

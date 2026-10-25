@@ -172,10 +172,13 @@ function buildSql(catalog: CatalogFile): string {
   for (const ex of catalog.exercises) {
     const norm = normalizeName(ex.name);
     lines.push(
-      `DELETE FROM exercise_assets WHERE exercise_id IN (SELECT id FROM exercises WHERE owner_user_id IS NULL AND lower(trim(name)) = ${sqlString(norm)} AND id != ${sqlString(ex.id)});`,
+      `UPDATE program_entries SET exercise_id = ${sqlString(ex.id)} WHERE exercise_id IN (SELECT id FROM exercises WHERE owner_user_id IS NULL AND lower(trim(name)) = ${sqlString(norm)} AND id != ${sqlString(ex.id)});`,
     );
     lines.push(
-      `DELETE FROM exercises WHERE owner_user_id IS NULL AND lower(trim(name)) = ${sqlString(norm)} AND id != ${sqlString(ex.id)};`,
+      `UPDATE exercise_assets SET exercise_id = ${sqlString(ex.id)} WHERE exercise_id IN (SELECT id FROM exercises WHERE owner_user_id IS NULL AND lower(trim(name)) = ${sqlString(norm)} AND id != ${sqlString(ex.id)});`,
+    );
+    lines.push(
+      `UPDATE exercises SET deleted_at = unixepoch() WHERE owner_user_id IS NULL AND lower(trim(name)) = ${sqlString(norm)} AND id != ${sqlString(ex.id)};`,
     );
     const aliasesJson = sqlString(JSON.stringify(ex.aliases));
     const secondaryJson = sqlString(JSON.stringify(ex.muscleSecondary));

@@ -5,6 +5,14 @@ import {
   PROGRAM_LEVELS,
 } from "#/lib/programs/taxonomy";
 
+/** Keeps one session upsert under D1 batch statement budgets (~1 stmt per entry). */
+export const MAX_ENTRIES_PER_SESSION = 60;
+/** Long notes still fit comfortably in a single D1 row. */
+export const MAX_SESSION_NOTES_LENGTH = 4_000;
+export const MAX_ENTRY_CUES_LENGTH = 2_000;
+export const MAX_ENTRY_GROUP_TAG_LENGTH = 40;
+export const MAX_ENTRY_REF_URL_LENGTH = 2_048;
+
 const repsTypeSchema = z.enum(["count", "max", "seconds"]);
 const loadTypeSchema = z.enum(["none", "kg", "percent1rm"]);
 const intensityTypeSchema = z.enum(["none", "rpe", "rir"]);
@@ -19,7 +27,7 @@ const httpUrlSchema = z
 export const entrySchema = z
   .object({
     exerciseId: z.string().min(1),
-    groupTag: z.string().nullable().optional(),
+    groupTag: z.string().max(MAX_ENTRY_GROUP_TAG_LENGTH).nullable().optional(),
     sets: z.number().int().min(1).max(20),
     repsType: repsTypeSchema,
     repsValue: z.number().int().nullable(),
@@ -28,8 +36,8 @@ export const entrySchema = z
     intensityType: intensityTypeSchema,
     intensityValue: z.number().nullable(),
     restSeconds: z.number().int().min(0).max(900).nullable(),
-    cues: z.string().nullable().optional(),
-    refUrl: z.string().nullable().optional(),
+    cues: z.string().max(MAX_ENTRY_CUES_LENGTH).nullable().optional(),
+    refUrl: z.string().max(MAX_ENTRY_REF_URL_LENGTH).nullable().optional(),
   })
   .superRefine((entry, ctx) => {
     if (entry.repsType === "max") {
@@ -144,8 +152,8 @@ export const sessionSchema = z.object({
   weekNumber: z.number().int().min(1),
   orderIndex: z.number().int().min(0),
   title: z.string().min(1).max(120),
-  notes: z.string().nullable().optional(),
-  entries: z.array(entrySchema),
+  notes: z.string().max(MAX_SESSION_NOTES_LENGTH).nullable().optional(),
+  entries: z.array(entrySchema).max(MAX_ENTRIES_PER_SESSION),
 });
 
 export const programMetaSchema = z.object({

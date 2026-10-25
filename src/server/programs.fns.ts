@@ -1,6 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import type { BatchItem } from "drizzle-orm/batch";
-import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  max,
+  or,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { useDb } from "#/db/client";
 import * as schema from "#/db/schema";
@@ -49,6 +61,10 @@ import {
   suggestAuthorSlug,
   suggestProgramSlug,
   validateSessionEntries,
+  publicProgramRemovalVariant,
+  assertProgramWeeksCoversSessions,
+  assertAnonymousReportRateAllowed,
+  authorSlugMintBase,
   type ProgramRedirectRow,
 } from "./programs.core";
 import { loadSessionUser } from "#/server/auth.core";
@@ -88,6 +104,7 @@ export type ProgramDTO = {
   forkSourceLabel: string | null;
   slug: string | null;
   shareToken: string | null;
+  hiddenAt: string | null;
   createdAt: string;
   sessions?: ProgramSessionDTO[];
   exercises?: Record<string, ProgramExerciseRefDTO>;
@@ -109,6 +126,7 @@ export type ProgramListItemDTO = Pick<
   | "forkSourceLabel"
   | "slug"
   | "shareToken"
+  | "hiddenAt"
   | "createdAt"
 >;
 
@@ -191,6 +209,7 @@ const toProgramDTO = (
   forkSourceLabel: row.forkSourceLabel,
   slug: row.slug,
   shareToken: row.shareToken,
+  hiddenAt: row.hiddenAt?.toISOString() ?? null,
   createdAt: row.createdAt.toISOString(),
   ...(sessions !== undefined ? { sessions } : {}),
 });
@@ -426,32 +445,118 @@ async function withRevisionBumpThenBatch(
   }
 }
 
-async function takenAuthorSlugsGlobally(now: Date): Promise<{
-  current: Set<string>;
-  history: Array<{ slug: string; createdAt: Date }>;
-}> {
+async function authorSlugTakenByOtherUser(
+  slug: string,
+  exceptUserId: string,
+): Promise<boolean> {
+  const [row] = await useDb()
+    .select({ id: schema.user.id })
+    .from(schema.user)
+    .where(eq(schema.user.slug, slug))
+    .limit(1);
+  return row != null && row.id !== exceptUserId;
+}
+
+async function reservedAuthorSlugHistoryForSlugs(
+  slugs: string[],
+  now: Date,
+): Promise<Array<{ slug: string; createdAt: Date; userId: string }>> {
+  if (slugs.length === 0) {
+    return [];
+  }
+  const rows = await useDb()
+    .select({
+      slug: schema.authorSlugHistory.fromSlug,
+      createdAt: schema.authorSlugHistory.createdAt,
+      userId: schema.authorSlugHistory.userId,
+    })
+    .from(schema.authorSlugHistory)
+    .where(inArray(schema.authorSlugHistory.fromSlug, slugs));
+  return rows
+    .filter((row) => isSlugHistoryReserved(row.createdAt, now))
+    .map((row) => ({
+      slug: row.slug,
+      createdAt: row.createdAt,
+      userId: row.userId,
+    }));
+}
+
+async function takenAuthorSlugsWithPrefix(
+  prefix: string,
+  now: Date,
+): Promise<string[]> {
+  const pattern = `${prefix.toLowerCase()}%`;
   const db = useDb();
-  const users = await db.select({ slug: schema.user.slug }).from(schema.user);
+  const userRows = await db
+    .select({ slug: schema.user.slug })
+    .from(schema.user)
+    .where(sql`lower(${schema.user.slug}) like ${pattern}`);
   const historyRows = await db
     .select({
       fromSlug: schema.authorSlugHistory.fromSlug,
       createdAt: schema.authorSlugHistory.createdAt,
     })
-    .from(schema.authorSlugHistory);
-
-  const current = new Set<string>();
-  for (const row of users) {
+    .from(schema.authorSlugHistory)
+    .where(sql`lower(${schema.authorSlugHistory.fromSlug}) like ${pattern}`);
+  const taken = new Set<string>();
+  for (const row of userRows) {
     if (row.slug) {
-      current.add(row.slug);
+      taken.add(row.slug);
     }
   }
-  const history: Array<{ slug: string; createdAt: Date }> = [];
   for (const row of historyRows) {
     if (isSlugHistoryReserved(row.createdAt, now)) {
-      history.push({ slug: row.fromSlug, createdAt: row.createdAt });
+      taken.add(row.fromSlug);
     }
   }
-  return { current, history };
+  return [...taken];
+}
+
+async function takenAuthorSlugsForShareMint(
+  label: string,
+  now: Date,
+): Promise<string[]> {
+  const bases = new Set([authorSlugMintBase(label), "author"]);
+  const taken = new Set<string>();
+  for (const base of bases) {
+    for (const slug of await takenAuthorSlugsWithPrefix(base, now)) {
+      taken.add(slug);
+    }
+  }
+  return [...taken];
+}
+
+async function hashReporterIp(rawIp: string): Promise<string> {
+  const data = new TextEncoder().encode(rawIp);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function clientIpFromHeaders(headers: Headers): string | null {
+  const direct = headers.get("CF-Connecting-IP")?.trim();
+  if (direct) {
+    return direct;
+  }
+  const forwarded = headers.get("X-Forwarded-For")?.split(",")[0]?.trim();
+  return forwarded || null;
+}
+
+async function countAnonymousReportsToday(ipHash: string): Promise<number> {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const [row] = await useDb()
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.programReports)
+    .where(
+      and(
+        eq(schema.programReports.reporterIpHash, ipHash),
+        isNull(schema.programReports.reporterUserId),
+        gte(schema.programReports.createdAt, startOfDay),
+      ),
+    );
+  return row?.count ?? 0;
 }
 
 async function buildPublicProgramDTO(
@@ -635,6 +740,13 @@ export const updateProgramMeta = createServerFn({ method: "POST" })
     const me = await requireUser();
     const program = await loadAuthorProgram(data.programId, me.id);
     revisionGuard(data.expectedRevision, program.revision);
+    const [maxWeekRow] = await useDb()
+      .select({ maxWeek: max(schema.programSessions.weekNumber) })
+      .from(schema.programSessions)
+      .where(eq(schema.programSessions.programId, program.id));
+    const maxSessionWeek =
+      maxWeekRow?.maxWeek != null ? Number(maxWeekRow.maxWeek) : null;
+    assertProgramWeeksCoversSessions(data.meta.weeks, maxSessionWeek);
     const now = new Date();
     const revision = nextRevision(program.revision);
     const [row] = await useDb()
@@ -1080,10 +1192,20 @@ export const setVisibility = createServerFn({ method: "POST" })
     if (effects.mintAuthorSlug) {
       const label =
         author.displayName ?? publicFirstName(author.name) ?? "author";
-      const { current, history } = await takenAuthorSlugsGlobally(now);
-      const taken = [...current, ...history.map((row) => row.slug)];
+      const taken = await takenAuthorSlugsForShareMint(label, now);
       const candidate = mintAuthorSlugForShare(label, taken);
-      assertSlugAvailable(candidate, current, history, now);
+      const reserved = await reservedAuthorSlugHistoryForSlugs(
+        [candidate],
+        now,
+      );
+      assertSlugAvailable(
+        candidate,
+        (await authorSlugTakenByOtherUser(candidate, author.id))
+          ? new Set([candidate])
+          : new Set(),
+        reserved,
+        now,
+      );
       authorSlugUpdate = candidate;
       if (author.displayName == null) {
         authorDisplayNameUpdate = publicFirstName(author.name);
@@ -1383,21 +1505,10 @@ export const checkAuthorSlugAvailable = createServerFn({ method: "GET" })
       return { ok: true as const };
     }
     const now = new Date();
-    const { current, history } = await takenAuthorSlugsGlobally(now);
-    const historyWithUser = await useDb()
-      .select({
-        slug: schema.authorSlugHistory.fromSlug,
-        createdAt: schema.authorSlugHistory.createdAt,
-        userId: schema.authorSlugHistory.userId,
-      })
-      .from(schema.authorSlugHistory);
-    const reservedHistory = historyWithUser
-      .filter((row) => isSlugHistoryReserved(row.createdAt, now))
-      .map((row) => ({
-        slug: row.slug,
-        createdAt: row.createdAt,
-        userId: row.userId,
-      }));
+    const reservedHistory = await reservedAuthorSlugHistoryForSlugs(
+      [candidate],
+      now,
+    );
     const reclaiming = reservedHistory.some(
       (row) => row.slug === candidate && row.userId === me.id,
     );
@@ -1407,14 +1518,15 @@ export const checkAuthorSlugAvailable = createServerFn({ method: "GET" })
         )
       : reservedHistory;
     try {
-      const taken = new Set(current);
-      if (author.slug) {
-        taken.delete(author.slug);
-      }
+      const slugTaken = await authorSlugTakenByOtherUser(candidate, me.id);
+      const taken = slugTaken ? new Set([candidate]) : new Set<string>();
       assertSlugAvailable(candidate, taken, historyForAssert, now);
     } catch (e) {
       if (e instanceof Error && e.message === "SLUG_TAKEN") {
-        const takenSlugs = [...current, ...history.map((h) => h.slug)];
+        const takenSlugs = await takenAuthorSlugsWithPrefix(
+          suggestSlug(candidate) || candidate,
+          now,
+        );
         const base = suggestSlug(candidate) || candidate;
         const suggestions = [
           suggestAuthorSlug(base, takenSlugs),
@@ -1435,7 +1547,6 @@ const SaveAuthorProfileInputSchema = z.object({
   displayName: z.string().min(1).max(80),
   authorSlug: z.string().min(3).max(40),
   bio: z.string().max(280).nullable().optional(),
-  publishProfile: z.boolean().optional(),
 });
 
 export const saveAuthorProfile = createServerFn({ method: "POST" })
@@ -1448,7 +1559,9 @@ export const saveAuthorProfile = createServerFn({ method: "POST" })
       throw appError("SLUG_TAKEN");
     }
     const now = new Date();
-    const { current } = await takenAuthorSlugsGlobally(now);
+    const nextSlug = data.authorSlug.trim().toLowerCase();
+    const slugTaken = await authorSlugTakenByOtherUser(nextSlug, me.id);
+    const takenCurrent = slugTaken ? [nextSlug] : [];
     const historyWithUser = await useDb()
       .select({
         slug: schema.authorSlugHistory.fromSlug,
@@ -1457,20 +1570,10 @@ export const saveAuthorProfile = createServerFn({ method: "POST" })
       })
       .from(schema.authorSlugHistory)
       .where(eq(schema.authorSlugHistory.userId, me.id));
-    const allHistory = await useDb()
-      .select({
-        slug: schema.authorSlugHistory.fromSlug,
-        createdAt: schema.authorSlugHistory.createdAt,
-        userId: schema.authorSlugHistory.userId,
-      })
-      .from(schema.authorSlugHistory);
-    const reservedHistory = allHistory
-      .filter((row) => isSlugHistoryReserved(row.createdAt, now))
-      .map((row) => ({
-        slug: row.slug,
-        createdAt: row.createdAt,
-        userId: row.userId,
-      }));
+    const reservedHistory = await reservedAuthorSlugHistoryForSlugs(
+      [nextSlug],
+      now,
+    );
     const planned = planAuthorProfileSave(
       {
         userId: me.id,
@@ -1483,7 +1586,7 @@ export const saveAuthorProfile = createServerFn({ method: "POST" })
         authorSlug: data.authorSlug.trim().toLowerCase(),
         bio: data.bio ?? null,
       },
-      current,
+      takenCurrent,
       reservedHistory,
       await lastAuthorSlugRenameAt(me.id),
       now,
@@ -1499,9 +1602,6 @@ export const saveAuthorProfile = createServerFn({ method: "POST" })
       bio: planned.next.bio,
       slug: planned.next.authorSlug,
     };
-    if (data.publishProfile && author.profilePublishedAt == null) {
-      userPatch.profilePublishedAt = now;
-    }
     batch.push(
       db.update(schema.user).set(userPatch).where(eq(schema.user.id, me.id)),
     );
@@ -1546,9 +1646,7 @@ export const saveAuthorProfile = createServerFn({ method: "POST" })
 
     return {
       authorSlug: planned.next.authorSlug,
-      profilePublished: Boolean(
-        data.publishProfile || author.profilePublishedAt != null,
-      ),
+      profilePublished: author.profilePublishedAt != null,
     };
   });
 
@@ -1721,13 +1819,11 @@ export const getPublicProgramRemoval = createServerFn({ method: "GET" })
     if (!program) {
       throw appError("PROGRAM_NOT_FOUND");
     }
-    if (program.hiddenAt != null) {
-      return buildRemovalDTO(program, "moderation");
+    const variant = publicProgramRemovalVariant(program);
+    if (variant == null) {
+      throw appError("PROGRAM_NOT_FOUND");
     }
-    if (program.deletedAt != null) {
-      return buildRemovalDTO(program, "author");
-    }
-    throw appError("PROGRAM_NOT_FOUND");
+    return buildRemovalDTO(program, variant);
   });
 
 const ForkProgramInputSchema = z.object({
@@ -1875,6 +1971,35 @@ const ReportProgramInputSchema = z.object({
   reason: reportProgramReasonSchema,
 });
 
+async function insertProgramReport(args: {
+  programId: string | null;
+  reportedUserId: string | null;
+  reason: string | undefined;
+}): Promise<void> {
+  const reporter = await loadSessionUser();
+  const headers = getRequestHeaders();
+  const ip = clientIpFromHeaders(headers);
+  let reporterIpHash: string | null = null;
+  if (reporter == null && ip) {
+    reporterIpHash = await hashReporterIp(ip);
+    const count = await countAnonymousReportsToday(reporterIpHash);
+    assertAnonymousReportRateAllowed(count);
+  }
+  const now = new Date();
+  await useDb()
+    .insert(schema.programReports)
+    .values({
+      id: crypto.randomUUID(),
+      programId: args.programId,
+      reportedUserId: args.reportedUserId,
+      reporterUserId: reporter?.id ?? null,
+      reporterIpHash,
+      reason: args.reason ?? "",
+      createdAt: now,
+      handledAt: null,
+    });
+}
+
 export const reportProgram = createServerFn({ method: "POST" })
   .validator((d) => ReportProgramInputSchema.parse(d))
   .handler(async ({ data }) => {
@@ -1886,19 +2011,36 @@ export const reportProgram = createServerFn({ method: "POST" })
     if (!program) {
       throw appError("PROGRAM_NOT_FOUND");
     }
-    const reporter = await loadSessionUser();
-    const now = new Date();
-    await useDb()
-      .insert(schema.programReports)
-      .values({
-        id: crypto.randomUUID(),
-        programId: data.programId,
-        reportedUserId: null,
-        reporterUserId: reporter?.id ?? null,
-        reason: data.reason ?? "",
-        createdAt: now,
-        handledAt: null,
-      });
+    await insertProgramReport({
+      programId: data.programId,
+      reportedUserId: null,
+      reason: data.reason,
+    });
+    return { ok: true as const };
+  });
+
+const ReportProfileInputSchema = z.object({
+  authorSlug: z.string().min(1),
+  reason: reportProgramReasonSchema,
+});
+
+export const reportProfile = createServerFn({ method: "POST" })
+  .validator((d) => ReportProfileInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const slug = data.authorSlug.trim().toLowerCase();
+    const [author] = await useDb()
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.slug, slug))
+      .limit(1);
+    if (!author) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    await insertProgramReport({
+      programId: null,
+      reportedUserId: author.id,
+      reason: data.reason,
+    });
     return { ok: true as const };
   });
 

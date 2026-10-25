@@ -450,17 +450,27 @@ export const programSlugHistory = sqliteTable(
   ],
 );
 
-export const programReports = sqliteTable("program_reports", {
-  id: text("id").primaryKey(),
-  programId: text("program_id"),
-  reportedUserId: text("reported_user_id"),
-  reporterUserId: text("reporter_user_id"),
-  reason: text("reason").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  handledAt: integer("handled_at", { mode: "timestamp" }),
-});
+export const programReports = sqliteTable(
+  "program_reports",
+  {
+    id: text("id").primaryKey(),
+    programId: text("program_id"),
+    reportedUserId: text("reported_user_id"),
+    reporterUserId: text("reporter_user_id"),
+    reporterIpHash: text("reporter_ip_hash"),
+    reason: text("reason").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    handledAt: integer("handled_at", { mode: "timestamp" }),
+  },
+  (t) => [
+    index("program_reports_ip_hash_created_at_idx").on(
+      t.reporterIpHash,
+      t.createdAt,
+    ),
+  ],
+);
 
 export type Exercise = typeof exercises.$inferSelect;
 export type NewExercise = typeof exercises.$inferInsert;

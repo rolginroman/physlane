@@ -537,12 +537,6 @@ export function resolvePublicProgramView(
   },
   mode: "token" | "public-only",
 ): PublicProgramViewOutcome {
-  if (program.deletedAt != null) {
-    return { kind: "removed_by_author" };
-  }
-  if (program.hiddenAt != null) {
-    return { kind: "unavailable" };
-  }
   if (mode === "public-only" && program.visibility !== "public") {
     return { kind: "not_found" };
   }
@@ -553,7 +547,49 @@ export function resolvePublicProgramView(
   ) {
     return { kind: "not_found" };
   }
+  if (program.deletedAt != null) {
+    return { kind: "removed_by_author" };
+  }
+  if (program.hiddenAt != null) {
+    return { kind: "unavailable" };
+  }
   return { kind: "ok" };
+}
+
+/** Removal page applies only to public programs that were deleted or hidden. */
+export function publicProgramRemovalVariant(program: {
+  deletedAt: Date | null;
+  hiddenAt: Date | null;
+  visibility: ProgramVisibility;
+}): "author" | "moderation" | null {
+  if (program.visibility !== "public") {
+    return null;
+  }
+  if (program.hiddenAt != null) {
+    return "moderation";
+  }
+  if (program.deletedAt != null) {
+    return "author";
+  }
+  return null;
+}
+
+export function assertProgramWeeksCoversSessions(
+  weeks: number,
+  maxSessionWeek: number | null,
+): void {
+  if (maxSessionWeek != null && weeks < maxSessionWeek) {
+    throw appError("INVALID_ENTRY");
+  }
+}
+
+/** Light cap on anonymous reports (per plan moderation section). */
+export const ANONYMOUS_REPORTS_PER_IP_PER_DAY = 5;
+
+export function assertAnonymousReportRateAllowed(reportsToday: number): void {
+  if (reportsToday >= ANONYMOUS_REPORTS_PER_IP_PER_DAY) {
+    throw appError("REPORT_RATE_LIMITED");
+  }
 }
 
 export function buildForkSourceLabel(

@@ -15,7 +15,8 @@ export type AppErrorCode =
   | "INVALID_ENTRY"
   | "STALE_REVISION"
   | "PROGRAM_REMOVED"
-  | "PROGRAM_UNAVAILABLE";
+  | "PROGRAM_UNAVAILABLE"
+  | "REPORT_RATE_LIMITED";
 
 const APP_ERROR_CODES: readonly AppErrorCode[] = [
   "PRO_REQUIRED",
@@ -35,6 +36,7 @@ const APP_ERROR_CODES: readonly AppErrorCode[] = [
   "STALE_REVISION",
   "PROGRAM_REMOVED",
   "PROGRAM_UNAVAILABLE",
+  "REPORT_RATE_LIMITED",
 ];
 
 export function isAppErrorCode(value: unknown): value is AppErrorCode {

@@ -10,6 +10,8 @@ import {
   SheetTitle,
 } from "#/components/ui/sheet";
 import { cn } from "#/lib/cn";
+import { isAppErrorCode } from "#/lib/app-error";
+import { programErrorMessage } from "#/lib/programs/program-error-message";
 import { forkProgram, reportProgram } from "#/server/programs.fns";
 
 type ProgramForkActionsProps = {
@@ -94,8 +96,13 @@ export function ProgramForkActions({
         data: { programId, reason: reportReason },
       });
       setReportSent(true);
-    } catch {
-      setForkError("Couldn't send your report. Try again later.");
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      setForkError(
+        isAppErrorCode(code)
+          ? programErrorMessage(code)
+          : "Couldn't send your report. Try again later.",
+      );
     }
   };
 
