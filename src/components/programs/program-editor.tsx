@@ -157,6 +157,7 @@ export function ProgramEditor({
     shareToken: initial.shareToken,
     slug: initial.slug,
     revision: initial.revision,
+    hiddenAt: initial.hiddenAt,
   });
   const [copyWeekOpen, setCopyWeekOpen] = useState(false);
   const [copyTargetWeek, setCopyTargetWeek] = useState(2);
@@ -838,6 +839,7 @@ export function ProgramEditor({
             shareToken: updated.shareToken,
             slug: updated.slug,
             revision: updated.revision,
+            hiddenAt: updated.hiddenAt,
           });
           setMeta((m) => ({ ...m, visibility: updated.visibility }));
           queue.setRevision(updated.revision);

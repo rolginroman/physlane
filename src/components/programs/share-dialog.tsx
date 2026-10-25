@@ -1,22 +1,48 @@
-import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Globe, Link2, RotateCw } from "lucide-react";
-import { Button } from "#/components/ui/button";
+import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "#/components/ui/dialog";
+  AlertCircle,
+  ArrowUpRight,
+  Check,
+  Copy,
+  Globe,
+  Info,
+  Link2,
+  QrCode as QrCodeIcon,
+  RotateCw,
+} from "lucide-react";
+import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
+import { Label } from "#/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
+import {
+  ResponsiveSheetBody,
+  ResponsiveSheetContent,
+  ResponsiveSheetHeader,
+} from "#/components/ui/responsive-sheet";
+import { Sheet, SheetTitle } from "#/components/ui/sheet";
+import { AuthorProfileSetup } from "#/components/programs/author-profile-setup";
+import { QrCode } from "#/components/programs/qr-code";
+import { useMediaQuery } from "#/hooks/use-media-query";
 import { isAppErrorCode } from "#/lib/app-error";
-import { programErrorMessage } from "#/lib/programs/program-error-message";
+import { visibilityDisplayLabel } from "#/lib/programs/display-labels";
+import { programActionErrorMessage } from "#/lib/programs/program-error-message";
 import {
   publicProgramCanonicalUrlFromOrigin,
+  publicProgramIdPermalinkUrlFromOrigin,
   shareLinkUrlFromOrigin,
 } from "#/lib/programs/program-urls";
-import { AuthorProfileSetup } from "#/components/programs/author-profile-setup";
+import {
+  defaultShareSelection,
+  HIDDEN_BY_MODERATION_NOTICE,
+  planShareChange,
+  publicChangeSummary,
+  SHARE_QUESTION,
+  SHARE_VISIBILITIES,
+  visibilityLine,
+  type ShareChange,
+  type ShareVisibility,
+} from "#/lib/programs/share-plan";
 import {
   getMyAuthorSlug,
   rotateShareToken,
@@ -26,17 +52,169 @@ import {
 
 export type ShareDialogProgram = Pick<
   ProgramDTO,
-  "id" | "title" | "visibility" | "shareToken" | "slug" | "revision"
+  | "id"
+  | "title"
+  | "visibility"
+  | "shareToken"
+  | "slug"
+  | "revision"
+  | "hiddenAt"
 >;
 
 type ShareDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Source of truth: the host echoes every change back via onProgramUpdated. */
   program: ShareDialogProgram;
   onProgramUpdated: (program: ProgramDTO | ShareDialogProgram) => void;
   /** Serializes revision-bumping writes with the host's other saves. */
   runExclusive?: <T>(job: () => Promise<T>) => Promise<T>;
+  /** Opens straight on the replace-link confirm (library row action). */
+  startWith?: "replace";
 };
+
+type Step =
+  | { kind: "main" }
+  | { kind: "replace" }
+  | { kind: "confirm" }
+  | { kind: "public-done"; summary: string[] };
+
+type Identity = { authorSlug: string | null; profilePublished: boolean };
+
+const COPY_RESET_MS = 2000;
+
+function errorCode(error: unknown): string {
+  const code = error instanceof Error ? error.message : "";
+  return isAppErrorCode(code) ? code : "";
+}
+
+function Notice({
+  tone = "info",
+  children,
+}: {
+  tone?: "info" | "danger";
+  children: ReactNode;
+}) {
+  const Icon = tone === "danger" ? AlertCircle : Info;
+  return (
+    <div
+      role={tone === "danger" ? "alert" : "status"}
+      className={`flex items-start gap-2 rounded-lg border bg-muted p-3 text-sm text-foreground ${
+        tone === "danger" ? "border-destructive/40" : "border-border"
+      }`}
+    >
+      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function LinkBox({
+  label,
+  value,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  const id = useId();
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-center gap-2">
+        <Input id={id} readOnly value={value} className="truncate bg-muted" />
+        <Button
+          type="button"
+          variant="outline"
+          size="touch"
+          className="shrink-0"
+          onClick={onCopy}
+          aria-live="polite"
+        >
+          {copied ? (
+            <>
+              <Check className="size-4" aria-hidden />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="size-4" aria-hidden />
+              Copy
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function VisibilityOptions({
+  current,
+  selected,
+  disabled,
+  onSelect,
+}: {
+  current: ShareVisibility;
+  selected: ShareVisibility;
+  disabled: boolean;
+  onSelect: (visibility: ShareVisibility) => void;
+}) {
+  const labelId = useId();
+  return (
+    <div className="flex flex-col gap-2">
+      <span id={labelId} className="text-sm font-medium text-muted-foreground">
+        {SHARE_QUESTION}
+      </span>
+      <RadioGroup
+        aria-labelledby={labelId}
+        value={selected}
+        disabled={disabled}
+        onValueChange={(next) => onSelect(next as ShareVisibility)}
+      >
+        {SHARE_VISIBILITIES.map((visibility) => (
+          <RadioGroupItem
+            key={visibility}
+            value={visibility}
+            className="min-h-11 w-full items-start gap-3 rounded-lg border border-border bg-card p-3 text-left data-checked:border-primary data-checked:bg-brand-soft"
+          >
+            <span
+              aria-hidden
+              className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border border-input group-data-checked/radio-group-item:border-primary"
+            >
+              <span className="hidden size-2 rounded-full bg-primary group-data-checked/radio-group-item:block" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="flex items-center justify-between gap-2">
+                <span className="font-medium text-foreground">
+                  {visibilityDisplayLabel(visibility)}
+                </span>
+                {visibility === current ? (
+                  <span className="text-xs text-muted-foreground">Current</span>
+                ) : null}
+              </span>
+              <span className="text-sm text-text-secondary">
+                {visibilityLine(visibility)}
+              </span>
+            </span>
+          </RadioGroupItem>
+        ))}
+      </RadioGroup>
+    </div>
+  );
+}
+
+function ConsequenceList({ bullets }: { bullets: string[] }) {
+  return (
+    <ul className="m-0 flex list-disc flex-col gap-1.5 pl-5 text-sm text-text-secondary">
+      {bullets.map((bullet) => (
+        <li key={bullet}>{bullet}</li>
+      ))}
+    </ul>
+  );
+}
 
 export function ShareDialog({
   open,
@@ -44,323 +222,447 @@ export function ShareDialog({
   program,
   onProgramUpdated,
   runExclusive = (job) => job(),
+  startWith,
 }: ShareDialogProps) {
-  const [local, setLocal] = useState(program);
-  const [authorSlug, setAuthorSlug] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<Identity>({
+    authorSlug: null,
+    profilePublished: false,
+  });
+  const [selected, setSelected] = useState<ShareVisibility>(() =>
+    defaultShareSelection(program.visibility),
+  );
+  const [step, setStep] = useState<Step>(() =>
+    startWith === "replace" ? { kind: "replace" } : { kind: "main" },
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [replaceConfirm, setReplaceConfirm] = useState(false);
+  const [copied, setCopied] = useState<"address" | "permalink" | null>(null);
+  const [qrToggled, setQrToggled] = useState<boolean | null>(null);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  const wide = useMediaQuery("(min-width: 40rem)");
 
-  useEffect(() => {
+  // Reset per-open state during render so a host re-render never clobbers a step.
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
-      setLocal(program);
+      setSelected(defaultShareSelection(program.visibility));
+      setStep(startWith === "replace" ? { kind: "replace" } : { kind: "main" });
       setError(null);
-      setReplaceConfirm(false);
-      setCopied(false);
+      setCopied(null);
+      setQrToggled(null);
     }
-  }, [open, program]);
+  }
+
+  const loadIdentity = useCallback(async (): Promise<Identity> => {
+    try {
+      const next = await getMyAuthorSlug();
+      setIdentity(next);
+      return next;
+    } catch {
+      return { authorSlug: null, profilePublished: false };
+    }
+  }, []);
 
   useEffect(() => {
-    if (!open) return;
-    void getMyAuthorSlug()
-      .then((r) => setAuthorSlug(r.authorSlug))
-      .catch(() => setAuthorSlug(null));
-  }, [open, local.visibility]);
+    if (open) void loadIdentity();
+  }, [open, loadIdentity]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const host = origin.replace(/^https?:\/\//, "");
+  const profileLabel = identity.authorSlug
+    ? `${host}/u/${identity.authorSlug}`
+    : null;
 
-  const displayUrl = useCallback(() => {
-    if (local.visibility === "public" && authorSlug && local.slug) {
-      return publicProgramCanonicalUrlFromOrigin(
-        origin,
-        authorSlug,
-        local.slug,
-      );
-    }
-    if (local.shareToken && authorSlug && local.slug) {
-      return shareLinkUrlFromOrigin(
-        origin,
-        authorSlug,
-        local.slug,
-        local.shareToken,
-      );
-    }
-    return "";
-  }, [authorSlug, local, origin]);
+  const { authorSlug } = identity;
+  const isPublic = program.visibility === "public";
+  const address =
+    authorSlug && program.slug
+      ? isPublic
+        ? publicProgramCanonicalUrlFromOrigin(origin, authorSlug, program.slug)
+        : program.shareToken
+          ? shareLinkUrlFromOrigin(
+              origin,
+              authorSlug,
+              program.slug,
+              program.shareToken,
+            )
+          : ""
+      : "";
+  const permalink =
+    isPublic && authorSlug
+      ? publicProgramIdPermalinkUrlFromOrigin(origin, authorSlug, program.id)
+      : "";
 
-  const copyUrl = async () => {
-    const url = displayUrl();
-    if (!url) return;
+  const hidden = program.hiddenAt != null;
+  const change = hidden
+    ? null
+    : planShareChange({
+        current: program.visibility,
+        selected,
+        title: program.title,
+        profilePublished: identity.profilePublished,
+        hasShareLink: program.shareToken != null,
+        profileLabel,
+      });
+
+  const copy = async (key: "address" | "permalink", text: string) => {
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      window.setTimeout(() => setCopied(null), COPY_RESET_MS);
     } catch {
-      setError("Couldn't copy. Select the link and copy manually.");
+      setError(programActionErrorMessage("copy-link"));
     }
   };
 
-  const runVisibility = async (target: "unlisted" | "public" | "draft") => {
+  const applyChange = async (planned: ShareChange) => {
+    const firstPublic =
+      planned.target === "public" && !identity.profilePublished;
+    const hadShareLink = program.shareToken != null;
     setPending(true);
     setError(null);
     try {
       const updated = await runExclusive(async () => {
         const result = await setVisibility({
-          data: {
-            programId: local.id,
-            target,
-          },
+          data: { programId: program.id, target: planned.target },
         });
         onProgramUpdated(result);
         return result;
       });
-      setLocal(updated);
-      if (target === "unlisted" || target === "public") {
-        const slug = await getMyAuthorSlug();
-        setAuthorSlug(slug.authorSlug);
-      }
-    } catch (e) {
-      const code = e instanceof Error ? e.message : "";
-      setError(
-        isAppErrorCode(code)
-          ? programErrorMessage(code)
-          : programErrorMessage(""),
+      const next = await loadIdentity();
+      setSelected(defaultShareSelection(updated.visibility));
+      setStep(
+        planned.target === "public"
+          ? {
+              kind: "public-done",
+              summary: publicChangeSummary({
+                profileLabel: next.authorSlug
+                  ? `${host}/u/${next.authorSlug}`
+                  : null,
+                firstPublic,
+                hadShareLink,
+              }),
+            }
+          : { kind: "main" },
       );
+    } catch (e) {
+      setError(programActionErrorMessage("change-visibility", errorCode(e)));
+      setStep({ kind: "main" });
     } finally {
       setPending(false);
-      setReplaceConfirm(false);
     }
   };
 
-  const onReplaceLink = async () => {
+  const replaceLink = async () => {
     setPending(true);
     setError(null);
     try {
-      const next = await runExclusive(async () => {
+      await runExclusive(async () => {
         const { shareToken, revision } = await rotateShareToken({
-          data: { programId: local.id },
+          data: { programId: program.id },
         });
-        const updated = { ...local, shareToken, revision };
-        onProgramUpdated(updated);
-        return updated;
+        onProgramUpdated({ ...program, shareToken, revision });
       });
-      setLocal(next);
     } catch (e) {
-      const code = e instanceof Error ? e.message : "";
-      setError(
-        isAppErrorCode(code)
-          ? programErrorMessage(code)
-          : programErrorMessage(""),
-      );
+      setError(programActionErrorMessage("replace-link", errorCode(e)));
     } finally {
       setPending(false);
-      setReplaceConfirm(false);
+      setStep({ kind: "main" });
     }
   };
 
-  const url = displayUrl();
+  const onPrimary = (planned: ShareChange) => {
+    if (planned.needsProfile) {
+      setProfileSetupOpen(true);
+    } else if (planned.confirm) {
+      setStep({ kind: "confirm" });
+    } else {
+      void applyChange(planned);
+    }
+  };
 
-  return (
-    <>
-      <Dialog open={open && !replaceConfirm} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Share &ldquo;{local.title}&rdquo;</DialogTitle>
-            {local.visibility === "draft" ? (
-              <DialogDescription>
-                Anyone with the link can view. Not listed anywhere.
-              </DialogDescription>
-            ) : null}
-          </DialogHeader>
+  const qrOpen = qrToggled ?? wide;
+  const titleText = `Share “${program.title}”`;
 
-          {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          {local.visibility === "draft" ? (
-            <div className="flex flex-col gap-3">
-              <Button
-                type="button"
-                size="touch"
-                className="w-full"
-                disabled={pending}
-                onClick={() => void runVisibility("unlisted")}
-              >
-                <Link2 className="size-4" aria-hidden />
-                {pending ? "Creating link…" : "Create share link"}
-              </Button>
-              <p className="text-sm text-text-secondary">
-                Anyone with the link can open and copy this program. You can
-                replace the link or turn it off later.
-              </p>
-            </div>
-          ) : null}
-
-          {local.visibility === "unlisted" ? (
-            <div className="flex flex-col gap-4">
-              <div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  Share link
-                </span>
-                <div className="mt-1.5 flex min-h-11 items-center gap-2 rounded-lg border border-border bg-muted px-2">
-                  <Input
-                    readOnly
-                    value={url}
-                    className="border-0 bg-transparent shadow-none"
-                    aria-label="Share link"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="touch"
-                    className="shrink-0"
-                    onClick={() => void copyUrl()}
-                    aria-live="polite"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="size-4" aria-hidden />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="size-4" aria-hidden />
-                        Copy link
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="touch"
-                className="justify-start px-0"
-                onClick={() => setReplaceConfirm(true)}
-                disabled={pending}
-              >
-                <RotateCw className="size-4" aria-hidden />
-                Replace link…
-              </Button>
-              <Button
-                type="button"
-                size="touch"
-                className="w-full"
-                disabled={pending}
-                onClick={() => setProfileSetupOpen(true)}
-              >
-                <Globe className="size-4" aria-hidden />
-                Go public
-              </Button>
-              <p className="text-sm text-text-secondary">
-                Listed on your profile when public. Search engines can index it.
-                Changes go live as they save.
-              </p>
-            </div>
-          ) : null}
-
-          {local.visibility === "public" ? (
-            <div className="flex flex-col gap-4">
-              <div>
-                <span className="text-sm font-medium text-muted-foreground">
-                  Public address
-                </span>
-                <div className="mt-1.5 flex min-h-11 items-center gap-2 rounded-lg border border-border bg-muted px-2">
-                  <Input
-                    readOnly
-                    value={url}
-                    className="border-0 bg-transparent shadow-none"
-                    aria-label="Public address"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="touch"
-                    className="shrink-0"
-                    onClick={() => void copyUrl()}
-                    aria-live="polite"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="size-4" aria-hidden />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="size-4" aria-hidden />
-                        Copy
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <p className="text-sm text-text-secondary">
-                Changes go live as they save.
-              </p>
-              <Button
-                type="button"
-                variant="destructive"
-                size="touch"
-                className="w-full"
-                disabled={pending}
-                onClick={() => void runVisibility("unlisted")}
-              >
-                Back to unlisted
-              </Button>
-              <p className="text-sm text-text-secondary">
-                Removes it from your profile and search. You get a new share
-                link; older links stop working.
-              </p>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-
-      <AuthorProfileSetup
-        open={profileSetupOpen}
-        onOpenChange={setProfileSetupOpen}
-        mode="go-public"
-        onSaved={async () => {
-          await runVisibility("public");
-        }}
+  const qrBlock = (
+    <div className="flex items-start gap-3">
+      <QrCode
+        value={isPublic ? permalink : address}
+        label="QR code for the link"
       />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {isPublic ? (
+          <LinkBox
+            label="Print link"
+            value={permalink}
+            copied={copied === "permalink"}
+            onCopy={() => void copy("permalink", permalink)}
+          />
+        ) : null}
+        <p className="m-0 text-sm text-muted-foreground">
+          {isPublic
+            ? "Keeps working if you rename your profile or this program. Use it on print."
+            : "Scan to open the same link. Anyone who scans it can open the program."}
+        </p>
+      </div>
+    </div>
+  );
 
-      <Dialog open={replaceConfirm} onOpenChange={setReplaceConfirm}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Replace the share link?</DialogTitle>
-            <DialogDescription>
-              Anyone with the old link loses access. You get a new link to send
-              to the people who should keep access.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
+  const renderStep = () => {
+    if (step.kind === "replace") {
+      return (
+        <>
+          <ResponsiveSheetHeader>
+            <SheetTitle>Replace the share link?</SheetTitle>
+          </ResponsiveSheetHeader>
+          <ResponsiveSheetBody>
+            <p className="m-0 text-sm text-text-secondary">
+              The current link stops working for everyone who has it. You get a
+              new link to send to the people who should keep access.
+            </p>
             <Button
               type="button"
               variant="destructive"
               size="touch"
               className="w-full"
               disabled={pending}
-              onClick={() => void onReplaceLink()}
+              onClick={() => void replaceLink()}
             >
-              Replace link
+              {pending ? "Replacing…" : "Replace link"}
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="touch"
               className="w-full"
-              onClick={() => setReplaceConfirm(false)}
+              disabled={pending}
+              onClick={() => setStep({ kind: "main" })}
             >
               Cancel
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ResponsiveSheetBody>
+        </>
+      );
+    }
+
+    if (step.kind === "confirm" && change?.confirm) {
+      const { confirm } = change;
+      return (
+        <>
+          <ResponsiveSheetHeader>
+            {change.needsProfile ? (
+              <p className="m-0 text-xs font-medium text-muted-foreground">
+                Step 2 of 2
+              </p>
+            ) : null}
+            <SheetTitle>{confirm.title}</SheetTitle>
+          </ResponsiveSheetHeader>
+          <ResponsiveSheetBody>
+            <ConsequenceList bullets={confirm.bullets} />
+            <Button
+              type="button"
+              variant={confirm.destructive ? "destructive" : "default"}
+              size="touch"
+              className="w-full"
+              disabled={pending}
+              onClick={() => void applyChange(change)}
+            >
+              {change.target === "public" ? (
+                <Globe className="size-4" aria-hidden />
+              ) : null}
+              {pending ? change.pendingLabel : confirm.confirmLabel}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="touch"
+              className="w-full"
+              disabled={pending}
+              onClick={() => setStep({ kind: "main" })}
+            >
+              {confirm.cancelLabel}
+            </Button>
+          </ResponsiveSheetBody>
+        </>
+      );
+    }
+
+    if (step.kind === "public-done") {
+      return (
+        <>
+          <ResponsiveSheetHeader>
+            <SheetTitle>{titleText}</SheetTitle>
+          </ResponsiveSheetHeader>
+          <ResponsiveSheetBody>
+            <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm text-foreground">
+              {step.summary.map((line) => (
+                <li key={line} className="flex items-start gap-2">
+                  <Check
+                    className="mt-0.5 size-4 shrink-0 text-data-positive"
+                    aria-hidden
+                  />
+                  {line}
+                </li>
+              ))}
+            </ul>
+            <LinkBox
+              label="Public address"
+              value={address}
+              copied={copied === "address"}
+              onCopy={() => void copy("address", address)}
+            />
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                QR and print link
+              </span>
+              {qrBlock}
+            </div>
+            {authorSlug && program.slug ? (
+              <Link
+                to="/u/$authorSlug/$programRef"
+                params={{ authorSlug, programRef: program.slug }}
+                className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-brand-text"
+              >
+                View public page
+                <ArrowUpRight className="size-4" aria-hidden />
+              </Link>
+            ) : null}
+          </ResponsiveSheetBody>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <ResponsiveSheetHeader>
+          <SheetTitle>{titleText}</SheetTitle>
+        </ResponsiveSheetHeader>
+        <ResponsiveSheetBody>
+          {hidden ? (
+            <>
+              <Notice>{HIDDEN_BY_MODERATION_NOTICE}</Notice>
+              <RadioGroup value="hidden" disabled>
+                <RadioGroupItem
+                  value="hidden"
+                  className="min-h-11 w-full items-start gap-3 rounded-lg border border-border bg-card p-3 text-left"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="font-medium text-foreground">Hidden</span>
+                    <span className="text-sm text-text-secondary">
+                      {visibilityLine("draft")}
+                    </span>
+                  </span>
+                </RadioGroupItem>
+              </RadioGroup>
+            </>
+          ) : (
+            <>
+              {address && program.visibility !== "draft" ? (
+                <>
+                  <LinkBox
+                    label={isPublic ? "Public address" : "Share link"}
+                    value={address}
+                    copied={copied === "address"}
+                    onCopy={() => void copy("address", address)}
+                  />
+                  {isPublic ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="touch"
+                        className="justify-start px-2"
+                        aria-expanded={qrOpen}
+                        onClick={() => setQrToggled(!qrOpen)}
+                      >
+                        <QrCodeIcon className="size-4" aria-hidden />
+                        QR and print link
+                      </Button>
+                      {qrOpen && permalink ? qrBlock : null}
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="touch"
+                        className="justify-start px-2"
+                        disabled={pending}
+                        onClick={() => setStep({ kind: "replace" })}
+                      >
+                        <RotateCw className="size-4" aria-hidden />
+                        Replace link…
+                      </Button>
+                      {qrBlock}
+                    </>
+                  )}
+                </>
+              ) : null}
+              <VisibilityOptions
+                current={program.visibility}
+                selected={selected}
+                disabled={pending}
+                onSelect={(next) => {
+                  setSelected(next);
+                  setError(null);
+                }}
+              />
+              {error ? <Notice tone="danger">{error}</Notice> : null}
+              {change ? (
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    variant={change.destructive ? "destructive" : "default"}
+                    size="touch"
+                    className="w-full"
+                    disabled={pending}
+                    onClick={() => onPrimary(change)}
+                  >
+                    {change.target === "unlisted" &&
+                    program.visibility === "draft" ? (
+                      <Link2 className="size-4" aria-hidden />
+                    ) : null}
+                    {change.target === "public" ? (
+                      <Globe className="size-4" aria-hidden />
+                    ) : null}
+                    {pending ? change.pendingLabel : change.label}
+                  </Button>
+                  <p className="m-0 text-sm text-text-secondary">
+                    {change.consequence}
+                  </p>
+                </div>
+              ) : program.visibility === "unlisted" ? (
+                <p className="m-0 text-sm text-muted-foreground">
+                  Change the selection above to make it public or move it back
+                  to draft.
+                </p>
+              ) : null}
+            </>
+          )}
+        </ResponsiveSheetBody>
+      </>
+    );
+  };
+
+  return (
+    <>
+      <Sheet open={open && !profileSetupOpen} onOpenChange={onOpenChange}>
+        <ResponsiveSheetContent className="sm:max-w-lg">
+          {renderStep()}
+        </ResponsiveSheetContent>
+      </Sheet>
+
+      <AuthorProfileSetup
+        open={profileSetupOpen}
+        onOpenChange={setProfileSetupOpen}
+        mode="go-public"
+        onSaved={async (savedSlug) => {
+          setIdentity((prev) => ({ ...prev, authorSlug: savedSlug }));
+          setStep({ kind: "confirm" });
+        }}
+      />
     </>
   );
 }

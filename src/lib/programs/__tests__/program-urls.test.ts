@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   publicProgramCanonicalPath,
   publicProgramIdPermalinkPath,
+  publicProgramIdPermalinkUrlFromOrigin,
   shareLinkPath,
 } from "../program-urls";
 
@@ -22,5 +23,15 @@ describe("program-urls", () => {
     expect(shareLinkPath("tara", "hypertrophy", "tok_abc")).toBe(
       "/u/tara/hypertrophy/tok_abc",
     );
+  });
+
+  it("builds an origin-relative permalink without a double slash", () => {
+    expect(
+      publicProgramIdPermalinkUrlFromOrigin(
+        "https://physlane.app/",
+        "tara",
+        "prog-uuid",
+      ),
+    ).toBe("https://physlane.app/u/tara/p/prog-uuid");
   });
 });

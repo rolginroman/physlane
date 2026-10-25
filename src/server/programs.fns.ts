@@ -1924,11 +1924,17 @@ export const getMyAuthorSlug = createServerFn({ method: "GET" }).handler(
   async () => {
     const me = await requireUser();
     const [row] = await useDb()
-      .select({ slug: schema.user.slug })
+      .select({
+        slug: schema.user.slug,
+        profilePublishedAt: schema.user.profilePublishedAt,
+      })
       .from(schema.user)
       .where(eq(schema.user.id, me.id))
       .limit(1);
-    return { authorSlug: row?.slug ?? null };
+    return {
+      authorSlug: row?.slug ?? null,
+      profilePublished: row?.profilePublishedAt != null,
+    };
   },
 );
 

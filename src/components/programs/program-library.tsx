@@ -1,8 +1,24 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Share2 } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  Copy,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RotateCw,
+  Share2,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "#/components/ui/dropdown-menu";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -11,14 +27,28 @@ import {
   ResponsiveSheetHeader,
 } from "#/components/ui/responsive-sheet";
 import { Sheet, SheetTitle } from "#/components/ui/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "#/components/ui/table";
 import { ProgramChoiceGroup } from "#/components/programs/program-choice-group";
 import { ProgramVisibilityBadge } from "#/components/programs/program-visibility-badge";
 import { ShareDialog } from "#/components/programs/share-dialog";
 import {
   goalDisplayLabel,
   levelDisplayLabel,
-  programMetaLine,
 } from "#/lib/programs/display-labels";
+import { isAppErrorCode } from "#/lib/app-error";
+import {
+  deleteConfirmBody,
+  libraryAddress,
+  type LibraryAddress,
+} from "#/lib/programs/library-rows";
+import { programActionErrorMessage } from "#/lib/programs/program-error-message";
 import { formatEditedAt } from "#/lib/programs/relative-time";
 import {
   PROGRAM_GOALS,
@@ -29,12 +59,14 @@ import {
 import {
   createProgram,
   deleteProgram,
+  getMyAuthorSlug,
   listMyPrograms,
   type ProgramListItemDTO,
 } from "#/server/programs.fns";
 
 type LibraryProps = {
   programs: ProgramListItemDTO[];
+  authorSlug: string | null;
   loadError?: boolean;
 };
 
@@ -103,67 +135,257 @@ function EditedAtLabel({ updatedAt }: { updatedAt: string }) {
   );
 }
 
-function ProgramRow({
+type RowActions = {
+  authorSlug: string | null;
+  onCopy: (address: LibraryAddress) => void;
+  onReplace: (program: ProgramListItemDTO) => void;
+  onShare: (program: ProgramListItemDTO) => void;
+  onDelete: (program: ProgramListItemDTO) => void;
+};
+
+function AddressCell({
   program,
-  onShare,
-  onRemove,
+  actions,
 }: {
   program: ProgramListItemDTO;
-  onShare: () => void;
-  onRemove: () => void;
+  actions: RowActions;
 }) {
-  const meta = programMetaLine(program);
+  const address = libraryAddress(program, actions.authorSlug);
+  if (program.hiddenAt != null) {
+    return (
+      <span className="text-sm text-muted-foreground">
+        Hidden by moderation
+      </span>
+    );
+  }
+  if (!address) {
+    return (
+      <span className="text-sm text-muted-foreground" aria-hidden>
+        —
+      </span>
+    );
+  }
+  const noun = address.kind === "public" ? "public address" : "share link";
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:gap-4">
-      <Link
-        to="/programs/$programId"
-        params={{ programId: program.id }}
-        className="min-w-0 flex-1 no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    <div className="flex min-w-0 items-center gap-1">
+      <code className="min-w-0 truncate rounded-md bg-muted px-2 py-1.5 text-sm text-text-secondary">
+        {address.display}
+      </code>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-touch"
+        aria-label={`Copy ${noun}`}
+        onClick={() => actions.onCopy(address)}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-base font-semibold break-words text-foreground">
-            {program.title}
-          </span>
-          <ProgramVisibilityBadge visibility={program.visibility} />
-        </div>
-        <p className="mt-1 text-sm text-text-secondary">{meta}</p>
-        {program.forkSourceLabel ? (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Based on {program.forkSourceLabel}
-          </p>
-        ) : null}
-      </Link>
-      <div className="flex shrink-0 items-center gap-2 self-end sm:self-center">
-        <EditedAtLabel updatedAt={program.updatedAt} />
+        <Copy className="size-4" aria-hidden />
+      </Button>
+      {address.kind === "unlisted" ? (
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="icon-touch"
-          aria-label={`Share ${program.title}`}
-          onClick={onShare}
+          aria-label="Replace share link"
+          onClick={() => actions.onReplace(program)}
         >
-          <Share2 className="size-4" aria-hidden />
+          <RotateCw className="size-4" aria-hidden />
         </Button>
-        <Button type="button" variant="outline" size="touch" onClick={onRemove}>
-          Remove
-        </Button>
-      </div>
-    </li>
+      ) : null}
+    </div>
   );
 }
 
-function LibrarySkeleton() {
+function RowMenu({
+  program,
+  actions,
+}: {
+  program: ProgramListItemDTO;
+  actions: RowActions;
+}) {
   return (
-    <ul className="flex flex-col gap-3" aria-busy="true" aria-label="Loading">
-      {[0, 1, 2].map((i) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-touch"
+            aria-label={`More for ${program.title}`}
+          />
+        }
+      >
+        <MoreHorizontal className="size-4" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onClick={() => actions.onShare(program)}>
+          <Share2 aria-hidden />
+          Share…
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          render={
+            <Link
+              to="/programs/$programId"
+              params={{ programId: program.id }}
+            />
+          }
+        >
+          <Pencil aria-hidden />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => actions.onDelete(program)}
+        >
+          <Trash2 aria-hidden />
+          Delete…
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ProgramTitleLink({ program }: { program: ProgramListItemDTO }) {
+  return (
+    <Link
+      to="/programs/$programId"
+      params={{ programId: program.id }}
+      className="text-base font-semibold break-words text-foreground no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      {program.title}
+    </Link>
+  );
+}
+
+function ForkLabel({ program }: { program: ProgramListItemDTO }) {
+  return program.forkSourceLabel ? (
+    <p className="m-0 mt-1 text-sm text-muted-foreground">
+      Based on {program.forkSourceLabel}
+    </p>
+  ) : null;
+}
+
+/** Stacked cards below `lg`; the table takes over from there. */
+function ProgramCardList({
+  programs,
+  actions,
+}: {
+  programs: ProgramListItemDTO[];
+  actions: RowActions;
+}) {
+  return (
+    <ul className="m-0 flex list-none flex-col gap-3 p-0 lg:hidden">
+      {programs.map((program) => (
+        <li
+          key={program.id}
+          className="rounded-xl border border-border bg-card p-4"
+        >
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <ProgramTitleLink program={program} />
+              <ForkLabel program={program} />
+            </div>
+            <RowMenu program={program} actions={actions} />
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <ProgramVisibilityBadge visibility={program.visibility} />
+            <EditedAtLabel updatedAt={program.updatedAt} />
+          </div>
+          {program.visibility !== "draft" || program.hiddenAt != null ? (
+            <div className="mt-2">
+              <AddressCell program={program} actions={actions} />
+            </div>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ProgramTable({
+  programs,
+  actions,
+}: {
+  programs: ProgramListItemDTO[];
+  actions: RowActions;
+}) {
+  return (
+    <div className="hidden rounded-xl border border-border bg-card lg:block">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="px-4">Program</TableHead>
+            <TableHead>Visibility</TableHead>
+            <TableHead>Address</TableHead>
+            <TableHead>Edited</TableHead>
+            <TableHead className="w-14 px-4">
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {programs.map((program) => (
+            <TableRow key={program.id}>
+              <TableCell className="max-w-xs px-4 py-3 whitespace-normal">
+                <ProgramTitleLink program={program} />
+                <p className="m-0 mt-0.5 text-sm text-text-secondary">
+                  {goalDisplayLabel(program.goal)} ·{" "}
+                  {levelDisplayLabel(program.level)} · {program.weeks}{" "}
+                  {program.weeks === 1 ? "week" : "weeks"}
+                </p>
+                <ForkLabel program={program} />
+              </TableCell>
+              <TableCell>
+                <ProgramVisibilityBadge visibility={program.visibility} />
+              </TableCell>
+              <TableCell className="max-w-96">
+                <AddressCell program={program} actions={actions} />
+              </TableCell>
+              <TableCell>
+                <EditedAtLabel updatedAt={program.updatedAt} />
+              </TableCell>
+              <TableCell className="px-4 text-right">
+                <RowMenu program={program} actions={actions} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function LibrarySkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <ul
+      className="m-0 flex list-none flex-col gap-3 p-0"
+      aria-busy="true"
+      aria-label="Loading"
+    >
+      {Array.from({ length: rows }, (_, i) => (
         <li
           key={i}
-          className="h-24 animate-pulse rounded-xl border border-border bg-muted"
+          className="h-20 animate-pulse rounded-xl border border-border bg-muted"
         />
       ))}
     </ul>
   );
 }
+
+/** Route pending state: the heading is static, so only the rows load. */
+export function ProgramLibraryPending() {
+  return (
+    <section className="pt-8 lg:pt-12">
+      <h1 className="m-0 font-display text-4xl font-normal tracking-tight text-foreground sm:text-5xl">
+        Programs
+      </h1>
+      <div className="mt-8">
+        <LibrarySkeleton rows={4} />
+      </div>
+    </section>
+  );
+}
+
+const TOAST_MS = 4000;
 
 const newProgramSchema = z.object({
   title: z.string().trim().min(1, "Add a title."),
@@ -172,7 +394,11 @@ const newProgramSchema = z.object({
   daysPerWeek: z.number().int().min(1).max(7),
 });
 
-export function ProgramLibrary({ programs, loadError }: LibraryProps) {
+export function ProgramLibrary({
+  programs,
+  authorSlug,
+  loadError,
+}: LibraryProps) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -186,10 +412,67 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
   const [shareTarget, setShareTarget] = useState<ProgramListItemDTO | null>(
     null,
   );
-  const [removeTarget, setRemoveTarget] = useState<ProgramListItemDTO | null>(
+  const [shareStart, setShareStart] = useState<"replace" | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<ProgramListItemDTO | null>(
     null,
   );
-  const [removePending, setRemovePending] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const handle = window.setTimeout(() => setToast(null), TOAST_MS);
+    return () => window.clearTimeout(handle);
+  }, [toast]);
+
+  const openShare = (program: ProgramListItemDTO, start?: "replace") => {
+    setShareStart(start);
+    setShareTarget(program);
+    setShareOpen(true);
+  };
+
+  const rowActions: RowActions = {
+    authorSlug,
+    onCopy: async (address) => {
+      try {
+        await navigator.clipboard.writeText(
+          `${window.location.origin}${address.path}`,
+        );
+        setToast(
+          address.kind === "public"
+            ? "Public address copied"
+            : "Share link copied",
+        );
+      } catch {
+        setToast(programActionErrorMessage("copy-link"));
+      }
+    },
+    onReplace: (program) => openShare(program, "replace"),
+    onShare: (program) => openShare(program),
+    onDelete: (program) => {
+      setDeleteError(null);
+      setDeleteTarget(program);
+    },
+  };
+
+  const onConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeletePending(true);
+    setDeleteError(null);
+    try {
+      await deleteProgram({ data: { programId: deleteTarget.id } });
+      setDeleteTarget(null);
+      await router.invalidate();
+    } catch (e) {
+      const code = e instanceof Error ? e.message : "";
+      setDeleteError(
+        programActionErrorMessage("delete", isAppErrorCode(code) ? code : ""),
+      );
+    } finally {
+      setDeletePending(false);
+    }
+  };
 
   const openNewProgram = () => {
     setTitle("");
@@ -232,7 +515,7 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
         params: { programId: created.id },
       });
     } catch {
-      setFieldError("Could not create the program. Try again.");
+      setFieldError(programActionErrorMessage("create"));
     } finally {
       setPending(false);
     }
@@ -265,6 +548,7 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
         </div>
         {programs.length > 0 ? (
           <Button type="button" size="touch" onClick={openNewProgram}>
+            <Plus className="size-4" aria-hidden />
             New program
           </Button>
         ) : null}
@@ -275,8 +559,9 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
           className="mt-8 rounded-xl border border-destructive/40 bg-muted p-4"
           role="alert"
         >
-          <p className="m-0 text-sm text-foreground">
-            Could not load your programs.
+          <p className="m-0 flex items-center gap-2 text-sm text-foreground">
+            <AlertCircle className="size-4 shrink-0" aria-hidden />
+            {programActionErrorMessage("load-list")}
           </p>
           <Button
             type="button"
@@ -314,60 +599,47 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
           </p>
         </div>
       ) : (
-        <ul className="mt-8 flex flex-col gap-3">
-          {programs.map((p) => (
-            <ProgramRow
-              key={p.id}
-              program={p}
-              onShare={() => {
-                setShareTarget(p);
-                setShareOpen(true);
-              }}
-              onRemove={() => setRemoveTarget(p)}
-            />
-          ))}
-        </ul>
+        <div className="mt-8">
+          <ProgramCardList programs={programs} actions={rowActions} />
+          <ProgramTable programs={programs} actions={rowActions} />
+        </div>
       )}
 
       <Sheet
-        open={removeTarget != null}
-        onOpenChange={(open) => !open && setRemoveTarget(null)}
+        open={deleteTarget != null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
       >
         <ResponsiveSheetContent>
           <ResponsiveSheetHeader>
-            <SheetTitle>Remove {removeTarget?.title ?? "program"}?</SheetTitle>
+            <SheetTitle>
+              Delete &ldquo;{deleteTarget?.title ?? "program"}&rdquo;?
+            </SheetTitle>
           </ResponsiveSheetHeader>
           <ResponsiveSheetBody>
             <p className="m-0 text-sm text-text-secondary">
-              {removeTarget?.visibility === "public"
-                ? "It leaves your profile and your programs. People who open its links see a page saying the author removed it. Copies other people made stay theirs. You can't undo this."
-                : "It leaves your programs. People who open its links see a page saying the author removed it. You can't undo this."}
+              {deleteTarget ? deleteConfirmBody(deleteTarget.visibility) : null}
             </p>
+            {deleteError ? (
+              <p className="m-0 text-sm text-destructive" role="alert">
+                {deleteError}
+              </p>
+            ) : null}
             <Button
               type="button"
               variant="destructive"
               size="touch"
               className="w-full"
-              disabled={removePending}
-              onClick={() => {
-                if (!removeTarget) return;
-                setRemovePending(true);
-                void deleteProgram({ data: { programId: removeTarget.id } })
-                  .then(async () => {
-                    setRemoveTarget(null);
-                    await router.invalidate();
-                  })
-                  .finally(() => setRemovePending(false));
-              }}
+              disabled={deletePending}
+              onClick={() => void onConfirmDelete()}
             >
-              Remove program
+              {deletePending ? "Deleting…" : "Delete program"}
             </Button>
             <Button
               type="button"
               variant="secondary"
               size="touch"
               className="w-full"
-              onClick={() => setRemoveTarget(null)}
+              onClick={() => setDeleteTarget(null)}
             >
               Cancel
             </Button>
@@ -378,6 +650,7 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
       {shareTarget ? (
         <ShareDialog
           open={shareOpen}
+          startWith={shareStart}
           onOpenChange={(open) => {
             setShareOpen(open);
             if (!open) {
@@ -391,6 +664,7 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
             shareToken: shareTarget.shareToken,
             slug: shareTarget.slug,
             revision: shareTarget.revision,
+            hiddenAt: shareTarget.hiddenAt,
           }}
           onProgramUpdated={(updated) => {
             setShareTarget((prev) => (prev ? { ...prev, ...updated } : prev));
@@ -457,10 +731,24 @@ export function ProgramLibrary({ programs, loadError }: LibraryProps) {
           </form>
         </ResponsiveSheetContent>
       </Sheet>
+
+      {toast ? (
+        <div
+          role="status"
+          className="fixed inset-x-4 bottom-4 z-[60] mx-auto flex w-fit max-w-full items-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm text-background shadow-lg"
+        >
+          <Check className="size-4 shrink-0" aria-hidden />
+          {toast}
+        </div>
+      ) : null}
     </section>
   );
 }
 
 export async function loadProgramLibrary() {
-  return listMyPrograms();
+  const [programs, me] = await Promise.all([
+    listMyPrograms(),
+    getMyAuthorSlug().catch(() => null),
+  ]);
+  return { programs, authorSlug: me?.authorSlug ?? null };
 }

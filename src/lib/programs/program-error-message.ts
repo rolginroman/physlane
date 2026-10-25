@@ -16,3 +16,39 @@ export function programErrorMessage(code: AppErrorCode | string): string {
       return "Something went wrong. Nothing changed. Try again.";
   }
 }
+
+export type ProgramAction =
+  | "change-visibility"
+  | "replace-link"
+  | "copy-link"
+  | "create"
+  | "delete"
+  | "load-list";
+
+const ACTION_MESSAGES: Record<ProgramAction, string> = {
+  "change-visibility":
+    "Couldn't change who can open this program. Nothing changed. Try again.",
+  "replace-link":
+    "Couldn't replace the share link. Nothing changed. Try again.",
+  "copy-link": "Couldn't copy. Select the link and copy it by hand.",
+  create: "Could not create the program. Try again.",
+  delete: "Couldn't delete this program. Nothing changed. Try again.",
+  "load-list": "Your programs didn't load.",
+};
+
+/** Codes that carry their own fix; everything else gets the action's copy. */
+const CODES_WITH_OWN_MESSAGE: readonly string[] = [
+  "SLUG_TAKEN",
+  "STALE_REVISION",
+  "INVALID_ENTRY",
+];
+
+export function programActionErrorMessage(
+  action: ProgramAction,
+  code?: AppErrorCode | string,
+): string {
+  if (code && CODES_WITH_OWN_MESSAGE.includes(code)) {
+    return programErrorMessage(code);
+  }
+  return ACTION_MESSAGES[action];
+}

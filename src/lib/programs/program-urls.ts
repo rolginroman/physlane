@@ -53,3 +53,11 @@ export function publicProgramCanonicalUrlFromOrigin(
 ): string {
   return `${origin.replace(/\/$/, "")}${publicProgramCanonicalPath(authorSlug, programSlug)}`;
 }
+
+export function publicProgramIdPermalinkUrlFromOrigin(
+  origin: string,
+  authorSlug: string,
+  programId: string,
+): string {
+  return `${origin.replace(/\/$/, "")}${publicProgramIdPermalinkPath(authorSlug, programId)}`;
+}
