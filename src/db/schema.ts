@@ -90,6 +90,7 @@ export const user = sqliteTable(
     slug: text("slug"),
     displayName: text("display_name"),
     bio: text("bio"),
+    profilePublishedAt: integer("profile_published_at", { mode: "timestamp" }),
     profileHiddenAt: integer("profile_hidden_at", { mode: "timestamp" }),
   },
   (t) => [

@@ -33,6 +33,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as PProgramIdRouteImport } from './routes/p.$programId'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as UAuthorSlugRouteImport } from './routes/u.$authorSlug'
 import { Route as DotwellKnownOauthProtectedResourceSplatRouteImport } from './routes/[.]well-known.oauth-protected-resource.$'
 import { Route as AuthProgramsIndexRouteImport } from './routes/_auth.programs.index'
 import { Route as AuthProgramsProgramIdRouteImport } from './routes/_auth.programs.$programId'
@@ -163,6 +164,11 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UAuthorSlugRoute = UAuthorSlugRouteImport.update({
+  id: '/u/$authorSlug',
+  path: '/u/$authorSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotwellKnownOauthProtectedResourceSplatRoute =
   DotwellKnownOauthProtectedResourceSplatRouteImport.update({
     id: '/$',
@@ -200,9 +206,9 @@ const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const UAuthorSlugPProgramRefRoute = UAuthorSlugPProgramRefRouteImport.update({
-  id: '/u/$authorSlug/p/$programRef',
-  path: '/u/$authorSlug/p/$programRef',
-  getParentRoute: () => rootRouteImport,
+  id: '/p/$programRef',
+  path: '/p/$programRef',
+  getParentRoute: () => UAuthorSlugRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/blog/$slug': typeof BlogSlugRoute
   '/p/$programId': typeof PProgramIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/u/$authorSlug': typeof UAuthorSlugRouteWithChildren
   '/blog/': typeof BlogIndexRoute
   '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
   '/programs/$programId': typeof AuthProgramsProgramIdRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByTo {
   '/blog/$slug': typeof BlogSlugRoute
   '/p/$programId': typeof PProgramIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/u/$authorSlug': typeof UAuthorSlugRouteWithChildren
   '/blog': typeof BlogIndexRoute
   '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
   '/programs/$programId': typeof AuthProgramsProgramIdRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/blog/$slug': typeof BlogSlugRoute
   '/p/$programId': typeof PProgramIdRoute
   '/share/$token': typeof ShareTokenRoute
+  '/u/$authorSlug': typeof UAuthorSlugRouteWithChildren
   '/blog/': typeof BlogIndexRoute
   '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
   '/_auth/programs/$programId': typeof AuthProgramsProgramIdRoute
@@ -331,6 +340,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/p/$programId'
     | '/share/$token'
+    | '/u/$authorSlug'
     | '/blog/'
     | '/.well-known/oauth-protected-resource/$'
     | '/programs/$programId'
@@ -364,6 +374,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/p/$programId'
     | '/share/$token'
+    | '/u/$authorSlug'
     | '/blog'
     | '/.well-known/oauth-protected-resource/$'
     | '/programs/$programId'
@@ -398,6 +409,7 @@ export interface FileRouteTypes {
     | '/blog/$slug'
     | '/p/$programId'
     | '/share/$token'
+    | '/u/$authorSlug'
     | '/blog/'
     | '/.well-known/oauth-protected-resource/$'
     | '/_auth/programs/$programId'
@@ -428,12 +440,12 @@ export interface RootRouteChildren {
   BlogSlugRoute: typeof BlogSlugRoute
   PProgramIdRoute: typeof PProgramIdRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  UAuthorSlugRoute: typeof UAuthorSlugRouteWithChildren
   BlogIndexRoute: typeof BlogIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiTelegramRemindRoute: typeof ApiTelegramRemindRoute
   ApiTelegramWebhookRoute: typeof ApiTelegramWebhookRoute
-  UAuthorSlugPProgramRefRoute: typeof UAuthorSlugPProgramRefRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -606,6 +618,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$authorSlug': {
+      id: '/u/$authorSlug'
+      path: '/u/$authorSlug'
+      fullPath: '/u/$authorSlug'
+      preLoaderRoute: typeof UAuthorSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.well-known/oauth-protected-resource/$': {
       id: '/.well-known/oauth-protected-resource/$'
       path: '/$'
@@ -657,10 +676,10 @@ declare module '@tanstack/react-router' {
     }
     '/u/$authorSlug/p/$programRef': {
       id: '/u/$authorSlug/p/$programRef'
-      path: '/u/$authorSlug/p/$programRef'
+      path: '/p/$programRef'
       fullPath: '/u/$authorSlug/p/$programRef'
       preLoaderRoute: typeof UAuthorSlugPProgramRefRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof UAuthorSlugRoute
     }
   }
 }
@@ -702,6 +721,18 @@ const DotwellKnownOauthProtectedResourceRouteWithChildren =
     DotwellKnownOauthProtectedResourceRouteChildren,
   )
 
+interface UAuthorSlugRouteChildren {
+  UAuthorSlugPProgramRefRoute: typeof UAuthorSlugPProgramRefRoute
+}
+
+const UAuthorSlugRouteChildren: UAuthorSlugRouteChildren = {
+  UAuthorSlugPProgramRefRoute: UAuthorSlugPProgramRefRoute,
+}
+
+const UAuthorSlugRouteWithChildren = UAuthorSlugRoute._addFileChildren(
+  UAuthorSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
@@ -723,12 +754,12 @@ const rootRouteChildren: RootRouteChildren = {
   BlogSlugRoute: BlogSlugRoute,
   PProgramIdRoute: PProgramIdRoute,
   ShareTokenRoute: ShareTokenRoute,
+  UAuthorSlugRoute: UAuthorSlugRouteWithChildren,
   BlogIndexRoute: BlogIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   ApiTelegramRemindRoute: ApiTelegramRemindRoute,
   ApiTelegramWebhookRoute: ApiTelegramWebhookRoute,
-  UAuthorSlugPProgramRefRoute: UAuthorSlugPProgramRefRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

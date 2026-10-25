@@ -10,6 +10,11 @@ import {
   nextRevision,
   planVisibilityTransition,
   revisionGuard,
+  authorSlugRenameAllowedAt,
+  planAuthorProfileSave,
+  resolveAuthorProfileRedirect,
+  resolveAuthorSlugLookup,
+  resolveProgramRedirect,
   suggestAuthorSlug,
   suggestProgramSlug,
   validateSessionEntries,
@@ -367,6 +372,158 @@ describe("suggestAuthorSlug", () => {
       taken.push(`alex-${n}`);
     }
     expect(suggestAuthorSlug("alex", taken)).toBeNull();
+  });
+});
+
+describe("resolveAuthorSlugLookup", () => {
+  it("resolves current and quarantined history slugs", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    expect(
+      resolveAuthorSlugLookup(
+        "tara",
+        { userId: "u1", slug: "tara" },
+        null,
+        "tara",
+        now,
+      ),
+    ).toEqual({
+      userId: "u1",
+      currentAuthorSlug: "tara",
+      viaHistory: false,
+    });
+    expect(
+      resolveAuthorSlugLookup(
+        "old-tara",
+        null,
+        { userId: "u1", createdAt: new Date("2026-01-01T00:00:00Z") },
+        "tara",
+        now,
+      ),
+    ).toEqual({
+      userId: "u1",
+      currentAuthorSlug: "tara",
+      viaHistory: true,
+    });
+  });
+});
+
+describe("planAuthorProfileSave", () => {
+  it("blocks rename during cooldown", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    const lastRename = new Date("2026-05-01T00:00:00Z");
+    const result = planAuthorProfileSave(
+      {
+        userId: "u1",
+        displayName: "Tara",
+        authorSlug: "tara",
+        bio: null,
+      },
+      { displayName: "Tara", authorSlug: "tara-lifts", bio: null },
+      ["tara"],
+      [],
+      lastRename,
+      now,
+    );
+    expect(result).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+    expect(authorSlugRenameAllowedAt(lastRename)?.toISOString()).toBe(
+      "2026-07-30T00:00:00.000Z",
+    );
+  });
+
+  it("writes rename plan when slug changes and cooldown elapsed", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    const result = planAuthorProfileSave(
+      {
+        userId: "u1",
+        displayName: "Tara",
+        authorSlug: "tara",
+        bio: null,
+      },
+      { displayName: "Tara", authorSlug: "tara-lifts", bio: "Coach" },
+      ["tara"],
+      [],
+      new Date("2026-01-01T00:00:00Z"),
+      now,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      rename: { fromSlug: "tara", toSlug: "tara-lifts" },
+    });
+  });
+});
+
+describe("resolveProgramRedirect", () => {
+  const author = {
+    userId: "u1",
+    currentAuthorSlug: "tara",
+    viaHistory: true,
+  };
+  const publicProgram = {
+    id: "p1",
+    userId: "u1",
+    slug: "hypertrophy",
+    visibility: "public" as const,
+    hiddenAt: null,
+    deletedAt: null,
+  };
+
+  it("flattens stale author and program slugs with token preserved", () => {
+    const result = resolveProgramRedirect(
+      "old-tara",
+      "old-program",
+      author,
+      null,
+      publicProgram,
+      "share-token-abc",
+      false,
+    );
+    expect(result).toEqual({
+      kind: "redirect",
+      path: "/u/tara/p/p1",
+      search: { t: "share-token-abc" },
+    });
+  });
+
+  it("does not redirect hidden programs", () => {
+    const result = resolveProgramRedirect(
+      "old-tara",
+      "old-program",
+      author,
+      null,
+      {
+        ...publicProgram,
+        visibility: "draft",
+      },
+      null,
+      false,
+    );
+    expect(result).toEqual({ kind: "not_found" });
+  });
+
+  it("skips redirect for id permalinks", () => {
+    expect(
+      resolveProgramRedirect(
+        "old-tara",
+        "p1",
+        author,
+        publicProgram,
+        null,
+        null,
+        true,
+      ).kind,
+    ).toBe("none");
+  });
+});
+
+describe("resolveAuthorProfileRedirect", () => {
+  it("returns current profile path for history hits", () => {
+    expect(
+      resolveAuthorProfileRedirect("old", {
+        userId: "u1",
+        currentAuthorSlug: "new",
+        viaHistory: true,
+      }),
+    ).toBe("/u/new");
   });
 });
 

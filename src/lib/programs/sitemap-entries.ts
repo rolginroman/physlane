@@ -8,6 +8,11 @@ export type ProgramSitemapEntry = {
   updatedAt: string;
 };
 
+export type AuthorProfileSitemapEntry = {
+  authorSlug: string;
+  updatedAt: string;
+};
+
 function urlEntry(loc: string, lastmod: string): string {
   return `  <url>
     <loc>${loc}</loc>
@@ -34,7 +39,14 @@ const STATIC_SITEMAP_LASTMOD = {
   },
 } as const;
 
-export function buildSiteSitemapXml(programs: ProgramSitemapEntry[]): string {
+export function authorProfilePath(authorSlug: string): string {
+  return `/u/${authorSlug}`;
+}
+
+export function buildSiteSitemapXml(
+  programs: ProgramSitemapEntry[],
+  authorProfiles: AuthorProfileSitemapEntry[] = [],
+): string {
   const lines = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -62,6 +74,12 @@ export function buildSiteSitemapXml(programs: ProgramSitemapEntry[]): string {
       urlEntry(
         publicProgramCanonicalUrl(p.authorSlug, p.programSlug),
         lastmodFromIso(p.updatedAt),
+      ),
+    ),
+    ...authorProfiles.map((a) =>
+      urlEntry(
+        `${SITE_URL}${authorProfilePath(a.authorSlug)}`,
+        lastmodFromIso(a.updatedAt),
       ),
     ),
     "</urlset>",

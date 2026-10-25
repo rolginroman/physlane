@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { appError, type AppErrorCode } from "#/lib/app-error";
 import { suggestSlug } from "#/lib/programs/slug";
-import { EQUIPMENT, MUSCLES } from "#/lib/programs/taxonomy";
+import {
+  EQUIPMENT,
+  MUSCLES,
+  type ProgramGoal,
+  type ProgramLevel,
+} from "#/lib/programs/taxonomy";
 import type { ProgramSession } from "#/lib/programs/program-shape";
 
 export type ProgramVisibility = "draft" | "unlisted" | "public";
@@ -264,3 +269,260 @@ export function assertSessionWeekInProgram(
 export type SessionUpsertPayload = ProgramSession & {
   id?: string;
 };
+
+/** Author handle rename rate limit (starts after profile setup / renames). */
+export const AUTHOR_SLUG_RENAME_COOLDOWN_MS = 90 * 24 * 60 * 60 * 1000;
+
+export const MAX_AUTHOR_SLUG_HISTORY_ROWS = 3;
+
+export type AuthorSlugLookup = {
+  userId: string;
+  currentAuthorSlug: string;
+  viaHistory: boolean;
+};
+
+/** Map path slug to the owning user and their current handle (current row or quarantined history). */
+export function resolveAuthorSlugLookup(
+  slugFromPath: string,
+  currentOwner: { userId: string; slug: string } | null,
+  historyRow: { userId: string; createdAt: Date } | null,
+  ownerCurrentSlug: string | null,
+  now: Date = new Date(),
+): AuthorSlugLookup | null {
+  if (currentOwner && currentOwner.slug === slugFromPath) {
+    return {
+      userId: currentOwner.userId,
+      currentAuthorSlug: currentOwner.slug,
+      viaHistory: false,
+    };
+  }
+  if (
+    historyRow &&
+    isSlugHistoryReserved(historyRow.createdAt, now) &&
+    ownerCurrentSlug
+  ) {
+    return {
+      userId: historyRow.userId,
+      currentAuthorSlug: ownerCurrentSlug,
+      viaHistory: true,
+    };
+  }
+  return null;
+}
+
+export type PublicProgramListRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  slug: string | null;
+  goal: ProgramGoal;
+  level: ProgramLevel;
+  daysPerWeek: number;
+  weeks: number;
+  updatedAt: Date;
+  visibility: ProgramVisibility;
+  hiddenAt: Date | null;
+  deletedAt: Date | null;
+};
+
+export function listPublicProgramsByAuthor<T extends PublicProgramListRow>(
+  programs: readonly T[],
+): T[] {
+  return programs
+    .filter(
+      (p) =>
+        p.visibility === "public" &&
+        p.deletedAt == null &&
+        p.hiddenAt == null &&
+        p.slug != null,
+    )
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+}
+
+export type AuthorProfileInput = {
+  displayName: string;
+  authorSlug: string;
+  bio: string | null;
+};
+
+export type AuthorProfileState = {
+  userId: string;
+  displayName: string | null;
+  authorSlug: string | null;
+  bio: string | null;
+};
+
+export type AuthorProfileSavePlan =
+  | { ok: true; next: AuthorProfileInput; rename: AuthorSlugRenamePlan | null }
+  | {
+      ok: false;
+      code: Extract<AppErrorCode, "SLUG_TAKEN" | "INVALID_TRANSITION">;
+    };
+
+export type AuthorSlugRenamePlan = {
+  fromSlug: string;
+  toSlug: string;
+  reclaimingOwnHistorySlug: boolean;
+};
+
+export function authorSlugRenameAllowedAt(
+  lastRenameAt: Date | null,
+): Date | null {
+  if (!lastRenameAt) {
+    return null;
+  }
+  return new Date(lastRenameAt.getTime() + AUTHOR_SLUG_RENAME_COOLDOWN_MS);
+}
+
+export function planAuthorProfileSave(
+  state: AuthorProfileState,
+  input: AuthorProfileInput,
+  takenCurrent: ReadonlySet<string> | readonly string[],
+  takenHistory: ReadonlyArray<{
+    slug: string;
+    createdAt: Date;
+    userId: string;
+  }>,
+  lastAuthorRenameAt: Date | null,
+  now: Date = new Date(),
+): AuthorProfileSavePlan {
+  const trimmedName = input.displayName.trim();
+  if (!trimmedName) {
+    return { ok: false, code: "INVALID_TRANSITION" };
+  }
+  const nextSlug = input.authorSlug.trim().toLowerCase();
+  const bio =
+    input.bio == null || input.bio.trim() === "" ? null : input.bio.trim();
+
+  const current = state.authorSlug;
+  let rename: AuthorSlugRenamePlan | null = null;
+  if (current !== nextSlug) {
+    const allowedFrom = authorSlugRenameAllowedAt(lastAuthorRenameAt);
+    if (current != null && allowedFrom != null && now < allowedFrom) {
+      return { ok: false, code: "INVALID_TRANSITION" };
+    }
+    const reclaiming = takenHistory.some(
+      (row) => row.slug === nextSlug && row.userId === state.userId,
+    );
+    const currentTaken = new Set(
+      takenCurrent instanceof Set ? takenCurrent : takenCurrent,
+    );
+    if (current) {
+      currentTaken.delete(current);
+    }
+    const historyForAssert = reclaiming
+      ? takenHistory.filter(
+          (row) => !(row.slug === nextSlug && row.userId === state.userId),
+        )
+      : takenHistory;
+    try {
+      assertSlugAvailable(nextSlug, currentTaken, historyForAssert, now);
+    } catch (e) {
+      if (e instanceof Error && e.message === "SLUG_TAKEN") {
+        return { ok: false, code: "SLUG_TAKEN" };
+      }
+      throw e;
+    }
+    if (current) {
+      rename = {
+        fromSlug: current,
+        toSlug: nextSlug,
+        reclaimingOwnHistorySlug: reclaiming,
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    next: { displayName: trimmedName, authorSlug: nextSlug, bio },
+    rename,
+  };
+}
+
+/** Keep the newest history rows per author; drop older redirect sources. */
+export function authorSlugHistoryRowsToKeep(
+  rows: ReadonlyArray<{ fromSlug: string; createdAt: Date }>,
+  limit: number = MAX_AUTHOR_SLUG_HISTORY_ROWS,
+): Set<string> {
+  const sorted = [...rows].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  );
+  return new Set(sorted.slice(0, limit).map((r) => r.fromSlug));
+}
+
+export type ProgramRedirectRow = {
+  id: string;
+  userId: string;
+  slug: string | null;
+  visibility: ProgramVisibility;
+  hiddenAt: Date | null;
+  deletedAt: Date | null;
+};
+
+export function isPublicProgramRedirectTarget(
+  program: ProgramRedirectRow,
+): boolean {
+  return (
+    program.visibility === "public" &&
+    program.deletedAt == null &&
+    program.hiddenAt == null &&
+    program.slug != null
+  );
+}
+
+export type ProgramRedirectResolution =
+  | { kind: "none" }
+  | { kind: "not_found" }
+  | { kind: "redirect"; path: string; search: Record<string, string> };
+
+/** Flatten stale author/program segments to the current id permalink (token query preserved). */
+export function resolveProgramRedirect(
+  authorSlugFromPath: string,
+  programRef: string,
+  author: AuthorSlugLookup | null,
+  programBySlug: ProgramRedirectRow | null,
+  programFromHistory: ProgramRedirectRow | null,
+  shareToken: string | null | undefined,
+  isProgramIdRef: boolean,
+): ProgramRedirectResolution {
+  if (isProgramIdRef) {
+    return { kind: "none" };
+  }
+  if (!author) {
+    return { kind: "not_found" };
+  }
+
+  const program = programBySlug ?? programFromHistory;
+  if (!program || program.userId !== author.userId) {
+    return { kind: "not_found" };
+  }
+  if (!isPublicProgramRedirectTarget(program)) {
+    return { kind: "not_found" };
+  }
+
+  const needsAuthorRedirect = authorSlugFromPath !== author.currentAuthorSlug;
+  const needsProgramRedirect = programRef !== program.slug;
+  if (!needsAuthorRedirect && !needsProgramRedirect) {
+    return { kind: "not_found" };
+  }
+
+  const path = `/u/${author.currentAuthorSlug}/p/${program.id}`;
+  const search: Record<string, string> = {};
+  if (shareToken) {
+    search.t = shareToken;
+  }
+  return { kind: "redirect", path, search };
+}
+
+export function resolveAuthorProfileRedirect(
+  slugFromPath: string,
+  author: AuthorSlugLookup | null,
+): string | null {
+  if (!author?.viaHistory) {
+    return null;
+  }
+  if (slugFromPath === author.currentAuthorSlug) {
+    return null;
+  }
+  return `/u/${author.currentAuthorSlug}`;
+}

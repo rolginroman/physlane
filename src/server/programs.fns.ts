@@ -18,23 +18,33 @@ import {
   type Muscle,
 } from "#/lib/programs/taxonomy";
 import { newShareToken, publicFirstName } from "#/lib/share";
-import { suggestSlug, validateSlug } from "#/lib/programs/slug";
+import { suggestSlug } from "#/lib/programs/slug";
 import { requireUser } from "./auth.fns";
 import {
   assertAuthor,
   assertProgramUsable,
   assertSessionWeekInProgram,
   assertSlugAvailable,
+  authorSlugHistoryRowsToKeep,
+  authorSlugRenameAllowedAt,
   customExerciseInputSchema,
   isSlugHistoryReserved,
+  listPublicProgramsByAuthor,
   nextRevision,
   normalizeExerciseName,
+  planAuthorProfileSave,
   planVisibilityTransition,
+  resolveAuthorProfileRedirect,
+  resolveAuthorSlugLookup,
+  resolveProgramRedirect,
   revisionGuard,
   suggestAuthorSlug,
   suggestProgramSlug,
   validateSessionEntries,
+  type ProgramRedirectRow,
 } from "./programs.core";
+import { loadSessionUser } from "#/server/auth.core";
+import { validateSlug } from "#/lib/programs/slug";
 
 export type ProgramEntryDTO = ProgramEntry & { id: string; orderIndex: number };
 
@@ -98,6 +108,34 @@ export type PublicProgramAuthorDTO = {
   userId: string;
   displayName: string | null;
   authorSlug: string | null;
+};
+
+export type PublicAuthorProfileProgramDTO = {
+  id: string;
+  title: string;
+  description: string | null;
+  slug: string;
+  goal: schema.Program["goal"];
+  level: schema.Program["level"];
+  daysPerWeek: number;
+  weeks: number;
+  updatedAt: string;
+};
+
+export type PublicAuthorProfileDTO = {
+  displayName: string;
+  authorSlug: string;
+  bio: string | null;
+  programs: PublicAuthorProfileProgramDTO[];
+  isOwner: boolean;
+  unavailable: boolean;
+};
+
+export type AuthorProfileSetupDTO = {
+  displayName: string;
+  authorSlug: string | null;
+  bio: string | null;
+  slugRenameAllowedFrom: string | null;
 };
 
 export type PublicProgramDTO = ProgramDTO & {
@@ -965,16 +1003,21 @@ export const setVisibility = createServerFn({ method: "POST" })
 
     const db = useDb();
     const visibilityBatch: BatchItem<"sqlite">[] = [];
+    const userPatch: Partial<schema.UserRow> = {};
     if (authorSlugUpdate != null) {
+      userPatch.slug = authorSlugUpdate;
+    }
+    if (authorDisplayNameUpdate !== undefined) {
+      userPatch.displayName = authorDisplayNameUpdate;
+    }
+    if (data.target === "public" && author.profilePublishedAt == null) {
+      userPatch.profilePublishedAt = now;
+    }
+    if (Object.keys(userPatch).length > 0) {
       visibilityBatch.push(
         db
           .update(schema.user)
-          .set({
-            slug: authorSlugUpdate,
-            ...(authorDisplayNameUpdate !== undefined
-              ? { displayName: authorDisplayNameUpdate }
-              : {}),
-          })
+          .set(userPatch)
           .where(eq(schema.user.id, author.id)),
       );
     }
@@ -1101,6 +1144,413 @@ export const getPublicProgramBySlug = createServerFn({ method: "GET" })
     }
     assertViewerVisibility(program, "public-only");
     return buildPublicProgramDTO(program);
+  });
+
+async function loadUserByAuthorSlug(slug: string) {
+  const [row] = await useDb()
+    .select()
+    .from(schema.user)
+    .where(eq(schema.user.slug, slug))
+    .limit(1);
+  return row ?? null;
+}
+
+async function loadAuthorSlugHistoryRow(fromSlug: string) {
+  const [row] = await useDb()
+    .select()
+    .from(schema.authorSlugHistory)
+    .where(eq(schema.authorSlugHistory.fromSlug, fromSlug))
+    .limit(1);
+  return row ?? null;
+}
+
+async function lastAuthorSlugRenameAt(userId: string): Promise<Date | null> {
+  const [row] = await useDb()
+    .select({ createdAt: schema.authorSlugHistory.createdAt })
+    .from(schema.authorSlugHistory)
+    .where(eq(schema.authorSlugHistory.userId, userId))
+    .orderBy(desc(schema.authorSlugHistory.createdAt))
+    .limit(1);
+  return row?.createdAt ?? null;
+}
+
+async function resolveAuthorSlugContext(slugFromPath: string, now: Date) {
+  const current = await loadUserByAuthorSlug(slugFromPath);
+  const history = await loadAuthorSlugHistoryRow(slugFromPath);
+  let ownerCurrentSlug: string | null = current?.slug ?? null;
+  if (!current && history) {
+    const owner = await loadAuthorRow(history.userId);
+    ownerCurrentSlug = owner.slug;
+  }
+  const lookup = resolveAuthorSlugLookup(
+    slugFromPath,
+    current ? { userId: current.id, slug: current.slug! } : null,
+    history ? { userId: history.userId, createdAt: history.createdAt } : null,
+    ownerCurrentSlug,
+    now,
+  );
+  return { lookup, current, history };
+}
+
+function toProgramRedirectRow(row: schema.Program): ProgramRedirectRow {
+  return {
+    id: row.id,
+    userId: row.userId,
+    slug: row.slug,
+    visibility: row.visibility,
+    hiddenAt: row.hiddenAt,
+    deletedAt: row.deletedAt,
+  };
+}
+
+const GetPublicAuthorProfileInputSchema = z.object({
+  authorSlug: z.string().min(1),
+});
+
+export const getPublicAuthorProfile = createServerFn({ method: "GET" })
+  .validator((d) => GetPublicAuthorProfileInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const now = new Date();
+    const viewer = await loadSessionUser();
+    const { lookup } = await resolveAuthorSlugContext(data.authorSlug, now);
+    if (!lookup) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    const author = await loadAuthorRow(lookup.userId);
+    if (author.profileHiddenAt != null) {
+      return {
+        displayName: resolvePublicAuthorDisplayName(author) ?? "Author",
+        authorSlug: lookup.currentAuthorSlug,
+        bio: null,
+        programs: [],
+        isOwner: viewer?.id === author.id,
+        unavailable: true,
+      } satisfies PublicAuthorProfileDTO;
+    }
+    if (author.profilePublishedAt == null) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    const programRows = await useDb()
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.userId, author.id));
+    const publicRows = listPublicProgramsByAuthor(programRows);
+    const programs: PublicAuthorProfileProgramDTO[] = publicRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      slug: row.slug!,
+      goal: row.goal,
+      level: row.level,
+      daysPerWeek: row.daysPerWeek,
+      weeks: row.weeks,
+      updatedAt: row.updatedAt.toISOString(),
+    }));
+    return {
+      displayName: resolvePublicAuthorDisplayName(author) ?? "Author",
+      authorSlug: lookup.currentAuthorSlug,
+      bio: author.bio,
+      programs,
+      isOwner: viewer?.id === author.id,
+      unavailable: false,
+    } satisfies PublicAuthorProfileDTO;
+  });
+
+export const getAuthorProfileSetup = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const me = await requireUser();
+    const author = await loadAuthorRow(me.id);
+    const lastRename = await lastAuthorSlugRenameAt(me.id);
+    const allowedFrom = authorSlugRenameAllowedAt(lastRename);
+    return {
+      displayName: author.displayName ?? publicFirstName(author.name) ?? "",
+      authorSlug: author.slug,
+      bio: author.bio,
+      slugRenameAllowedFrom: allowedFrom?.toISOString() ?? null,
+    } satisfies AuthorProfileSetupDTO;
+  },
+);
+
+const CheckAuthorSlugInputSchema = z.object({
+  candidate: z.string().min(1),
+});
+
+export const checkAuthorSlugAvailable = createServerFn({ method: "GET" })
+  .validator((d) => CheckAuthorSlugInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const validated = validateSlug(data.candidate.trim().toLowerCase());
+    if (!validated.ok) {
+      return { ok: false as const, reason: validated.reason };
+    }
+    const candidate = data.candidate.trim().toLowerCase();
+    const author = await loadAuthorRow(me.id);
+    if (author.slug === candidate) {
+      return { ok: true as const };
+    }
+    const now = new Date();
+    const { current, history } = await takenAuthorSlugsGlobally(now);
+    const historyWithUser = await useDb()
+      .select({
+        slug: schema.authorSlugHistory.fromSlug,
+        createdAt: schema.authorSlugHistory.createdAt,
+        userId: schema.authorSlugHistory.userId,
+      })
+      .from(schema.authorSlugHistory);
+    const reservedHistory = historyWithUser
+      .filter((row) => isSlugHistoryReserved(row.createdAt, now))
+      .map((row) => ({
+        slug: row.slug,
+        createdAt: row.createdAt,
+        userId: row.userId,
+      }));
+    const reclaiming = reservedHistory.some(
+      (row) => row.slug === candidate && row.userId === me.id,
+    );
+    const historyForAssert = reclaiming
+      ? reservedHistory.filter(
+          (row) => !(row.slug === candidate && row.userId === me.id),
+        )
+      : reservedHistory;
+    try {
+      const taken = new Set(current);
+      if (author.slug) {
+        taken.delete(author.slug);
+      }
+      assertSlugAvailable(candidate, taken, historyForAssert, now);
+    } catch (e) {
+      if (e instanceof Error && e.message === "SLUG_TAKEN") {
+        const takenSlugs = [...current, ...history.map((h) => h.slug)];
+        const base = suggestSlug(candidate) || candidate;
+        const suggestions = [
+          suggestAuthorSlug(base, takenSlugs),
+          suggestAuthorSlug(`${base}-strength`, takenSlugs),
+        ].filter((s): s is string => s != null && s !== candidate);
+        return {
+          ok: false as const,
+          reason: "That address is taken.",
+          suggestions: [...new Set(suggestions)].slice(0, 2),
+        };
+      }
+      throw e;
+    }
+    return { ok: true as const };
+  });
+
+const SaveAuthorProfileInputSchema = z.object({
+  displayName: z.string().min(1).max(80),
+  authorSlug: z.string().min(3).max(40),
+  bio: z.string().max(280).nullable().optional(),
+  publishProfile: z.boolean().optional(),
+});
+
+export const saveAuthorProfile = createServerFn({ method: "POST" })
+  .validator((d) => SaveAuthorProfileInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const author = await loadAuthorRow(me.id);
+    const validated = validateSlug(data.authorSlug.trim().toLowerCase());
+    if (!validated.ok) {
+      throw appError("SLUG_TAKEN");
+    }
+    const now = new Date();
+    const { current } = await takenAuthorSlugsGlobally(now);
+    const historyWithUser = await useDb()
+      .select({
+        slug: schema.authorSlugHistory.fromSlug,
+        createdAt: schema.authorSlugHistory.createdAt,
+        userId: schema.authorSlugHistory.userId,
+      })
+      .from(schema.authorSlugHistory)
+      .where(eq(schema.authorSlugHistory.userId, me.id));
+    const allHistory = await useDb()
+      .select({
+        slug: schema.authorSlugHistory.fromSlug,
+        createdAt: schema.authorSlugHistory.createdAt,
+        userId: schema.authorSlugHistory.userId,
+      })
+      .from(schema.authorSlugHistory);
+    const reservedHistory = allHistory
+      .filter((row) => isSlugHistoryReserved(row.createdAt, now))
+      .map((row) => ({
+        slug: row.slug,
+        createdAt: row.createdAt,
+        userId: row.userId,
+      }));
+    const planned = planAuthorProfileSave(
+      {
+        userId: me.id,
+        displayName: author.displayName,
+        authorSlug: author.slug,
+        bio: author.bio,
+      },
+      {
+        displayName: data.displayName,
+        authorSlug: data.authorSlug.trim().toLowerCase(),
+        bio: data.bio ?? null,
+      },
+      current,
+      reservedHistory,
+      await lastAuthorSlugRenameAt(me.id),
+      now,
+    );
+    if (!planned.ok) {
+      throw appError(planned.code);
+    }
+
+    const db = useDb();
+    const batch: BatchItem<"sqlite">[] = [];
+    const userPatch: Partial<schema.UserRow> = {
+      displayName: planned.next.displayName,
+      bio: planned.next.bio,
+      slug: planned.next.authorSlug,
+    };
+    if (data.publishProfile && author.profilePublishedAt == null) {
+      userPatch.profilePublishedAt = now;
+    }
+    batch.push(
+      db.update(schema.user).set(userPatch).where(eq(schema.user.id, me.id)),
+    );
+
+    if (planned.rename) {
+      if (planned.rename.reclaimingOwnHistorySlug) {
+        batch.push(
+          db
+            .delete(schema.authorSlugHistory)
+            .where(
+              eq(schema.authorSlugHistory.fromSlug, planned.rename.toSlug),
+            ),
+        );
+      }
+      batch.push(
+        db.insert(schema.authorSlugHistory).values({
+          fromSlug: planned.rename.fromSlug,
+          userId: me.id,
+          createdAt: now,
+        }),
+      );
+      const keep = authorSlugHistoryRowsToKeep([
+        ...historyWithUser.map((row) => ({
+          fromSlug: row.slug,
+          createdAt: row.createdAt,
+        })),
+        { fromSlug: planned.rename.fromSlug, createdAt: now },
+      ]);
+      for (const row of historyWithUser) {
+        if (!keep.has(row.slug) && row.slug !== planned.rename.toSlug) {
+          batch.push(
+            db
+              .delete(schema.authorSlugHistory)
+              .where(eq(schema.authorSlugHistory.fromSlug, row.slug)),
+          );
+        }
+      }
+    }
+
+    await db.batch(batch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
+
+    return {
+      authorSlug: planned.next.authorSlug,
+      profilePublished: Boolean(
+        data.publishProfile || author.profilePublishedAt != null,
+      ),
+    };
+  });
+
+const ResolvePublicProgramRedirectInputSchema = z.object({
+  authorSlug: z.string().min(1),
+  programRef: z.string().min(1),
+  shareToken: z.string().optional(),
+});
+
+export const resolvePublicProgramRedirect = createServerFn({ method: "GET" })
+  .validator((d) => ResolvePublicProgramRedirectInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const now = new Date();
+    const uuidRe =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isProgramIdRef = uuidRe.test(data.programRef);
+    const { lookup } = await resolveAuthorSlugContext(data.authorSlug, now);
+    if (!lookup) {
+      return { kind: "not_found" as const };
+    }
+
+    let programBySlug: ProgramRedirectRow | null = null;
+    let programFromHistory: ProgramRedirectRow | null = null;
+
+    if (!isProgramIdRef) {
+      const [bySlug] = await useDb()
+        .select()
+        .from(schema.programs)
+        .where(
+          and(
+            eq(schema.programs.userId, lookup.userId),
+            eq(schema.programs.slug, data.programRef),
+          ),
+        )
+        .limit(1);
+      if (bySlug) {
+        programBySlug = toProgramRedirectRow(bySlug);
+      } else {
+        const [hist] = await useDb()
+          .select({ programId: schema.programSlugHistory.programId })
+          .from(schema.programSlugHistory)
+          .where(
+            and(
+              eq(schema.programSlugHistory.userId, lookup.userId),
+              eq(schema.programSlugHistory.fromSlug, data.programRef),
+            ),
+          )
+          .limit(1);
+        if (hist) {
+          const [program] = await useDb()
+            .select()
+            .from(schema.programs)
+            .where(eq(schema.programs.id, hist.programId))
+            .limit(1);
+          if (program) {
+            programFromHistory = toProgramRedirectRow(program);
+          }
+        }
+      }
+    }
+
+    const resolution = resolveProgramRedirect(
+      data.authorSlug,
+      data.programRef,
+      lookup,
+      programBySlug,
+      programFromHistory,
+      data.shareToken,
+      isProgramIdRef,
+    );
+    if (resolution.kind === "redirect") {
+      return {
+        kind: "redirect" as const,
+        path: resolution.path,
+        search: resolution.search,
+      };
+    }
+    return { kind: "not_found" as const };
+  });
+
+const ResolveAuthorProfileRouteInputSchema = z.object({
+  authorSlug: z.string().min(1),
+});
+
+export const resolveAuthorProfileRoute = createServerFn({ method: "GET" })
+  .validator((d) => ResolveAuthorProfileRouteInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const now = new Date();
+    const { lookup } = await resolveAuthorSlugContext(data.authorSlug, now);
+    if (!lookup) {
+      return { kind: "not_found" as const };
+    }
+    const path = resolveAuthorProfileRedirect(data.authorSlug, lookup);
+    if (path) {
+      return { kind: "redirect" as const, path };
+    }
+    return { kind: "ok" as const };
   });
 
 export const getMyAuthorSlug = createServerFn({ method: "GET" }).handler(

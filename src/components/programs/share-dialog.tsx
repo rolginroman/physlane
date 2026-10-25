@@ -15,6 +15,7 @@ import {
   publicProgramCanonicalUrlFromOrigin,
   shareLinkUrlFromOrigin,
 } from "#/lib/programs/program-urls";
+import { AuthorProfileSetup } from "#/components/programs/author-profile-setup";
 import {
   getMyAuthorSlug,
   rotateShareToken,
@@ -57,6 +58,7 @@ export function ShareDialog({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [replaceConfirm, setReplaceConfirm] = useState(false);
+  const [profileSetupOpen, setProfileSetupOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -239,7 +241,7 @@ export function ShareDialog({
                 type="button"
                 className="min-h-11 w-full"
                 disabled={pending}
-                onClick={() => void runVisibility("public")}
+                onClick={() => setProfileSetupOpen(true)}
               >
                 <Globe className="size-4" aria-hidden />
                 Go public
@@ -305,6 +307,15 @@ export function ShareDialog({
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <AuthorProfileSetup
+        open={profileSetupOpen}
+        onOpenChange={setProfileSetupOpen}
+        mode="go-public"
+        onSaved={async () => {
+          await runVisibility("public");
+        }}
+      />
 
       <Dialog open={replaceConfirm} onOpenChange={setReplaceConfirm}>
         <DialogContent className="sm:max-w-md">
