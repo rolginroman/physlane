@@ -3,10 +3,15 @@ import {
   assertAuthor,
   assertExerciseReferenceAllowed,
   assertProgramUsable,
+  assertSlugAvailable,
   customExerciseInputSchema,
+  isSlugHistoryReserved,
   normalizeExerciseName,
   nextRevision,
+  planVisibilityTransition,
   revisionGuard,
+  suggestAuthorSlug,
+  suggestProgramSlug,
   validateSessionEntries,
 } from "../programs.core";
 
@@ -139,6 +144,254 @@ describe("validateSessionEntries", () => {
         inheritedForeignCustomIds: new Set(),
       }),
     ).toThrow("INVALID_ENTRY");
+  });
+});
+
+const noHidden = { hiddenAt: null as Date | null };
+const withSlug = (slug: string | null) => ({ ...noHidden, slug });
+const authorNoSlug = { slug: null as string | null };
+const authorWithSlug = { slug: "jane" };
+
+describe("planVisibilityTransition", () => {
+  it("refuses hidden programs", () => {
+    const result = planVisibilityTransition(
+      "draft",
+      "unlisted",
+      { hiddenAt: new Date(), slug: null },
+      authorNoSlug,
+    );
+    expect(result).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+  });
+
+  const invalidPairs: Array<
+    ["draft" | "unlisted" | "public", "draft" | "unlisted" | "public"]
+  > = [
+    ["draft", "draft"],
+    ["unlisted", "unlisted"],
+    ["public", "public"],
+  ];
+  for (const [current, target] of invalidPairs) {
+    it(`rejects self-transition ${current} → ${target}`, () => {
+      expect(
+        planVisibilityTransition(
+          current,
+          target,
+          withSlug("ppl"),
+          authorWithSlug,
+        ),
+      ).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+    });
+  }
+
+  it("draft → unlisted mints token and slugs when absent", () => {
+    expect(
+      planVisibilityTransition(
+        "draft",
+        "unlisted",
+        withSlug(null),
+        authorNoSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: true,
+        clearShareToken: false,
+        mintProgramSlug: true,
+        mintAuthorSlug: true,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("draft → public mints slugs but not token", () => {
+    expect(
+      planVisibilityTransition("draft", "public", withSlug(null), authorNoSlug),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: false,
+        mintProgramSlug: true,
+        mintAuthorSlug: true,
+        profileBecomesPublic: true,
+      },
+    });
+  });
+
+  it("unlisted → public keeps token and slugs", () => {
+    expect(
+      planVisibilityTransition(
+        "unlisted",
+        "public",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: false,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: true,
+      },
+    });
+  });
+
+  it("public → unlisted mints fresh token, retains slugs", () => {
+    expect(
+      planVisibilityTransition(
+        "public",
+        "unlisted",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: true,
+        clearShareToken: false,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("public → draft clears token, retains slugs", () => {
+    expect(
+      planVisibilityTransition(
+        "public",
+        "draft",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: true,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("unlisted → draft clears token", () => {
+    expect(
+      planVisibilityTransition(
+        "unlisted",
+        "draft",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: true,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("skips slug mint effects when slugs already set", () => {
+    expect(
+      planVisibilityTransition(
+        "draft",
+        "unlisted",
+        withSlug("prog"),
+        authorWithSlug,
+      ),
+    ).toMatchObject({
+      ok: true,
+      effects: {
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+      },
+    });
+  });
+});
+
+describe("suggestProgramSlug", () => {
+  it("returns base slug when free", () => {
+    expect(suggestProgramSlug("Upper Lower Split", [])).toBe(
+      "upper-lower-split",
+    );
+  });
+
+  it("suffixes on collision within 40 chars", () => {
+    expect(suggestProgramSlug("PPL", ["ppl"])).toBe("ppl-2");
+    expect(suggestProgramSlug("PPL", ["ppl", "ppl-2"])).toBe("ppl-3");
+  });
+
+  it("clamps long titles before suffixing", () => {
+    const longTitle = "a".repeat(50);
+    const slug = suggestProgramSlug(longTitle, []);
+    expect(slug.length).toBeLessThanOrEqual(40);
+    expect(slug).toBe("a".repeat(40));
+  });
+
+  it("returns empty when title cannot produce a slug", () => {
+    expect(suggestProgramSlug("!!!", [])).toBe("");
+  });
+});
+
+describe("suggestAuthorSlug", () => {
+  it("returns base slug when free", () => {
+    expect(suggestAuthorSlug("alex", [])).toBe("alex");
+  });
+
+  it("suffixes on collision within 40 chars", () => {
+    expect(suggestAuthorSlug("alex", ["alex"])).toBe("alex-2");
+    expect(suggestAuthorSlug("alex", ["alex", "alex-2"])).toBe("alex-3");
+  });
+
+  it("clamps long base before suffixing", () => {
+    const longBase = "a".repeat(40);
+    const slug = suggestAuthorSlug(longBase, ["a".repeat(40)]);
+    expect(slug).toBe(`${"a".repeat(38)}-2`);
+    expect(slug?.length).toBeLessThanOrEqual(40);
+  });
+
+  it("returns null for empty base", () => {
+    expect(suggestAuthorSlug("", [])).toBeNull();
+  });
+
+  it("returns null when all suffix candidates are taken", () => {
+    const taken = ["alex"];
+    for (let n = 2; n <= 99; n++) {
+      taken.push(`alex-${n}`);
+    }
+    expect(suggestAuthorSlug("alex", taken)).toBeNull();
+  });
+});
+
+describe("assertSlugAvailable", () => {
+  it("throws SLUG_TAKEN for current slugs", () => {
+    expect(() => assertSlugAvailable("taken", ["taken"], [])).toThrow(
+      "SLUG_TAKEN",
+    );
+  });
+
+  it("throws SLUG_TAKEN for quarantined history", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    const createdAt = new Date("2026-01-01T00:00:00Z");
+    expect(() =>
+      assertSlugAvailable("old", [], [{ slug: "old", createdAt }], now),
+    ).toThrow("SLUG_TAKEN");
+  });
+
+  it("allows expired history slugs", () => {
+    const now = new Date("2028-01-02T00:00:00Z");
+    const createdAt = new Date("2026-01-01T00:00:00Z");
+    expect(() =>
+      assertSlugAvailable("old", [], [{ slug: "old", createdAt }], now),
+    ).not.toThrow();
+    expect(isSlugHistoryReserved(createdAt, now)).toBe(false);
   });
 });
 

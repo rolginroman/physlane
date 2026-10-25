@@ -16,15 +16,22 @@ import {
   type Equipment,
   type Muscle,
 } from "#/lib/programs/taxonomy";
+import { newShareToken, publicFirstName } from "#/lib/share";
+import { suggestSlug, validateSlug } from "#/lib/programs/slug";
 import { requireUser } from "./auth.fns";
 import {
   assertAuthor,
   assertProgramUsable,
   assertSessionWeekInProgram,
+  assertSlugAvailable,
   customExerciseInputSchema,
+  isSlugHistoryReserved,
   nextRevision,
   normalizeExerciseName,
+  planVisibilityTransition,
   revisionGuard,
+  suggestAuthorSlug,
+  suggestProgramSlug,
   validateSessionEntries,
 } from "./programs.core";
 
@@ -85,6 +92,17 @@ export type ProgramListItemDTO = Pick<
   | "shareToken"
   | "createdAt"
 >;
+
+export type PublicProgramAuthorDTO = {
+  displayName: string | null;
+  authorSlug: string | null;
+};
+
+export type PublicProgramDTO = ProgramDTO & {
+  sessions: ProgramSessionDTO[];
+  exercises: Record<string, ProgramExerciseRefDTO>;
+  author: PublicProgramAuthorDTO;
+};
 
 export type ExercisePickerRowDTO = {
   id: string;
@@ -236,6 +254,126 @@ async function loadProgramExerciseMap(
     };
   }
   return map;
+}
+
+function resolvePublicAuthorDisplayName(author: {
+  displayName: string | null;
+  name: string | null;
+}): string | null {
+  return author.displayName ?? publicFirstName(author.name);
+}
+
+async function loadAuthorRow(userId: string): Promise<schema.UserRow> {
+  const [author] = await useDb()
+    .select()
+    .from(schema.user)
+    .where(eq(schema.user.id, userId))
+    .limit(1);
+  if (!author) {
+    throw appError("PROGRAM_NOT_FOUND");
+  }
+  return author;
+}
+
+async function takenProgramSlugsForAuthor(
+  authorUserId: string,
+  now: Date,
+): Promise<string[]> {
+  const db = useDb();
+  const programRows = await db
+    .select({ slug: schema.programs.slug })
+    .from(schema.programs)
+    .where(
+      and(
+        eq(schema.programs.userId, authorUserId),
+        isNull(schema.programs.deletedAt),
+      ),
+    );
+  const historyRows = await db
+    .select({
+      fromSlug: schema.programSlugHistory.fromSlug,
+      createdAt: schema.programSlugHistory.createdAt,
+    })
+    .from(schema.programSlugHistory)
+    .where(eq(schema.programSlugHistory.userId, authorUserId));
+
+  const taken = new Set<string>();
+  for (const row of programRows) {
+    if (row.slug) {
+      taken.add(row.slug);
+    }
+  }
+  for (const row of historyRows) {
+    if (isSlugHistoryReserved(row.createdAt, now)) {
+      taken.add(row.fromSlug);
+    }
+  }
+  return [...taken];
+}
+
+async function takenAuthorSlugsGlobally(now: Date): Promise<{
+  current: Set<string>;
+  history: Array<{ slug: string; createdAt: Date }>;
+}> {
+  const db = useDb();
+  const users = await db.select({ slug: schema.user.slug }).from(schema.user);
+  const historyRows = await db
+    .select({
+      fromSlug: schema.authorSlugHistory.fromSlug,
+      createdAt: schema.authorSlugHistory.createdAt,
+    })
+    .from(schema.authorSlugHistory);
+
+  const current = new Set<string>();
+  for (const row of users) {
+    if (row.slug) {
+      current.add(row.slug);
+    }
+  }
+  const history: Array<{ slug: string; createdAt: Date }> = [];
+  for (const row of historyRows) {
+    if (isSlugHistoryReserved(row.createdAt, now)) {
+      history.push({ slug: row.fromSlug, createdAt: row.createdAt });
+    }
+  }
+  return { current, history };
+}
+
+async function buildPublicProgramDTO(
+  program: schema.Program,
+): Promise<PublicProgramDTO> {
+  const author = await loadAuthorRow(program.userId);
+  const sessions = await loadProgramSessionsDTO(program.id);
+  const exercises = await loadProgramExerciseMap(sessions);
+  const dto = toProgramDTO(program, sessions);
+  return {
+    ...dto,
+    sessions,
+    exercises,
+    author: {
+      displayName: resolvePublicAuthorDisplayName(author),
+      authorSlug: author.slug,
+    },
+  };
+}
+
+function assertViewerVisibility(
+  program: schema.Program,
+  mode: "token" | "public-only",
+): void {
+  if (program.deletedAt != null || program.hiddenAt != null) {
+    throw appError("PROGRAM_NOT_FOUND");
+  }
+  if (mode === "public-only" && program.visibility !== "public") {
+    throw appError("PROGRAM_NOT_FOUND");
+  }
+  if (
+    mode === "token" &&
+    program.visibility !== "public" &&
+    program.visibility !== "unlisted"
+  ) {
+    throw appError("PROGRAM_NOT_FOUND");
+  }
 }
 
 async function loadProgramSessionsDTO(
@@ -741,4 +879,207 @@ export const searchCatalogExercises = createServerFn({ method: "GET" })
         hasArticle: hints?.hasArticle ?? false,
       };
     }) satisfies ExercisePickerRowDTO[];
+  });
+
+const SetVisibilityInputSchema = z.object({
+  programId: z.string().min(1),
+  target: z.enum(["draft", "unlisted", "public"]),
+});
+
+export const setVisibility = createServerFn({ method: "POST" })
+  .validator((d) => SetVisibilityInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const program = await loadAuthorProgram(data.programId, me.id);
+    const author = await loadAuthorRow(program.userId);
+    const planned = planVisibilityTransition(
+      program.visibility,
+      data.target,
+      { hiddenAt: program.hiddenAt, slug: program.slug },
+      { slug: author.slug },
+    );
+    if (!planned.ok) {
+      throw appError(planned.code);
+    }
+    const { effects } = planned;
+    const now = new Date();
+    const revision = nextRevision(program.revision);
+
+    let nextShareToken = program.shareToken;
+    if (effects.clearShareToken) {
+      nextShareToken = null;
+    }
+    if (effects.mintShareToken) {
+      nextShareToken = newShareToken();
+    }
+
+    let nextProgramSlug = program.slug;
+    if (effects.mintProgramSlug) {
+      const taken = await takenProgramSlugsForAuthor(program.userId, now);
+      const candidate = suggestProgramSlug(program.title, taken);
+      if (!candidate) {
+        throw appError("SLUG_TAKEN");
+      }
+      const validated = validateSlug(candidate);
+      if (!validated.ok) {
+        throw appError("SLUG_TAKEN");
+      }
+      assertSlugAvailable(candidate, taken, []);
+      nextProgramSlug = candidate;
+    }
+
+    let authorSlugUpdate: string | undefined;
+    let authorDisplayNameUpdate: string | null | undefined;
+    if (effects.mintAuthorSlug) {
+      const base = suggestSlug(
+        author.displayName ?? publicFirstName(author.name) ?? "author",
+      );
+      if (!base) {
+        throw appError("SLUG_TAKEN");
+      }
+      const { current, history } = await takenAuthorSlugsGlobally(now);
+      const taken = [...current, ...history.map((row) => row.slug)];
+      const candidate = suggestAuthorSlug(base, taken);
+      if (candidate == null) {
+        throw appError("SLUG_TAKEN");
+      }
+      assertSlugAvailable(candidate, current, history, now);
+      authorSlugUpdate = candidate;
+      if (author.displayName == null) {
+        authorDisplayNameUpdate = publicFirstName(author.name);
+      }
+    }
+
+    const db = useDb();
+    await db.transaction(async (tx) => {
+      if (authorSlugUpdate != null) {
+        await tx
+          .update(schema.user)
+          .set({
+            slug: authorSlugUpdate,
+            ...(authorDisplayNameUpdate !== undefined
+              ? { displayName: authorDisplayNameUpdate }
+              : {}),
+          })
+          .where(eq(schema.user.id, author.id));
+      }
+      await tx
+        .update(schema.programs)
+        .set({
+          visibility: data.target,
+          shareToken: nextShareToken,
+          slug: nextProgramSlug,
+          revision,
+          updatedAt: now,
+        })
+        .where(eq(schema.programs.id, program.id));
+    });
+
+    const [row] = await db
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.id, program.id))
+      .limit(1);
+    if (!row) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    const sessions = await loadProgramSessionsDTO(row.id);
+    return toProgramDTO(row, sessions);
+  });
+
+const RotateShareTokenInputSchema = z.object({
+  programId: z.string().min(1),
+});
+
+export const rotateShareToken = createServerFn({ method: "POST" })
+  .validator((d) => RotateShareTokenInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const me = await requireUser();
+    const program = await loadAuthorProgram(data.programId, me.id);
+    if (program.visibility !== "unlisted") {
+      throw appError("INVALID_TRANSITION");
+    }
+    const now = new Date();
+    const token = newShareToken();
+    const revision = nextRevision(program.revision);
+    await useDb()
+      .update(schema.programs)
+      .set({
+        shareToken: token,
+        revision,
+        updatedAt: now,
+      })
+      .where(eq(schema.programs.id, program.id));
+    return { shareToken: token };
+  });
+
+const GetPublicProgramByTokenInputSchema = z.object({
+  token: z.string().min(1),
+});
+
+export const getPublicProgramByToken = createServerFn({ method: "GET" })
+  .validator((d) => GetPublicProgramByTokenInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const [program] = await useDb()
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.shareToken, data.token))
+      .limit(1);
+    if (!program) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    assertViewerVisibility(program, "token");
+    return buildPublicProgramDTO(program);
+  });
+
+const GetPublicProgramByIdInputSchema = z.object({
+  programId: z.string().min(1),
+});
+
+export const getPublicProgramById = createServerFn({ method: "GET" })
+  .validator((d) => GetPublicProgramByIdInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const [program] = await useDb()
+      .select()
+      .from(schema.programs)
+      .where(eq(schema.programs.id, data.programId))
+      .limit(1);
+    if (!program) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    assertViewerVisibility(program, "public-only");
+    return buildPublicProgramDTO(program);
+  });
+
+const GetPublicProgramBySlugInputSchema = z.object({
+  authorSlug: z.string().min(1),
+  programSlug: z.string().min(1),
+});
+
+export const getPublicProgramBySlug = createServerFn({ method: "GET" })
+  .validator((d) => GetPublicProgramBySlugInputSchema.parse(d))
+  .handler(async ({ data }) => {
+    const [author] = await useDb()
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.slug, data.authorSlug))
+      .limit(1);
+    if (!author) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    const [program] = await useDb()
+      .select()
+      .from(schema.programs)
+      .where(
+        and(
+          eq(schema.programs.userId, author.id),
+          eq(schema.programs.slug, data.programSlug),
+        ),
+      )
+      .limit(1);
+    if (!program) {
+      throw appError("PROGRAM_NOT_FOUND");
+    }
+    assertViewerVisibility(program, "public-only");
+    return buildPublicProgramDTO(program);
   });
