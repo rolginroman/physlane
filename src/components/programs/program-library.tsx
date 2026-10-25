@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -125,6 +125,23 @@ function SessionsStepper({
   );
 }
 
+function EditedAtLabel({ updatedAt }: { updatedAt: string }) {
+  const [label, setLabel] = useState(() => formatEditedAt(updatedAt));
+
+  useEffect(() => {
+    setLabel(formatEditedAt(updatedAt));
+  }, [updatedAt]);
+
+  return (
+    <span
+      suppressHydrationWarning
+      className="shrink-0 text-sm tabular-nums text-muted-foreground"
+    >
+      {label}
+    </span>
+  );
+}
+
 function ProgramRow({ program }: { program: ProgramListItemDTO }) {
   const meta = programMetaLine(program);
   return (
@@ -148,9 +165,7 @@ function ProgramRow({ program }: { program: ProgramListItemDTO }) {
             </p>
           ) : null}
         </div>
-        <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-          {formatEditedAt(program.updatedAt)}
-        </span>
+        <EditedAtLabel updatedAt={program.updatedAt} />
       </Link>
     </li>
   );

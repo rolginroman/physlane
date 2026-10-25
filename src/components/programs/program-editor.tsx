@@ -59,20 +59,36 @@ import {
 
 type SaveIndicator = "idle" | "saving" | "saved" | "error";
 
+function nullIfEmpty(value: string | null | undefined): string | null {
+  if (value == null || value.trim() === "") {
+    return null;
+  }
+  return value;
+}
+
 function entryToPayload(entry: ProgramEntryDTO): ProgramEntry {
+  const sets = Math.min(20, Math.max(1, Math.floor(Number(entry.sets)) || 3));
+  let repsValue = entry.repsValue;
+  if (entry.repsType === "max") {
+    repsValue = null;
+  } else if (!Number.isFinite(repsValue)) {
+    repsValue = entry.repsType === "seconds" ? 30 : 10;
+  }
+  const loadType = entry.loadType;
+  const intensityType = entry.intensityType;
   return {
     exerciseId: entry.exerciseId,
     groupTag: entry.groupTag,
-    sets: entry.sets,
+    sets,
     repsType: entry.repsType,
-    repsValue: entry.repsValue,
-    loadType: entry.loadType,
-    loadValue: entry.loadValue,
-    intensityType: entry.intensityType,
-    intensityValue: entry.intensityValue,
+    repsValue,
+    loadType,
+    loadValue: loadType === "none" ? null : entry.loadValue,
+    intensityType,
+    intensityValue: intensityType === "none" ? null : entry.intensityValue,
     restSeconds: entry.restSeconds,
-    cues: entry.cues,
-    refUrl: entry.refUrl,
+    cues: nullIfEmpty(entry.cues),
+    refUrl: nullIfEmpty(entry.refUrl),
   };
 }
 
@@ -81,16 +97,18 @@ function sessionToPayload(session: ProgramSessionDTO): ProgramSession {
     weekNumber: session.weekNumber,
     orderIndex: session.orderIndex,
     title: session.title,
-    notes: session.notes,
-    entries: session.entries.map(entryToPayload),
+    notes: nullIfEmpty(session.notes),
+    entries: session.entries
+      .filter((e) => e.exerciseId.length > 0)
+      .map(entryToPayload),
   };
 }
 
-function newEntryRow(): ProgramEntryDTO {
+function newEntryRow(exerciseId: string): ProgramEntryDTO {
   return {
     id: crypto.randomUUID(),
     orderIndex: 0,
-    exerciseId: "",
+    exerciseId,
     groupTag: null,
     sets: 3,
     repsType: "count",
@@ -155,9 +173,7 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [saveIndicator, setSaveIndicator] = useState<SaveIndicator>("saved");
   const [staleRevision, setStaleRevision] = useState(false);
-  const [offline, setOffline] = useState(
-    typeof navigator !== "undefined" ? !navigator.onLine : false,
-  );
+  const [offline, setOffline] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [copyWeekOpen, setCopyWeekOpen] = useState(false);
   const [copyTargetWeek, setCopyTargetWeek] = useState(2);
@@ -167,6 +183,7 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
     useState<ProgramSessionDTO | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSessionId, setPickerSessionId] = useState<string | null>(null);
   const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [reloadPending, setReloadPending] = useState(false);
@@ -174,6 +191,7 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    setOffline(!navigator.onLine);
     const onOnline = () => setOffline(false);
     const onOffline = () => setOffline(true);
     window.addEventListener("online", onOnline);
@@ -483,8 +501,15 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
     });
   };
 
-  const openPickerForEntry = (entryId: string) => {
+  const openPickerForEntry = (sessionId: string, entryId: string) => {
+    setPickerSessionId(sessionId);
     setPickerEntryId(entryId);
+    setPickerOpen(true);
+  };
+
+  const openPickerForNewEntry = (sessionId: string) => {
+    setPickerSessionId(sessionId);
+    setPickerEntryId(null);
     setPickerOpen(true);
   };
 
@@ -639,6 +664,7 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
             onUpdate={(updater) => updateSession(session.id, updater)}
             onRemove={() => setRemoveSessionTarget(session)}
             onPickExercise={openPickerForEntry}
+            onAddExercise={() => openPickerForNewEntry(session.id)}
             stale={staleRevision}
           />
         ))}
@@ -659,10 +685,17 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
 
       <ExercisePicker
         open={pickerOpen}
-        onOpenChange={setPickerOpen}
+        onOpenChange={(open) => {
+          setPickerOpen(open);
+          if (!open) {
+            setPickerSessionId(null);
+            setPickerEntryId(null);
+          }
+        }}
         onSelect={(ex) => {
-          if (!pickerEntryId) return;
+          const sessionId = pickerSessionId;
           const entryId = pickerEntryId;
+          if (!sessionId) return;
           setExercises((prev) => ({
             ...prev,
             [ex.id]: {
@@ -673,17 +706,23 @@ export function ProgramEditor({ initial }: ProgramEditorProps) {
               isCustom: ex.isCustom,
             },
           }));
-          const host = sessions.find((s) =>
-            s.entries.some((e) => e.id === entryId),
-          );
-          if (host) {
-            updateSession(host.id, (s) => ({
+          if (entryId) {
+            updateSession(sessionId, (s) => ({
               ...s,
               entries: s.entries.map((entry) =>
                 entry.id === entryId ? { ...entry, exerciseId: ex.id } : entry,
               ),
             }));
+          } else {
+            const row = newEntryRow(ex.id);
+            updateSession(sessionId, (s) => ({
+              ...s,
+              entries: [...s.entries, { ...row, orderIndex: s.entries.length }],
+            }));
+            setExpanded((prev) => new Set(prev).add(row.id));
           }
+          setPickerOpen(false);
+          setPickerSessionId(null);
           setPickerEntryId(null);
         }}
       />
@@ -966,6 +1005,7 @@ function SessionCard({
   onUpdate,
   onRemove,
   onPickExercise,
+  onAddExercise,
   stale,
 }: {
   session: ProgramSessionDTO;
@@ -974,7 +1014,8 @@ function SessionCard({
   onToggleExpanded: (id: string) => void;
   onUpdate: (fn: (s: ProgramSessionDTO) => ProgramSessionDTO) => void;
   onRemove: () => void;
-  onPickExercise: (entryId: string) => void;
+  onPickExercise: (sessionId: string, entryId: string) => void;
+  onAddExercise: () => void;
   stale: boolean;
 }) {
   const grouped = useMemo(() => {
@@ -1072,7 +1113,15 @@ function SessionCard({
                       }),
                     }));
                   }}
-                  onPick={() => onPickExercise(entry.id)}
+                  onPick={() => onPickExercise(session.id, entry.id)}
+                  onRemoveEntry={() =>
+                    onUpdate((s) => ({
+                      ...s,
+                      entries: s.entries
+                        .filter((e) => e.id !== entry.id)
+                        .map((e, i) => ({ ...e, orderIndex: i })),
+                    }))
+                  }
                   canSuperset={index > 0}
                   stale={stale}
                 />
@@ -1086,14 +1135,7 @@ function SessionCard({
         variant="outline"
         className="mt-3 min-h-11"
         disabled={stale}
-        onClick={() => {
-          const entry = newEntryRow();
-          onUpdate((s) => ({
-            ...s,
-            entries: [...s.entries, { ...entry, orderIndex: s.entries.length }],
-          }));
-          onToggleExpanded(entry.id);
-        }}
+        onClick={onAddExercise}
       >
         Add exercise
       </Button>
@@ -1109,6 +1151,7 @@ function EntryRow({
   onUpdate,
   onSupersetToggle,
   onPick,
+  onRemoveEntry,
   canSuperset,
   stale,
 }: {
@@ -1119,6 +1162,7 @@ function EntryRow({
   onUpdate: (patch: Partial<ProgramEntryDTO>) => void;
   onSupersetToggle: () => void;
   onPick: () => void;
+  onRemoveEntry: () => void;
   canSuperset: boolean;
   stale: boolean;
 }) {
@@ -1309,6 +1353,15 @@ function EntryRow({
               placeholder="https://"
             />
           </div>
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11 text-destructive"
+            disabled={stale}
+            onClick={onRemoveEntry}
+          >
+            Remove exercise
+          </Button>
         </div>
       ) : null}
     </div>

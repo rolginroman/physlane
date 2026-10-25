@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { BatchItem } from "drizzle-orm/batch";
 import { and, asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { useDb } from "#/db/client";
@@ -562,9 +563,6 @@ export const upsertSession = createServerFn({ method: "POST" })
         )
         .limit(1);
       existingSession = row;
-      if (!existingSession) {
-        throw appError("PROGRAM_NOT_FOUND");
-      }
     }
 
     const { catalogIds, myCustomIds } = await loadExerciseReferenceSets(
@@ -584,9 +582,10 @@ export const upsertSession = createServerFn({ method: "POST" })
     const now = new Date();
     const revision = nextRevision(program.revision);
 
-    await db.transaction(async (tx) => {
-      if (existingSession) {
-        await tx
+    const upsertBatch: BatchItem<"sqlite">[] = [];
+    if (existingSession) {
+      upsertBatch.push(
+        db
           .update(schema.programSessions)
           .set({
             weekNumber: parsedSession.weekNumber,
@@ -594,25 +593,29 @@ export const upsertSession = createServerFn({ method: "POST" })
             title: parsedSession.title,
             notes: parsedSession.notes ?? null,
           })
-          .where(eq(schema.programSessions.id, sessionId));
-        await tx
+          .where(eq(schema.programSessions.id, sessionId)),
+        db
           .delete(schema.programEntries)
-          .where(eq(schema.programEntries.sessionId, sessionId));
-      } else {
-        await tx.insert(schema.programSessions).values({
+          .where(eq(schema.programEntries.sessionId, sessionId)),
+      );
+    } else {
+      upsertBatch.push(
+        db.insert(schema.programSessions).values({
           id: sessionId,
           programId: program.id,
           weekNumber: parsedSession.weekNumber,
           orderIndex: parsedSession.orderIndex,
           title: parsedSession.title,
           notes: parsedSession.notes ?? null,
-        });
-      }
+        }),
+      );
+    }
 
-      for (let i = 0; i < parsedSession.entries.length; i++) {
-        const entry = parsedSession.entries[i];
-        const validated = entrySchema.parse(entry);
-        await tx.insert(schema.programEntries).values({
+    for (let i = 0; i < parsedSession.entries.length; i++) {
+      const entry = parsedSession.entries[i];
+      const validated = entrySchema.parse(entry);
+      upsertBatch.push(
+        db.insert(schema.programEntries).values({
           id: crypto.randomUUID(),
           sessionId,
           orderIndex: i,
@@ -628,14 +631,21 @@ export const upsertSession = createServerFn({ method: "POST" })
           restSeconds: validated.restSeconds ?? null,
           cues: validated.cues ?? null,
           refUrl: validated.refUrl ?? null,
-        });
-      }
+        }),
+      );
+    }
 
-      await tx
+    upsertBatch.push(
+      db
         .update(schema.programs)
         .set({ revision, updatedAt: now })
-        .where(eq(schema.programs.id, program.id));
-    });
+        .where(eq(schema.programs.id, program.id)),
+    );
+
+    // D1 batch API requires a non-empty tuple; length is always ≥2 here.
+    await db.batch(
+      upsertBatch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]],
+    );
 
     const sessions = await loadProgramSessionsDTO(program.id);
     const [updatedProgram] = await db
@@ -674,24 +684,25 @@ export const removeSession = createServerFn({ method: "POST" })
       )
       .limit(1);
     if (!session) {
-      throw appError("PROGRAM_NOT_FOUND");
+      const sessions = await loadProgramSessionsDTO(program.id);
+      return toProgramDTO(program, sessions);
     }
 
     const now = new Date();
     const revision = nextRevision(program.revision);
 
-    await db.transaction(async (tx) => {
-      await tx
+    await db.batch([
+      db
         .delete(schema.programEntries)
-        .where(eq(schema.programEntries.sessionId, data.sessionId));
-      await tx
+        .where(eq(schema.programEntries.sessionId, data.sessionId)),
+      db
         .delete(schema.programSessions)
-        .where(eq(schema.programSessions.id, data.sessionId));
-      await tx
+        .where(eq(schema.programSessions.id, data.sessionId)),
+      db
         .update(schema.programs)
         .set({ revision, updatedAt: now })
-        .where(eq(schema.programs.id, program.id));
-    });
+        .where(eq(schema.programs.id, program.id)),
+    ]);
 
     const sessions = await loadProgramSessionsDTO(program.id);
     const [updatedProgram] = await db
@@ -951,9 +962,10 @@ export const setVisibility = createServerFn({ method: "POST" })
     }
 
     const db = useDb();
-    await db.transaction(async (tx) => {
-      if (authorSlugUpdate != null) {
-        await tx
+    const visibilityBatch: BatchItem<"sqlite">[] = [];
+    if (authorSlugUpdate != null) {
+      visibilityBatch.push(
+        db
           .update(schema.user)
           .set({
             slug: authorSlugUpdate,
@@ -961,9 +973,11 @@ export const setVisibility = createServerFn({ method: "POST" })
               ? { displayName: authorDisplayNameUpdate }
               : {}),
           })
-          .where(eq(schema.user.id, author.id));
-      }
-      await tx
+          .where(eq(schema.user.id, author.id)),
+      );
+    }
+    visibilityBatch.push(
+      db
         .update(schema.programs)
         .set({
           visibility: data.target,
@@ -972,8 +986,11 @@ export const setVisibility = createServerFn({ method: "POST" })
           revision,
           updatedAt: now,
         })
-        .where(eq(schema.programs.id, program.id));
-    });
+        .where(eq(schema.programs.id, program.id)),
+    );
+    await db.batch(
+      visibilityBatch as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]],
+    );
 
     const [row] = await db
       .select()
