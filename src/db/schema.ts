@@ -16,12 +16,16 @@ import {
   type Muscle,
 } from "#/lib/programs/taxonomy";
 
+// drizzle's enum option wants a mutable tuple; taxonomy arrays are the source of truth
 const muscleEnum = MUSCLES as unknown as [Muscle, ...Muscle[]];
+// drizzle's enum option wants a mutable tuple; taxonomy arrays are the source of truth
 const equipmentEnum = EQUIPMENT as unknown as [Equipment, ...Equipment[]];
+// drizzle's enum option wants a mutable tuple; taxonomy arrays are the source of truth
 const programGoalEnum = PROGRAM_GOALS as unknown as [
   (typeof PROGRAM_GOALS)[number],
   ...(typeof PROGRAM_GOALS)[number][],
 ];
+// drizzle's enum option wants a mutable tuple; taxonomy arrays are the source of truth
 const programLevelEnum = PROGRAM_LEVELS as unknown as [
   (typeof PROGRAM_LEVELS)[number],
   ...(typeof PROGRAM_LEVELS)[number][],

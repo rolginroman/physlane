@@ -7,7 +7,13 @@ export type AppErrorCode =
   | "INVALID_PROTEIN"
   | "BILLING_NOT_CONFIGURED"
   | "NO_STRIPE_CUSTOMER"
-  | "EMAIL_REQUIRED";
+  | "EMAIL_REQUIRED"
+  | "PROGRAM_NOT_FOUND"
+  | "NOT_AUTHOR"
+  | "SLUG_TAKEN"
+  | "INVALID_TRANSITION"
+  | "INVALID_ENTRY"
+  | "STALE_REVISION";
 
 const APP_ERROR_CODES: readonly AppErrorCode[] = [
   "PRO_REQUIRED",
@@ -19,6 +25,12 @@ const APP_ERROR_CODES: readonly AppErrorCode[] = [
   "BILLING_NOT_CONFIGURED",
   "NO_STRIPE_CUSTOMER",
   "EMAIL_REQUIRED",
+  "PROGRAM_NOT_FOUND",
+  "NOT_AUTHOR",
+  "SLUG_TAKEN",
+  "INVALID_TRANSITION",
+  "INVALID_ENTRY",
+  "STALE_REVISION",
 ];
 
 export function isAppErrorCode(value: unknown): value is AppErrorCode {
