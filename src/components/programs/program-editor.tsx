@@ -1,8 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { Settings, Share2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  Settings,
+  Share2,
+} from "lucide-react";
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -41,10 +49,38 @@ import {
   goalDisplayLabel,
   levelDisplayLabel,
 } from "#/lib/programs/display-labels";
-import type {
-  ProgramEntry,
-  ProgramSession,
-} from "#/lib/programs/program-shape";
+import {
+  appendEntry,
+  groupEntryBlocks,
+  isJoinedToPrevious,
+  moveEntry,
+  nextSessionDefaults,
+  removeEntry,
+  toggleSupersetWithPrevious,
+} from "#/lib/programs/entry-ops";
+import { formatEntrySummary } from "#/lib/programs/entry-display";
+import {
+  collectSaveBlockers,
+  entryToPayload,
+  numberToInput,
+  parseNumberInput,
+  saveBlockedLabel,
+  sessionToPayload,
+  validateSession,
+  type EntryErrors,
+  type SessionErrors,
+} from "#/lib/programs/entry-validation";
+import {
+  defaultKgLoad,
+  loadFromInput,
+  loadToInput,
+  loadUnitLabel,
+} from "#/lib/programs/load-units";
+import {
+  validateMetaDraft,
+  type MetaErrors,
+} from "#/lib/programs/meta-validation";
+import type { ProgramMeta } from "#/lib/programs/program-shape";
 import {
   EQUIPMENT,
   PROGRAM_GOALS,
@@ -66,57 +102,12 @@ import {
   type ProgramExerciseRefDTO,
   type ProgramSessionDTO,
 } from "#/server/programs.fns";
+import type { UnitSystem } from "#/lib/units";
 
 type SaveIndicator = "idle" | "saving" | "saved" | "error";
 
-function nullIfEmpty(value: string | null | undefined): string | null {
-  if (value == null || value.trim() === "") {
-    return null;
-  }
-  return value;
-}
-
 function isStaleRevisionError(error: unknown): boolean {
   return error instanceof Error && error.message === "STALE_REVISION";
-}
-
-function entryToPayload(entry: ProgramEntryDTO, keepId = true): ProgramEntry {
-  const sets = Math.min(20, Math.max(1, Math.floor(Number(entry.sets)) || 3));
-  let repsValue = entry.repsValue;
-  if (entry.repsType === "max") {
-    repsValue = null;
-  } else if (!Number.isFinite(repsValue)) {
-    repsValue = entry.repsType === "seconds" ? 30 : 10;
-  }
-  const loadType = entry.loadType;
-  const intensityType = entry.intensityType;
-  return {
-    id: keepId ? entry.id : undefined,
-    exerciseId: entry.exerciseId,
-    groupTag: entry.groupTag,
-    sets,
-    repsType: entry.repsType,
-    repsValue,
-    loadType,
-    loadValue: loadType === "none" ? null : entry.loadValue,
-    intensityType,
-    intensityValue: intensityType === "none" ? null : entry.intensityValue,
-    restSeconds: entry.restSeconds,
-    cues: nullIfEmpty(entry.cues),
-    refUrl: nullIfEmpty(entry.refUrl),
-  };
-}
-
-function sessionToPayload(session: ProgramSessionDTO): ProgramSession {
-  return {
-    weekNumber: session.weekNumber,
-    orderIndex: session.orderIndex,
-    title: session.title,
-    notes: nullIfEmpty(session.notes),
-    entries: session.entries
-      .filter((e) => e.exerciseId.length > 0)
-      .map((entry) => entryToPayload(entry)),
-  };
 }
 
 function newEntryRow(exerciseId: string): ProgramEntryDTO {
@@ -138,12 +129,14 @@ function newEntryRow(exerciseId: string): ProgramEntryDTO {
   };
 }
 
-function newSession(weekNumber: number, orderIndex: number): ProgramSessionDTO {
+function newSession(
+  weekNumber: number,
+  weekSessions: readonly ProgramSessionDTO[],
+): ProgramSessionDTO {
   return {
     id: crypto.randomUUID(),
     weekNumber,
-    orderIndex,
-    title: `Session ${orderIndex + 1}`,
+    ...nextSessionDefaults(weekSessions),
     notes: null,
     entries: [],
   };
@@ -155,6 +148,7 @@ type ProgramEditorProps = {
     exercises: Record<string, ProgramExerciseRefDTO>;
   };
   showForkBanner?: boolean;
+  unitSystem: UnitSystem;
 };
 
 type MetaState = {
@@ -172,6 +166,7 @@ type MetaState = {
 export function ProgramEditor({
   initial,
   showForkBanner = false,
+  unitSystem,
 }: ProgramEditorProps) {
   const programId = initial.id;
   const [forkBannerOpen, setForkBannerOpen] = useState(showForkBanner);
@@ -199,6 +194,8 @@ export function ProgramEditor({
   const [staleRevision, setStaleRevision] = useState(false);
   const [offline, setOffline] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [draft, setDraft] = useState<MetaState>(meta);
+  const [announcement, setAnnouncement] = useState("");
   const [programSlug, setProgramSlug] = useState(initial.slug ?? "");
   const [authorSlugPrefix, setAuthorSlugPrefix] = useState<string | null>(null);
   const [programSlugStatus, setProgramSlugStatus] = useState<
@@ -311,6 +308,8 @@ export function ProgramEditor({
           dirty.drop(sessionId);
           continue;
         }
+        // Stays dirty until fixed; other sessions still save.
+        if (validateSession(session, unitSystem)) continue;
         const dto = await upsertSession({
           data: {
             programId,
@@ -322,8 +321,18 @@ export function ProgramEditor({
         dirty.clearIfUnchanged(sessionId, sentVersion);
         mergeSessions(dto.sessions);
       }
+      writeFailedRef.current = false;
     });
-  }, [dirty, mergeSessions, programId, queue, runWrite]);
+  }, [dirty, mergeSessions, programId, queue, runWrite, unitSystem]);
+
+  const retrySave = () => {
+    if (dirty.size > 0) {
+      void flushDirty();
+    } else {
+      writeFailedRef.current = false;
+      setSaveIndicator("saved");
+    }
+  };
 
   const scheduleSave = useCallback(
     (sessionId: string) => {
@@ -460,15 +469,7 @@ export function ProgramEditor({
         data: {
           programId,
           expectedRevision: queue.revision,
-          meta: {
-            title: meta.title,
-            description: meta.description || null,
-            weeks: nextWeeks,
-            goal: meta.goal,
-            level: meta.level,
-            daysPerWeek: meta.daysPerWeek,
-            equipmentTags: meta.equipmentTags,
-          },
+          meta: metaToPayload({ ...meta, weeks: nextWeeks }),
         },
       });
       applyProgram(dto);
@@ -480,6 +481,7 @@ export function ProgramEditor({
 
   const saveSettings = async (e: FormEvent) => {
     e.preventDefault();
+    if (draftErrors) return;
     if (
       shareProgram.slug &&
       programSlug.trim().toLowerCase() !== shareProgram.slug &&
@@ -493,15 +495,7 @@ export function ProgramEditor({
           data: {
             programId,
             expectedRevision: queue.revision,
-            meta: {
-              title: meta.title,
-              description: meta.description || null,
-              weeks: meta.weeks,
-              goal: meta.goal,
-              level: meta.level,
-              daysPerWeek: meta.daysPerWeek,
-              equipmentTags: meta.equipmentTags,
-            },
+            meta: metaToPayload(draft),
           },
         }),
       );
@@ -642,6 +636,23 @@ export function ProgramEditor({
     });
   };
 
+  const draftErrors = useMemo(
+    () => validateMetaDraft(metaToPayload(draft)),
+    [draft],
+  );
+
+  const blockers = useMemo(
+    () => collectSaveBlockers(sessions, unitSystem),
+    [sessions, unitSystem],
+  );
+  const blockedLabel = saveBlockedLabel(blockers);
+
+  const openSettings = () => {
+    setDraft(meta);
+    setProgramSlug(shareProgram.slug ?? "");
+    setSettingsOpen(true);
+  };
+
   const openPickerForEntry = (sessionId: string, entryId: string) => {
     setPickerSessionId(sessionId);
     setPickerEntryId(entryId);
@@ -743,14 +754,30 @@ export function ProgramEditor({
             </p>
           ) : null}
         </div>
-        <span className="text-sm text-muted-foreground" role="status">
-          {saveIndicator === "saving"
-            ? "Saving…"
-            : saveIndicator === "saved"
-              ? "Saved"
-              : saveIndicator === "error"
-                ? "Save failed"
-                : null}
+        <span
+          className="flex items-center gap-1 text-sm text-muted-foreground"
+          role="status"
+        >
+          {blockedLabel ??
+            (offline
+              ? "Not saved"
+              : saveIndicator === "saving"
+                ? "Saving…"
+                : saveIndicator === "saved"
+                  ? "Saved"
+                  : saveIndicator === "error"
+                    ? "Save failed"
+                    : null)}
+          {saveIndicator === "error" && !blockedLabel && !offline ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 px-2 text-brand-text"
+              onClick={retrySave}
+            >
+              Retry
+            </Button>
+          ) : null}
         </span>
         <Button
           type="button"
@@ -767,7 +794,7 @@ export function ProgramEditor({
           size="icon-lg"
           aria-label="Program settings"
           className="min-h-11 min-w-11"
-          onClick={() => setSettingsOpen(true)}
+          onClick={openSettings}
         >
           <Settings className="size-5" aria-hidden />
         </Button>
@@ -841,6 +868,9 @@ export function ProgramEditor({
             onRemove={() => setRemoveSessionTarget(session)}
             onPickExercise={openPickerForEntry}
             onAddExercise={() => openPickerForNewEntry(session.id)}
+            onAnnounce={setAnnouncement}
+            errors={blockers.bySession[session.id]}
+            unitSystem={unitSystem}
             stale={staleRevision}
           />
         ))}
@@ -850,7 +880,7 @@ export function ProgramEditor({
           className="min-h-11 w-full sm:w-auto"
           disabled={staleRevision}
           onClick={() => {
-            const session = newSession(selectedWeek, weekSessions.length);
+            const session = newSession(selectedWeek, weekSessions);
             commitSessions([...sessionsRef.current, session]);
             scheduleSave(session.id);
           }}
@@ -893,7 +923,7 @@ export function ProgramEditor({
             const row = newEntryRow(ex.id);
             updateSession(sessionId, (s) => ({
               ...s,
-              entries: [...s.entries, { ...row, orderIndex: s.entries.length }],
+              entries: appendEntry(s.entries, row),
             }));
             setExpanded((prev) => new Set(prev).add(row.id));
           }
@@ -917,11 +947,16 @@ export function ProgramEditor({
               <Input
                 id="set-title"
                 className="mt-1 min-h-11"
-                value={meta.title}
+                value={draft.title}
                 onChange={(e) =>
-                  setMeta((m) => ({ ...m, title: e.target.value }))
+                  setDraft((m) => ({ ...m, title: e.target.value }))
+                }
+                aria-invalid={draftErrors?.title != null}
+                aria-describedby={
+                  draftErrors?.title ? "set-title-err" : undefined
                 }
               />
+              <FieldError id="set-title-err" message={draftErrors?.title} />
             </div>
             <div>
               <Label htmlFor="set-desc">
@@ -930,13 +965,21 @@ export function ProgramEditor({
               <textarea
                 id="set-desc"
                 className="mt-1 flex min-h-[76px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                value={meta.description}
+                value={draft.description}
                 onChange={(e) =>
-                  setMeta((m) => ({ ...m, description: e.target.value }))
+                  setDraft((m) => ({ ...m, description: e.target.value }))
+                }
+                aria-invalid={draftErrors?.description != null}
+                aria-describedby={
+                  draftErrors?.description ? "set-desc-err" : undefined
                 }
               />
+              <FieldError
+                id="set-desc-err"
+                message={draftErrors?.description}
+              />
             </div>
-            <MetaPickers meta={meta} setMeta={setMeta} />
+            <MetaPickers meta={draft} setMeta={setDraft} errors={draftErrors} />
             {shareProgram.slug && authorSlugPrefix ? (
               <div>
                 <Label htmlFor="set-program-slug">Program address</Label>
@@ -981,7 +1024,9 @@ export function ProgramEditor({
             <Button
               type="submit"
               className="min-h-11"
-              disabled={staleRevision || structuralPending}
+              disabled={
+                staleRevision || structuralPending || draftErrors != null
+              }
             >
               Save settings
             </Button>
@@ -1116,16 +1161,42 @@ export function ProgramEditor({
           queue.setRevision(updated.revision);
         }}
       />
+      <p className="sr-only" role="status" aria-live="polite">
+        {announcement}
+      </p>
     </section>
+  );
+}
+
+function metaToPayload(m: MetaState): ProgramMeta {
+  return {
+    title: m.title,
+    description: m.description || null,
+    weeks: m.weeks,
+    goal: m.goal,
+    level: m.level,
+    daysPerWeek: m.daysPerWeek,
+    equipmentTags: m.equipmentTags,
+  };
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="mt-1 text-xs text-destructive">
+      {message}
+    </p>
   );
 }
 
 function MetaPickers({
   meta,
   setMeta,
+  errors,
 }: {
   meta: MetaState;
   setMeta: React.Dispatch<React.SetStateAction<MetaState>>;
+  errors: MetaErrors | null;
 }) {
   return (
     <>
@@ -1172,36 +1243,44 @@ function MetaPickers({
         </div>
       </div>
       <div>
-        <Label>Sessions per week</Label>
+        <Label htmlFor="set-days">Sessions per week</Label>
         <Input
+          id="set-days"
           type="number"
           min={1}
           max={7}
           className="mt-1 min-h-11"
-          value={meta.daysPerWeek}
+          value={numberToInput(meta.daysPerWeek)}
           onChange={(e) =>
             setMeta((m) => ({
               ...m,
-              daysPerWeek: Number(e.target.value),
+              daysPerWeek: parseNumberInput(e.target.value) ?? Number.NaN,
             }))
           }
+          aria-invalid={errors?.daysPerWeek != null}
+          aria-describedby={errors?.daysPerWeek ? "set-days-err" : undefined}
         />
+        <FieldError id="set-days-err" message={errors?.daysPerWeek} />
       </div>
       <div>
-        <Label>Weeks</Label>
+        <Label htmlFor="set-weeks">Weeks</Label>
         <Input
+          id="set-weeks"
           type="number"
           min={1}
           max={52}
           className="mt-1 min-h-11"
-          value={meta.weeks}
+          value={numberToInput(meta.weeks)}
           onChange={(e) =>
             setMeta((m) => ({
               ...m,
-              weeks: Number(e.target.value),
+              weeks: parseNumberInput(e.target.value) ?? Number.NaN,
             }))
           }
+          aria-invalid={errors?.weeks != null}
+          aria-describedby={errors?.weeks ? "set-weeks-err" : undefined}
         />
+        <FieldError id="set-weeks-err" message={errors?.weeks} />
       </div>
       <div>
         <span className="text-sm font-medium text-muted-foreground">
@@ -1247,6 +1326,9 @@ function SessionCard({
   onRemove,
   onPickExercise,
   onAddExercise,
+  onAnnounce,
+  errors,
+  unitSystem,
   stale,
 }: {
   session: ProgramSessionDTO;
@@ -1257,24 +1339,94 @@ function SessionCard({
   onRemove: () => void;
   onPickExercise: (sessionId: string, entryId: string) => void;
   onAddExercise: () => void;
+  onAnnounce: (message: string) => void;
+  errors: SessionErrors | undefined;
+  unitSystem: UnitSystem;
   stale: boolean;
 }) {
-  const grouped = useMemo(() => {
-    const tags = new Set(
-      session.entries.map((e) => e.groupTag).filter(Boolean) as string[],
-    );
-    return tags;
-  }, [session.entries]);
+  const uid = useId();
+  const blocks = useMemo(
+    () => groupEntryBlocks(session.entries),
+    [session.entries],
+  );
+
+  const updateEntry = (entryId: string, patch: Partial<ProgramEntryDTO>) =>
+    onUpdate((s) => ({
+      ...s,
+      entries: s.entries.map((e) =>
+        e.id === entryId ? { ...e, ...patch } : e,
+      ),
+    }));
+
+  const move = (entry: ProgramEntryDTO, index: number, direction: -1 | 1) => {
+    const result = moveEntry(session.entries, index, direction);
+    if (!result) return;
+    onUpdate((s) => {
+      const at = s.entries.findIndex((e) => e.id === entry.id);
+      const moved = moveEntry(s.entries, at, direction);
+      return moved ? { ...s, entries: moved.entries } : s;
+    });
+    const name = exercises[entry.exerciseId]?.name ?? "Exercise";
+    onAnnounce(`Moved ${name} to position ${result.index + 1}`);
+    // The row reorders in the DOM, so put focus back; a button disabled at an end hands over to its twin.
+    requestAnimationFrame(() => {
+      const button = (suffix: string) =>
+        document.getElementById(
+          `entry-${entry.id}-${suffix}`,
+        ) as HTMLButtonElement | null;
+      const same = button(direction === -1 ? "move-up" : "move-down");
+      const other = button(direction === -1 ? "move-down" : "move-up");
+      (same && !same.disabled ? same : other)?.focus();
+    });
+  };
+
+  const renderEntry = (entry: ProgramEntryDTO, index: number) => (
+    <li key={entry.id}>
+      <EntryRow
+        entry={entry}
+        exerciseName={exercises[entry.exerciseId]?.name ?? "Choose exercise"}
+        expanded={expanded.has(entry.id)}
+        onToggle={() => onToggleExpanded(entry.id)}
+        onUpdate={(patch) => updateEntry(entry.id, patch)}
+        onSupersetToggle={() =>
+          onUpdate((s) => ({
+            ...s,
+            entries: toggleSupersetWithPrevious(
+              s.entries,
+              s.entries.findIndex((e) => e.id === entry.id),
+            ),
+          }))
+        }
+        onPick={() => onPickExercise(session.id, entry.id)}
+        onRemoveEntry={() =>
+          onUpdate((s) => ({ ...s, entries: removeEntry(s.entries, entry.id) }))
+        }
+        onMove={(direction) => move(entry, index, direction)}
+        canMoveUp={index > 0}
+        canMoveDown={index < session.entries.length - 1}
+        canSuperset={index > 0}
+        joinedToPrevious={isJoinedToPrevious(session.entries, index)}
+        errors={errors?.entries[entry.id]}
+        unitSystem={unitSystem}
+        stale={stale}
+      />
+    </li>
+  );
 
   return (
     <article className="rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <Input
-          value={session.title}
-          onChange={(e) => onUpdate((s) => ({ ...s, title: e.target.value }))}
-          aria-label="Session title"
-          className="min-h-11 max-w-md flex-1 font-semibold"
-        />
+        <div className="min-w-0 max-w-md flex-1">
+          <Input
+            value={session.title}
+            onChange={(e) => onUpdate((s) => ({ ...s, title: e.target.value }))}
+            aria-label="Session title"
+            aria-invalid={errors?.title != null}
+            aria-describedby={errors?.title ? `${uid}-title-err` : undefined}
+            className="min-h-11 font-semibold"
+          />
+          <FieldError id={`${uid}-title-err`} message={errors?.title} />
+        </div>
         <Button
           type="button"
           variant="ghost"
@@ -1286,90 +1438,38 @@ function SessionCard({
         </Button>
       </div>
       <textarea
+        aria-label="Session notes"
         placeholder="Session notes (optional)"
         value={session.notes ?? ""}
         onChange={(e) =>
           onUpdate((s) => ({ ...s, notes: e.target.value || null }))
         }
+        aria-invalid={errors?.notes != null}
+        aria-describedby={errors?.notes ? `${uid}-notes-err` : undefined}
         className="mt-2 flex min-h-[60px] w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
       />
+      <FieldError id={`${uid}-notes-err`} message={errors?.notes} />
+      <FieldError id={`${uid}-limit-err`} message={errors?.entriesLimit} />
       <ul className="mt-4 flex flex-col gap-2">
-        {session.entries.map((entry, index) => {
-          const inSuperset =
-            entry.groupTag != null && grouped.has(entry.groupTag);
-          const showBracket =
-            inSuperset &&
-            (index === 0 ||
-              session.entries[index - 1]?.groupTag !== entry.groupTag);
-          return (
-            <li key={entry.id} className="flex gap-2">
-              {showBracket ? (
-                <div
-                  className="w-1 shrink-0 rounded-full bg-chart-neutral"
-                  aria-hidden
-                />
-              ) : (
-                <div className="w-1 shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                {showBracket ? (
-                  <span className="text-xs font-semibold uppercase text-muted-foreground">
-                    Superset
-                  </span>
-                ) : null}
-                <EntryRow
-                  entry={entry}
-                  exerciseName={
-                    exercises[entry.exerciseId]?.name ?? "Choose exercise"
-                  }
-                  expanded={expanded.has(entry.id)}
-                  onToggle={() => onToggleExpanded(entry.id)}
-                  onUpdate={(patch) =>
-                    onUpdate((s) => ({
-                      ...s,
-                      entries: s.entries.map((e) =>
-                        e.id === entry.id ? { ...e, ...patch } : e,
-                      ),
-                    }))
-                  }
-                  onSupersetToggle={() => {
-                    if (index === 0) return;
-                    const prev = session.entries[index - 1];
-                    if (!prev) return;
-                    const tag =
-                      prev.groupTag ?? `ss-${crypto.randomUUID().slice(0, 8)}`;
-                    onUpdate((s) => ({
-                      ...s,
-                      entries: s.entries.map((e, i) => {
-                        if (i === index - 1 && !e.groupTag) {
-                          return { ...e, groupTag: tag };
-                        }
-                        if (i === index) {
-                          return {
-                            ...e,
-                            groupTag: e.groupTag ? null : tag,
-                          };
-                        }
-                        return e;
-                      }),
-                    }));
-                  }}
-                  onPick={() => onPickExercise(session.id, entry.id)}
-                  onRemoveEntry={() =>
-                    onUpdate((s) => ({
-                      ...s,
-                      entries: s.entries
-                        .filter((e) => e.id !== entry.id)
-                        .map((e, i) => ({ ...e, orderIndex: i })),
-                    }))
-                  }
-                  canSuperset={index > 0}
-                  stale={stale}
-                />
-              </div>
+        {blocks.map((block) =>
+          block.kind === "single" ? (
+            renderEntry(block.entry, block.index)
+          ) : (
+            <li
+              key={`group-${block.items[0]?.entry.id}`}
+              className="border-l-4 border-chart-neutral pl-2"
+            >
+              <span className="text-xs font-semibold uppercase text-muted-foreground">
+                Superset
+              </span>
+              <ul className="mt-1 flex flex-col gap-2">
+                {block.items.map(({ entry, index }) =>
+                  renderEntry(entry, index),
+                )}
+              </ul>
             </li>
-          );
-        })}
+          ),
+        )}
       </ul>
       <Button
         type="button"
@@ -1384,6 +1484,118 @@ function SessionCard({
   );
 }
 
+/** Holds the typed text so "7." or "-" survive while the parsed value is stored. */
+function DraftNumberField({
+  id,
+  label,
+  value,
+  toText,
+  fromText,
+  onChange,
+  error,
+  className,
+  inputMode,
+}: {
+  id: string;
+  label: string;
+  value: number | null;
+  toText: (value: number | null) => string;
+  fromText: (text: string) => number | null;
+  onChange: (value: number | null) => void;
+  error: string | undefined;
+  className?: string;
+  inputMode: "numeric" | "decimal";
+}) {
+  const [text, setText] = useState(() => toText(value));
+  const lastSent = useRef(value);
+  useEffect(() => {
+    // Outside changes (type switch, reload) replace the draft; our own edits do not.
+    if (!Object.is(value, lastSent.current)) {
+      lastSent.current = value;
+      setText(toText(value));
+    }
+  }, [value, toText]);
+
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        inputMode={inputMode}
+        className={cn("mt-1 min-h-11", className)}
+        value={text}
+        onChange={(e) => {
+          const parsed = fromText(e.target.value);
+          setText(e.target.value);
+          lastSent.current = parsed;
+          onChange(parsed);
+        }}
+        aria-invalid={error != null}
+        aria-describedby={error ? `${id}-err` : undefined}
+      />
+      <FieldError id={`${id}-err`} message={error} />
+    </div>
+  );
+}
+
+function NumberField(props: {
+  id: string;
+  label: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+  error: string | undefined;
+  className?: string;
+  inputMode?: "numeric" | "decimal";
+}) {
+  return (
+    <DraftNumberField
+      {...props}
+      inputMode={props.inputMode ?? "numeric"}
+      toText={numberToInput}
+      fromText={parseNumberInput}
+    />
+  );
+}
+
+function LoadField({
+  id,
+  value,
+  unitSystem,
+  onChange,
+  error,
+}: {
+  id: string;
+  value: number | null;
+  unitSystem: UnitSystem;
+  onChange: (kg: number | null) => void;
+  error: string | undefined;
+}) {
+  const toText = useCallback(
+    (kg: number | null) => loadToInput(kg, unitSystem),
+    [unitSystem],
+  );
+  const fromText = useCallback(
+    (text: string) => loadFromInput(text, unitSystem),
+    [unitSystem],
+  );
+  return (
+    <DraftNumberField
+      id={id}
+      label={`Load in ${loadUnitLabel(unitSystem)}`}
+      value={value}
+      toText={toText}
+      fromText={fromText}
+      onChange={onChange}
+      error={error}
+      className="w-24"
+      inputMode="decimal"
+    />
+  );
+}
+
+const selectClass =
+  "mt-1 flex h-11 rounded-lg border border-border bg-card px-2 text-sm";
+
 function EntryRow({
   entry,
   exerciseName,
@@ -1393,7 +1605,13 @@ function EntryRow({
   onSupersetToggle,
   onPick,
   onRemoveEntry,
+  onMove,
+  canMoveUp,
+  canMoveDown,
   canSuperset,
+  joinedToPrevious,
+  errors,
+  unitSystem,
   stale,
 }: {
   entry: ProgramEntryDTO;
@@ -1404,19 +1622,38 @@ function EntryRow({
   onSupersetToggle: () => void;
   onPick: () => void;
   onRemoveEntry: () => void;
+  onMove: (direction: -1 | 1) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   canSuperset: boolean;
+  joinedToPrevious: boolean;
+  errors: EntryErrors | undefined;
+  unitSystem: UnitSystem;
   stale: boolean;
 }) {
+  const uid = useId();
+  const supersetLabelId = `${uid}-superset`;
+  const hasErrors = errors != null;
   return (
-    <div className="rounded-lg border border-border bg-background p-3">
+    <div
+      className={cn(
+        "rounded-lg border bg-background p-3",
+        hasErrors ? "border-destructive" : "border-border",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={onToggle}
-          className="min-h-11 min-w-11 text-muted-foreground"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center text-muted-foreground"
           aria-expanded={expanded}
+          aria-label={`${expanded ? "Collapse" : "Edit"} ${exerciseName}`}
         >
-          {expanded ? "▾" : "▸"}
+          {expanded ? (
+            <ChevronDown className="size-5" aria-hidden />
+          ) : (
+            <ChevronRight className="size-5" aria-hidden />
+          )}
         </button>
         <Button
           type="button"
@@ -1428,38 +1665,37 @@ function EntryRow({
           {exerciseName}
         </Button>
         <span className="text-sm tabular-nums text-text-secondary">
-          {entry.sets} ×{" "}
-          {entry.repsType === "max"
-            ? "max"
-            : entry.repsType === "seconds"
-              ? `${entry.repsValue ?? 0}s`
-              : entry.repsValue}
+          {formatEntrySummary(entry, unitSystem)}
         </span>
       </div>
+      {hasErrors && !expanded ? (
+        <p className="mt-2 text-xs text-destructive">
+          Open this exercise to fix {Object.keys(errors).length}{" "}
+          {Object.keys(errors).length === 1 ? "field" : "fields"}.
+        </p>
+      ) : null}
       {expanded ? (
         <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
           <div className="flex flex-wrap gap-2">
+            <NumberField
+              id={`${uid}-sets`}
+              label="Sets"
+              value={entry.sets}
+              onChange={(v) => onUpdate({ sets: v ?? Number.NaN })}
+              error={errors?.sets}
+              className="w-20"
+            />
             <div>
-              <Label>Sets</Label>
-              <Input
-                type="number"
-                min={1}
-                max={20}
-                className="mt-1 min-h-11 w-20"
-                value={entry.sets}
-                onChange={(e) => onUpdate({ sets: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label>Reps type</Label>
+              <Label htmlFor={`${uid}-reps-type`}>Reps type</Label>
               <select
-                className="mt-1 flex h-11 rounded-lg border border-border bg-card px-2 text-sm"
+                id={`${uid}-reps-type`}
+                className={selectClass}
                 value={entry.repsType}
                 onChange={(e) => {
                   const t = e.target.value as ProgramEntryDTO["repsType"];
                   onUpdate({
                     repsType: t,
-                    repsValue: t === "max" ? null : (entry.repsValue ?? 10),
+                    repsValue: t === "max" ? null : t === "seconds" ? 30 : 10,
                   });
                 }}
               >
@@ -1469,64 +1705,78 @@ function EntryRow({
               </select>
             </div>
             {entry.repsType !== "max" ? (
-              <div>
-                <Label>Reps</Label>
-                <Input
-                  type="number"
-                  className="mt-1 min-h-11 w-24"
-                  value={entry.repsValue ?? ""}
-                  onChange={(e) =>
-                    onUpdate({ repsValue: Number(e.target.value) })
-                  }
-                />
-              </div>
+              <NumberField
+                id={`${uid}-reps`}
+                label={entry.repsType === "seconds" ? "Seconds" : "Reps"}
+                value={entry.repsValue}
+                onChange={(v) => onUpdate({ repsValue: v })}
+                error={errors?.repsValue}
+                className="w-24"
+              />
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <div>
-              <Label>Load</Label>
+              <Label htmlFor={`${uid}-load-type`}>
+                Load <span className="font-normal">(optional)</span>
+              </Label>
               <select
-                className="mt-1 flex h-11 rounded-lg border border-border bg-card px-2 text-sm"
+                id={`${uid}-load-type`}
+                className={selectClass}
                 value={entry.loadType}
                 onChange={(e) => {
                   const t = e.target.value as ProgramEntryDTO["loadType"];
                   onUpdate({
                     loadType: t,
-                    loadValue: t === "none" ? null : (entry.loadValue ?? 40),
+                    loadValue:
+                      t === "none"
+                        ? null
+                        : t === "kg"
+                          ? defaultKgLoad(unitSystem)
+                          : 70,
                   });
                 }}
               >
                 <option value="none">None</option>
-                <option value="kg">kg</option>
+                <option value="kg">{loadUnitLabel(unitSystem)}</option>
                 <option value="percent1rm">%1RM</option>
               </select>
             </div>
-            {entry.loadType !== "none" ? (
-              <div>
-                <Label>Value</Label>
-                <Input
-                  type="number"
-                  className="mt-1 min-h-11 w-24"
-                  value={entry.loadValue ?? ""}
-                  onChange={(e) =>
-                    onUpdate({ loadValue: Number(e.target.value) })
-                  }
-                />
-              </div>
+            {entry.loadType === "kg" ? (
+              <LoadField
+                id={`${uid}-load`}
+                value={entry.loadValue}
+                unitSystem={unitSystem}
+                onChange={(kg) => onUpdate({ loadValue: kg })}
+                error={errors?.loadValue}
+              />
+            ) : null}
+            {entry.loadType === "percent1rm" ? (
+              <NumberField
+                id={`${uid}-load`}
+                label="Load as % of 1RM"
+                value={entry.loadValue}
+                onChange={(v) => onUpdate({ loadValue: v })}
+                error={errors?.loadValue}
+                className="w-24"
+                inputMode="decimal"
+              />
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <div>
-              <Label>Intensity</Label>
+              <Label htmlFor={`${uid}-int-type`}>
+                Intensity <span className="font-normal">(optional)</span>
+              </Label>
               <select
-                className="mt-1 flex h-11 rounded-lg border border-border bg-card px-2 text-sm"
+                id={`${uid}-int-type`}
+                className={selectClass}
                 value={entry.intensityType}
                 onChange={(e) => {
                   const t = e.target.value as ProgramEntryDTO["intensityType"];
                   onUpdate({
                     intensityType: t,
-                    intensityValue:
-                      t === "none" ? null : (entry.intensityValue ?? 8),
+                    intensityValue: t === "none" ? null : t === "rpe" ? 8 : 2,
                   });
                 }}
               >
@@ -1536,73 +1786,106 @@ function EntryRow({
               </select>
             </div>
             {entry.intensityType !== "none" ? (
-              <div>
-                <Label>Value</Label>
-                <Input
-                  type="number"
-                  className="mt-1 min-h-11 w-24"
-                  value={entry.intensityValue ?? ""}
-                  onChange={(e) =>
-                    onUpdate({ intensityValue: Number(e.target.value) })
-                  }
-                />
-              </div>
+              <NumberField
+                id={`${uid}-int`}
+                label={
+                  entry.intensityType === "rpe" ? "RPE" : "Reps in reserve"
+                }
+                value={entry.intensityValue}
+                onChange={(v) => onUpdate({ intensityValue: v })}
+                error={errors?.intensityValue}
+                className="w-24"
+                inputMode="decimal"
+              />
             ) : null}
           </div>
-          <div>
-            <Label>Rest (seconds)</Label>
-            <Input
-              type="number"
-              min={0}
-              className="mt-1 min-h-11 w-32"
-              value={entry.restSeconds ?? ""}
-              onChange={(e) =>
-                onUpdate({
-                  restSeconds: e.target.value ? Number(e.target.value) : null,
-                })
-              }
-            />
-          </div>
+          <NumberField
+            id={`${uid}-rest`}
+            label="Rest in seconds (optional)"
+            value={entry.restSeconds}
+            onChange={(v) => onUpdate({ restSeconds: v })}
+            error={errors?.restSeconds}
+            className="w-32"
+          />
           {canSuperset ? (
             <div className="flex min-h-11 items-center justify-between gap-2">
-              <span className="text-sm">Superset with previous</span>
+              <span id={supersetLabelId} className="text-sm">
+                Superset with previous
+              </span>
               <Switch
-                checked={entry.groupTag != null}
+                checked={joinedToPrevious}
                 onCheckedChange={() => onSupersetToggle()}
                 disabled={stale}
+                aria-labelledby={supersetLabelId}
               />
             </div>
           ) : null}
           <div>
-            <Label>
+            <Label htmlFor={`${uid}-cues`}>
               Cues <span className="font-normal">(optional)</span>
             </Label>
             <textarea
+              id={`${uid}-cues`}
               className="mt-1 flex min-h-[60px] w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm"
               value={entry.cues ?? ""}
               onChange={(e) => onUpdate({ cues: e.target.value || null })}
+              aria-invalid={errors?.cues != null}
+              aria-describedby={errors?.cues ? `${uid}-cues-err` : undefined}
             />
+            <FieldError id={`${uid}-cues-err`} message={errors?.cues} />
           </div>
           <div>
-            <Label>
+            <Label htmlFor={`${uid}-ref`}>
               Reference link <span className="font-normal">(optional)</span>
             </Label>
             <Input
+              id={`${uid}-ref`}
               className="mt-1 min-h-11"
               value={entry.refUrl ?? ""}
               onChange={(e) => onUpdate({ refUrl: e.target.value || null })}
               placeholder="https://"
+              aria-invalid={errors?.refUrl != null}
+              aria-describedby={errors?.refUrl ? `${uid}-ref-err` : undefined}
             />
+            <FieldError id={`${uid}-ref-err`} message={errors?.refUrl} />
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11 text-destructive"
-            disabled={stale}
-            onClick={onRemoveEntry}
-          >
-            Remove exercise
-          </Button>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-1">
+              <Button
+                id={`entry-${entry.id}-move-up`}
+                type="button"
+                variant="ghost"
+                size="icon-lg"
+                className="min-h-11 min-w-11"
+                aria-label="Move up"
+                disabled={stale || !canMoveUp}
+                onClick={() => onMove(-1)}
+              >
+                <ArrowUp className="size-5" aria-hidden />
+              </Button>
+              <Button
+                id={`entry-${entry.id}-move-down`}
+                type="button"
+                variant="ghost"
+                size="icon-lg"
+                className="min-h-11 min-w-11"
+                aria-label="Move down"
+                disabled={stale || !canMoveDown}
+                onClick={() => onMove(1)}
+              >
+                <ArrowDown className="size-5" aria-hidden />
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 text-destructive"
+              disabled={stale}
+              onClick={onRemoveEntry}
+            >
+              Remove exercise
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

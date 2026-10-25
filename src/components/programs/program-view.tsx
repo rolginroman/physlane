@@ -3,6 +3,7 @@ import { ChevronDown, Link2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PublicProgramShell } from "#/components/programs/public-program-shell";
 import { cn } from "#/lib/cn";
+import { groupEntryBlocks } from "#/lib/programs/entry-ops";
 import {
   equipmentDisplayLabel,
   goalDisplayLabel,
@@ -108,36 +109,10 @@ function SessionAccordion({
   const [open, setOpen] = useState(defaultOpen);
   const summary = sessionSummary(session);
 
-  const blocks = useMemo(() => {
-    const items: Array<
-      | { kind: "single"; entry: ProgramEntryDTO }
-      | { kind: "group"; entries: ProgramEntryDTO[] }
-    > = [];
-    for (let i = 0; i < session.entries.length; i++) {
-      const entry = session.entries[i];
-      if (!entry) continue;
-      const tag = entry.groupTag;
-      const prev = session.entries[i - 1];
-      if (tag && prev?.groupTag === tag) {
-        continue;
-      }
-      if (tag) {
-        const group: ProgramEntryDTO[] = [entry];
-        let j = i + 1;
-        while (j < session.entries.length) {
-          const next = session.entries[j];
-          if (!next || next.groupTag !== tag) break;
-          group.push(next);
-          j++;
-        }
-        items.push({ kind: "group", entries: group });
-        i = j - 1;
-      } else {
-        items.push({ kind: "single", entry });
-      }
-    }
-    return items;
-  }, [session.entries]);
+  const blocks = useMemo(
+    () => groupEntryBlocks(session.entries),
+    [session.entries],
+  );
 
   return (
     <div className="border-t border-border">
@@ -185,7 +160,7 @@ function SessionAccordion({
                 <li
                   key={`group-${idx}`}
                   className="flex flex-col gap-2 border-l-2 border-chart-neutral pl-3"
-                  aria-label={`Superset, ${block.entries.length} exercises`}
+                  aria-label={`Superset, ${block.items.length} exercises`}
                 >
                   <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Superset
@@ -195,7 +170,7 @@ function SessionAccordion({
                     </span>
                   </p>
                   <ol className="m-0 flex list-none flex-col gap-2 p-0">
-                    {block.entries.map((entry) => (
+                    {block.items.map(({ entry }) => (
                       <EntryBlock
                         key={entry.id}
                         entry={entry}

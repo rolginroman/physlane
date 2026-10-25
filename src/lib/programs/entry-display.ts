@@ -38,6 +38,27 @@ export function formatEntryIntensity(entry: ProgramEntryDTO): string | null {
   return `RIR ${entry.intensityValue}`;
 }
 
+/** One-line row summary for the editor; tolerates half-typed values. */
+export function formatEntrySummary(
+  entry: ProgramEntryDTO,
+  units: UnitSystem,
+): string {
+  const sets = Number.isFinite(entry.sets) ? entry.sets : "?";
+  const reps =
+    entry.repsType !== "max" &&
+    (entry.repsValue == null || Number.isNaN(entry.repsValue))
+      ? "?"
+      : formatEntryReps(entry);
+  const rest = entry.restSeconds;
+  const parts = [
+    `${sets} × ${reps}`,
+    Number.isFinite(entry.loadValue) ? formatEntryLoad(entry, units) : null,
+    Number.isFinite(entry.intensityValue) ? formatEntryIntensity(entry) : null,
+    rest != null && Number.isFinite(rest) ? formatRestSeconds(rest) : null,
+  ];
+  return parts.filter(Boolean).join(" · ");
+}
+
 export function formatRestSeconds(seconds: number | null): string | null {
   if (seconds == null || seconds <= 0) {
     return null;

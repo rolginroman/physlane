@@ -45,6 +45,15 @@ type ExercisePickerProps = {
   onSelect: (exercise: ExercisePickerSelection) => void;
 };
 
+function chipClass(pressed: boolean): string {
+  return cn(
+    "min-h-11 rounded-lg border px-3 text-sm font-medium",
+    pressed
+      ? "border-primary bg-brand-soft text-foreground"
+      : "border-border bg-card text-text-secondary",
+  );
+}
+
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -65,7 +74,6 @@ export function ExercisePicker({
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [muscle, setMuscle] = useState<Muscle | null>(null);
   const [region, setRegion] = useState<MuscleRegion | null>(null);
-  const [regionMenu, setRegionMenu] = useState<MuscleRegion | null>(null);
   const [rows, setRows] = useState<ExercisePickerRowDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -116,7 +124,6 @@ export function ExercisePicker({
       setEquipment(null);
       setMuscle(null);
       setRegion(null);
-      setRegionMenu(null);
       setTab("catalog");
       setCreating(false);
       setCustomError(null);
@@ -240,59 +247,18 @@ export function ExercisePicker({
             </span>
             <div className="flex flex-wrap gap-2">
               {regions.map((r) => (
-                <div key={r} className="relative">
-                  <button
-                    type="button"
-                    aria-pressed={region === r && !muscle}
-                    onClick={() => {
-                      setRegion(r);
-                      setMuscle(null);
-                      setRegionMenu(regionMenu === r ? null : r);
-                    }}
-                    className={cn(
-                      "min-h-11 rounded-lg border px-3 text-sm font-medium",
-                      region === r && !muscle
-                        ? "border-primary bg-brand-soft text-foreground"
-                        : "border-border bg-card text-text-secondary",
-                    )}
-                  >
-                    {regionDisplayLabel(r)}
-                  </button>
-                  {regionMenu === r ? (
-                    <div
-                      className="absolute top-full z-10 mt-1 flex min-w-[10rem] flex-col rounded-lg border border-border bg-popover p-1 shadow-lg"
-                      role="menu"
-                    >
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-muted"
-                        onClick={() => {
-                          setRegion(r);
-                          setMuscle(null);
-                          setRegionMenu(null);
-                        }}
-                      >
-                        All {regionDisplayLabel(r)}
-                      </button>
-                      {MUSCLE_GROUPS[r].map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          role="menuitem"
-                          className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-muted"
-                          onClick={() => {
-                            setRegion(r);
-                            setMuscle(m);
-                            setRegionMenu(null);
-                          }}
-                        >
-                          {muscleDisplayLabel(m)}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
+                <button
+                  key={r}
+                  type="button"
+                  aria-pressed={region === r}
+                  onClick={() => {
+                    setRegion(region === r ? null : r);
+                    setMuscle(null);
+                  }}
+                  className={chipClass(region === r)}
+                >
+                  {regionDisplayLabel(r)}
+                </button>
               ))}
               {region || muscle ? (
                 <button
@@ -301,13 +267,39 @@ export function ExercisePicker({
                   onClick={() => {
                     setRegion(null);
                     setMuscle(null);
-                    setRegionMenu(null);
                   }}
                 >
                   Clear
                 </button>
               ) : null}
             </div>
+            {region ? (
+              <div
+                role="group"
+                aria-label={`Muscle in ${regionDisplayLabel(region)}`}
+                className="flex flex-wrap gap-2"
+              >
+                <button
+                  type="button"
+                  aria-pressed={muscle === null}
+                  onClick={() => setMuscle(null)}
+                  className={chipClass(muscle === null)}
+                >
+                  All {regionDisplayLabel(region)}
+                </button>
+                {MUSCLE_GROUPS[region].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={muscle === m}
+                    onClick={() => setMuscle(muscle === m ? null : m)}
+                    className={chipClass(muscle === m)}
+                  >
+                    {muscleDisplayLabel(m)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="flex flex-col gap-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -320,12 +312,7 @@ export function ExercisePicker({
                   type="button"
                   aria-pressed={equipment === eq}
                   onClick={() => setEquipment(equipment === eq ? null : eq)}
-                  className={cn(
-                    "min-h-11 rounded-lg border px-3 text-sm font-medium",
-                    equipment === eq
-                      ? "border-primary bg-brand-soft text-foreground"
-                      : "border-border bg-card text-text-secondary",
-                  )}
+                  className={chipClass(equipment === eq)}
                 >
                   {equipmentDisplayLabel(eq)}
                 </button>
