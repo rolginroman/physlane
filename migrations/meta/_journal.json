@@ -57,6 +57,13 @@
       "when": 1792449545972,
       "tag": "0007_huge_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792943213274,
+      "tag": "0008_premium_sage",
+      "breakpoints": true
     }
   ]
 }

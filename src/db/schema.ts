@@ -7,6 +7,25 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import {
+  EQUIPMENT,
+  MUSCLES,
+  PROGRAM_GOALS,
+  PROGRAM_LEVELS,
+  type Equipment,
+  type Muscle,
+} from "#/lib/programs/taxonomy";
+
+const muscleEnum = MUSCLES as unknown as [Muscle, ...Muscle[]];
+const equipmentEnum = EQUIPMENT as unknown as [Equipment, ...Equipment[]];
+const programGoalEnum = PROGRAM_GOALS as unknown as [
+  (typeof PROGRAM_GOALS)[number],
+  ...(typeof PROGRAM_GOALS)[number][],
+];
+const programLevelEnum = PROGRAM_LEVELS as unknown as [
+  (typeof PROGRAM_LEVELS)[number],
+  ...(typeof PROGRAM_LEVELS)[number][],
+];
 
 /* ── better-auth core tables ─────────────────────────────────────────── */
 
@@ -64,10 +83,15 @@ export const user = sqliteTable(
     planCurrentPeriodEnd: integer("plan_current_period_end", {
       mode: "timestamp",
     }),
+    slug: text("slug"),
+    displayName: text("display_name"),
+    bio: text("bio"),
+    profileHiddenAt: integer("profile_hidden_at", { mode: "timestamp" }),
   },
   (t) => [
     uniqueIndex("user_email_idx").on(t.email),
     uniqueIndex("user_share_token_idx").on(t.shareToken), // SQLite: multiple NULLs allowed
+    uniqueIndex("user_slug_idx").on(t.slug), // SQLite: multiple NULLs allowed
   ],
 );
 
@@ -251,6 +275,204 @@ export const waitlist = sqliteTable(
 );
 
 export type WaitlistRow = typeof waitlist.$inferSelect;
+
+/* ── programs domain (shareable training programs) ───────────────────── */
+
+/** Unique normalized name per scope is enforced in app logic, not in the DB. */
+export const exercises = sqliteTable(
+  "exercises",
+  {
+    id: text("id").primaryKey(),
+    ownerUserId: text("owner_user_id"),
+    name: text("name").notNull(),
+    aliases: text("aliases", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    musclePrimary: text("muscle_primary", { enum: muscleEnum }).notNull(),
+    muscleSecondary: text("muscle_secondary", { mode: "json" })
+      .$type<Muscle[]>()
+      .notNull()
+      .default([]),
+    equipment: text("equipment", { enum: equipmentEnum }).notNull(),
+    formNote: text("form_note"),
+    deletedAt: integer("deleted_at", { mode: "timestamp" }),
+  },
+  (t) => [
+    index("exercises_name_idx").on(t.name),
+    index("exercises_owner_user_id_idx").on(t.ownerUserId),
+  ],
+);
+
+export const exerciseAssets = sqliteTable(
+  "exercise_assets",
+  {
+    id: text("id").primaryKey(),
+    exerciseId: text("exercise_id").notNull(),
+    kind: text("kind", { enum: ["video", "article", "image"] }).notNull(),
+    url: text("url").notNull(),
+    title: text("title").notNull(),
+    sortOrder: integer("sort_order").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index("exercise_assets_exercise_sort_idx").on(t.exerciseId, t.sortOrder),
+  ],
+);
+
+export const programs = sqliteTable(
+  "programs",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    title: text("title").notNull(),
+    description: text("description"),
+    slug: text("slug"),
+    visibility: text("visibility", {
+      enum: ["draft", "unlisted", "public"],
+    })
+      .notNull()
+      .default("draft"),
+    weeks: integer("weeks").notNull(),
+    goal: text("goal", { enum: programGoalEnum }).notNull(),
+    level: text("level", { enum: programLevelEnum }).notNull(),
+    daysPerWeek: integer("days_per_week").notNull(),
+    equipmentTags: text("equipment_tags", { mode: "json" })
+      .$type<Equipment[]>()
+      .notNull()
+      .default([]),
+    shareToken: text("share_token"),
+    forkedFromProgramId: text("forked_from_program_id"),
+    forkSourceLabel: text("fork_source_label"),
+    forkable: integer("forkable", { mode: "boolean" }).notNull().default(true),
+    hiddenAt: integer("hidden_at", { mode: "timestamp" }),
+    revision: integer("revision").notNull().default(0),
+    deletedAt: integer("deleted_at", { mode: "timestamp" }),
+  },
+  (t) => [
+    index("programs_user_visibility_deleted_idx").on(
+      t.userId,
+      t.visibility,
+      t.deletedAt,
+    ),
+    index("programs_visibility_deleted_idx").on(t.visibility, t.deletedAt),
+    uniqueIndex("programs_user_slug_idx").on(t.userId, t.slug),
+    uniqueIndex("programs_share_token_idx").on(t.shareToken),
+  ],
+);
+
+export const programSessions = sqliteTable(
+  "program_sessions",
+  {
+    id: text("id").primaryKey(),
+    programId: text("program_id").notNull(),
+    weekNumber: integer("week_number").notNull(),
+    orderIndex: integer("order_index").notNull(),
+    title: text("title").notNull(),
+    notes: text("notes"),
+  },
+  (t) => [
+    index("program_sessions_program_week_order_idx").on(
+      t.programId,
+      t.weekNumber,
+      t.orderIndex,
+    ),
+  ],
+);
+
+export const programEntries = sqliteTable(
+  "program_entries",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id").notNull(),
+    orderIndex: integer("order_index").notNull(),
+    exerciseId: text("exercise_id").notNull(),
+    groupTag: text("group_tag"),
+    sets: integer("sets").notNull(),
+    repsType: text("reps_type", {
+      enum: ["count", "max", "seconds"],
+    }).notNull(),
+    repsValue: integer("reps_value"),
+    loadType: text("load_type", {
+      enum: ["none", "kg", "percent1rm"],
+    }).notNull(),
+    loadValue: real("load_value"),
+    intensityType: text("intensity_type", {
+      enum: ["none", "rpe", "rir"],
+    }).notNull(),
+    intensityValue: real("intensity_value"),
+    restSeconds: integer("rest_seconds"),
+    cues: text("cues"),
+    refUrl: text("ref_url"),
+  },
+  (t) => [
+    index("program_entries_session_order_idx").on(t.sessionId, t.orderIndex),
+  ],
+);
+
+export const authorSlugHistory = sqliteTable("author_slug_history", {
+  fromSlug: text("from_slug").primaryKey(),
+  userId: text("user_id").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const programSlugHistory = sqliteTable(
+  "program_slug_history",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    fromSlug: text("from_slug").notNull(),
+    programId: text("program_id").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    uniqueIndex("program_slug_history_user_from_slug_idx").on(
+      t.userId,
+      t.fromSlug,
+    ),
+  ],
+);
+
+export const programReports = sqliteTable("program_reports", {
+  id: text("id").primaryKey(),
+  programId: text("program_id"),
+  reportedUserId: text("reported_user_id"),
+  reporterUserId: text("reporter_user_id"),
+  reason: text("reason").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  handledAt: integer("handled_at", { mode: "timestamp" }),
+});
+
+export type Exercise = typeof exercises.$inferSelect;
+export type NewExercise = typeof exercises.$inferInsert;
+export type ExerciseAsset = typeof exerciseAssets.$inferSelect;
+export type NewExerciseAsset = typeof exerciseAssets.$inferInsert;
+export type Program = typeof programs.$inferSelect;
+export type NewProgram = typeof programs.$inferInsert;
+export type ProgramSession = typeof programSessions.$inferSelect;
+export type NewProgramSession = typeof programSessions.$inferInsert;
+export type ProgramEntry = typeof programEntries.$inferSelect;
+export type NewProgramEntry = typeof programEntries.$inferInsert;
+export type AuthorSlugHistory = typeof authorSlugHistory.$inferSelect;
+export type NewAuthorSlugHistory = typeof authorSlugHistory.$inferInsert;
+export type ProgramSlugHistory = typeof programSlugHistory.$inferSelect;
+export type NewProgramSlugHistory = typeof programSlugHistory.$inferInsert;
+export type ProgramReport = typeof programReports.$inferSelect;
+export type NewProgramReport = typeof programReports.$inferInsert;
 
 /* ── better-auth OAuth / MCP (migration via @better-auth/cli generate) ─── */
 
