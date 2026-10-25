@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>editor — physlane programs sketch</title>
+<style>
+/* ---- Fonts: self-hosted repo copies (no CDN). Serve repo root over HTTP. ---- */
+@font-face {
+  font-family: "Instrument Serif";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../public/fonts/instrument-serif-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../../public/fonts/inter-latin-var.woff2") format("woff2");
+}
+
+/* ---- Tokens: DESIGN.md v2 values under shadcn-canonical names (mirrors src/styles.css) ---- */
+:root {
+  --background: #f7f4ee;
+  --card: #fffefc;
+  --muted: #eeeae2;
+  --popover: #ffffff;
+  --foreground: #171717;
+  --text-secondary: #62615e;
+  --muted-foreground: #6b6964; /* Appendix A adjustment */
+  --border: #e3ded5;
+  --primary: #d92f28;
+  --primary-foreground: #fffefc;
+  --brand-hover: #b92520;
+  --brand-soft: #f5dcd7;
+  --brand-text: #b92520; /* small red text, Appendix A */
+  --destructive: #b92520;
+  --chart-grid: #e7e2d9;
+  --chart-neutral: #777773;
+  --data-positive: #426c56;
+  --ring: #345b9a;
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --radius: 12px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #101112;
+  --card: #171819;
+  --muted: #1e2021;
+  --popover: #242526;
+  --foreground: #f4f1ea;
+  --text-secondary: #b6b3ad;
+  --muted-foreground: #8d8a84;
+  --border: #343332;
+  --primary: #e63a33;
+  --primary-foreground: #101112; /* Appendix A: dark primary label = background */
+  --brand-hover: #f04a42;
+  --brand-soft: #482321;
+  --brand-text: #e63a33;
+  --destructive: #f04a42;
+  --chart-grid: #343332;
+  --chart-neutral: #aaa79f;
+  --data-positive: #8db69a;
+  --ring: #a8c7ff;
+}
+
+/* ---- Sketch canvas (presentation chrome, not product UI) ---- */
+* { box-sizing: border-box; }
+html { background: var(--muted); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--muted);
+  -webkit-font-smoothing: antialiased;
+}
+.sk-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding: 12px 24px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+.sk-bar h1 { margin: 0; font: 400 26px/1.1 var(--font-display); }
+.sk-bar .sk-meta { font-size: 13px; color: var(--muted-foreground); }
+.sk-bar .sk-spacer { flex: 1; }
+.sk-intro { max-width: 880px; padding: 24px 24px 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.sk-intro p { margin: 0 0 8px; }
+.sk-group { padding: 24px 24px 8px; }
+.sk-group > h2 { margin: 0 0 4px; font: 600 15px/1.3 var(--font-sans); }
+.sk-group > p.sk-note { margin: 0 0 16px; max-width: 880px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.sk-row { display: flex; gap: 24px; align-items: flex-start; overflow-x: auto; padding-bottom: 16px; }
+.sk-frame { margin: 0; flex: none; }
+.sk-frame > figcaption {
+  margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted-foreground);
+}
+.sk-frame > figcaption span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.sk-note-inline {
+  margin: 8px 0 0; max-width: 390px; font-size: 12px; line-height: 1.45;
+  color: var(--muted-foreground); border-left: 2px dashed var(--border); padding-left: 8px;
+}
+.sk-frame.d .sk-note-inline { max-width: 720px; }
+
+/* ---- Screen container: container queries make one markup serve 390 and 1280 ---- */
+.scr {
+  position: relative;
+  container-type: inline-size;
+  width: 390px;
+  min-height: 720px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sk-frame.d .scr { width: 1280px; min-height: 760px; border-radius: 10px; }
+.scr.short { min-height: 0; }
+.scr.tall { min-height: 1100px; }
+
+/* ---- Type ---- */
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.015em; line-height: 1.08; text-wrap: balance; margin: 0; }
+.display-lg { font-size: 36px; }
+.display-md { font-size: 28px; }
+@container (min-width: 1024px) { .display-lg { font-size: 52px; } .display-md { font-size: 34px; } }
+.h-card { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.h-sec { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.body-sm { font-size: 14px; }
+.t-sec { color: var(--text-secondary); }
+.t-muted { color: var(--muted-foreground); }
+.cap { font-size: 13px; color: var(--muted-foreground); }
+.num { font-variant-numeric: tabular-nums; }
+.m0 { margin: 0; }
+p { margin: 0; }
+
+/* ---- Layout helpers ---- */
+.pad { padding: 16px; }
+.px { padding-left: 16px; padding-right: 16px; }
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.wrap { flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.g4 { gap: 4px; } .g8 { gap: 8px; } .g12 { gap: 12px; } .g16 { gap: 16px; } .g24 { gap: 24px; }
+.mt4 { margin-top: 4px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt24 { margin-top: 24px; } .mt32 { margin-top: 32px; }
+.grow { flex: 1; min-width: 0; }
+.only-d { display: none !important; }
+@container (min-width: 1024px) {
+  .only-m { display: none !important; }
+  .only-d { display: revert !important; }
+  .pad, .px { padding-left: 32px; padding-right: 32px; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Icons (sprite in body) ---- */
+.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.i-sm { width: 14px; height: 14px; }
+.i-fill { fill: currentColor; stroke: none; }
+
+/* ---- App header ---- */
+.app-head {
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+.wordmark { font: 400 24px/1 var(--font-display); color: var(--foreground); text-decoration: none; letter-spacing: -0.01em; }
+.app-nav { display: flex; gap: 4px; margin-left: 16px; }
+.app-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; border-radius: var(--radius-sm); }
+.app-nav a[aria-current="page"] { color: var(--foreground); box-shadow: inset 0 -2px 0 var(--primary); border-radius: 0; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--muted); border: 1px solid var(--border); display: inline-grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); flex: none; }
+.avatar-lg { width: 72px; height: 72px; font-size: 26px; }
+@container (min-width: 1024px) { .app-head { padding: 0 32px; height: 64px; } }
+
+/* ---- Buttons (DESIGN §9.1 + src/styles.css .btn-primary) ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--primary); color: var(--primary-foreground);
+  font: 600 14px/1 var(--font-sans); text-decoration: none; cursor: pointer;
+  transition: background 150ms ease-out;
+  white-space: nowrap;
+}
+.btn:hover, .btn.is-hover { background: var(--brand-hover); }
+.btn.is-active { background: var(--brand-hover); transform: translateY(1px); }
+.btn:disabled, .btn.is-disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: transparent; color: var(--foreground); border-color: var(--border); }
+.btn-secondary:hover, .btn-secondary.is-hover { background: var(--muted); }
+.btn-secondary.is-active { background: var(--muted); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover, .btn-ghost.is-hover { background: var(--muted); color: var(--foreground); }
+.btn-danger { background: var(--destructive); color: var(--primary-foreground); }
+.btn-danger:hover { background: var(--destructive); filter: none; }
+.btn-block { width: 100%; }
+.btn-icon { width: 44px; padding: 0; }
+.btn.is-loading { pointer-events: none; }
+.btn.is-loading::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+}
+:focus-visible, .is-focus { outline: 2px solid var(--ring) !important; outline-offset: 2px; }
+.link {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
+  color: var(--brand-text); font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
+  background: none; border: 0; padding: 0; font-size: inherit; font-family: inherit; cursor: pointer;
+}
+.link-quiet { color: var(--text-secondary); text-decoration-color: var(--border); }
+
+/* ---- Chips, badges ---- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); color: var(--text-secondary);
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--text-secondary);
+  font: 500 14px/1 var(--font-sans); white-space: nowrap; cursor: pointer;
+}
+.chip-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--brand-soft); color: var(--foreground); }
+.chip-btn[aria-pressed="true"]::before { content: "\2713"; font-weight: 700; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border: 1px solid; border-radius: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.4; white-space: nowrap;
+}
+.badge-draft { color: var(--muted-foreground); border-color: var(--border); background: var(--muted); }
+.badge-unlisted { color: var(--foreground); border-color: var(--chart-neutral); }
+.badge-public { color: var(--brand-text); border-color: var(--brand-text); }
+.scroll-x { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+
+/* ---- Surfaces ---- */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.divider { border: 0; border-top: 1px solid var(--border); margin: 0; }
+.banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px; font-size: 14px; line-height: 1.45;
+  background: var(--muted); border-bottom: 1px solid var(--border); color: var(--foreground);
+}
+.banner.brand { background: var(--brand-soft); }
+.banner .i { margin-top: 1px; }
+.notice {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); font-size: 14px; line-height: 1.45;
+}
+.notice.danger { border-color: var(--destructive); }
+.notice.danger .i { color: var(--destructive); }
+
+/* ---- Tabs ---- */
+.tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tab {
+  flex: none; min-height: 44px; padding: 0 14px;
+  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  color: var(--text-secondary); font: 500 14px/1 var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--foreground); font-weight: 600; border-bottom-color: var(--primary); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.seg button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--text-secondary); font: 500 14px var(--font-sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+
+/* ---- Forms (mirrors src/styles.css .input/.label/.hint/.field-error) ---- */
+.field { display: flex; flex-direction: column; }
+.label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+.label .opt { font-weight: 400; }
+.input, .select, .textarea {
+  display: block; width: 100%; min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); color: var(--foreground);
+  font: 400 15px/1.4 var(--font-sans);
+}
+.textarea { padding: 10px 12px; min-height: 76px; resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--muted-foreground); }
+.input.is-focus, .select.is-focus { border-color: var(--ring); }
+.input[aria-invalid="true"], .select[aria-invalid="true"] { border-color: var(--destructive); }
+.hint { margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
+.field-error { margin-top: 6px; font-size: 13px; color: var(--destructive); display: flex; gap: 6px; align-items: center; }
+.field-ok { margin-top: 6px; font-size: 13px; color: var(--data-positive); display: flex; gap: 6px; align-items: center; }
+.prefix-input { display: flex; align-items: stretch; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted); overflow: hidden; }
+.prefix-input span { display: inline-flex; align-items: center; padding: 0 0 0 12px; color: var(--muted-foreground); font-size: 15px; white-space: nowrap; }
+.prefix-input input { border: 0; background: none; min-height: 44px; flex: 1; min-width: 0; padding: 0 12px 0 0; font: 400 15px var(--font-sans); color: var(--foreground); }
+.prefix-input.is-invalid { border-color: var(--destructive); }
+.prefix-input.is-ok { border-color: var(--data-positive); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.switch { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; flex: none; border: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+.switch[aria-checked="true"] { background: var(--primary); }
+.switch[aria-checked="true"]::after { left: 21px; }
+
+/* ---- Overlays ---- */
+.scrim { position: absolute; inset: 0; background: color-mix(in srgb, var(--foreground) 50%, transparent); z-index: 10; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 11;
+  max-height: 88%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
+  padding: 8px 16px 24px;
+}
+.sheet .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.dialog {
+  position: absolute; z-index: 11; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(480px, calc(100% - 32px)); max-height: 90%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+}
+.side-panel {
+  position: absolute; z-index: 11; top: 0; right: 0; bottom: 0; width: 440px; overflow: auto;
+  background: var(--popover); border-left: 1px solid var(--border); padding: 24px;
+}
+/* One overlay markup: bottom sheet on mobile, dialog/side panel on desktop */
+@container (min-width: 1024px) {
+  .sheet.as-dialog { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%, -50%); width: 520px; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .sheet.as-panel { left: auto; top: 0; width: 440px; max-height: none; border-radius: 0; border-top: 0; border-left: 1px solid var(--border); padding: 24px; }
+  .sheet.as-dialog .grabber, .sheet.as-panel .grabber { display: none; }
+}
+.toast {
+  position: absolute; z-index: 12; left: 16px; right: 16px; bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  background: var(--foreground); color: var(--background); font-size: 14px;
+}
+@container (min-width: 1024px) { .toast { left: auto; right: 32px; width: 380px; } }
+
+/* ---- Skeleton (static; pulse noted in design-notes §4) ---- */
+.skel { background: var(--muted); border-radius: 6px; }
+.skel-line { height: 12px; }
+.skel-title { height: 30px; border-radius: 8px; }
+
+/* ---- Owner bar ---- */
+.owner-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 16px; min-height: 52px;
+  background: var(--muted); border-bottom: 1px solid var(--border); font-size: 14px;
+}
+@container (min-width: 1024px) { .owner-bar { padding: 8px 32px; } }
+
+/* ---- QR placeholder ---- */
+.qr {
+  width: 120px; height: 120px; flex: none; padding: 8px; border-radius: 6px;
+  background: var(--popover); border: 1px solid var(--border);
+}
+.qr svg { width: 100%; height: 100%; fill: var(--foreground); }
+html[data-theme="dark"] .qr { background: var(--foreground); }
+html[data-theme="dark"] .qr svg { fill: var(--background); }
+.url-box {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted);
+  font-size: 14px; overflow: hidden;
+}
+.url-box code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-sans); color: var(--foreground); }
+.ed-bar { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 8px 0 4px; border-bottom: 1px solid var(--border); background: var(--background); }
+.ed-bar .ttl { font-weight: 600; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container (min-width: 1024px) { .ed-bar { padding: 0 32px 0 24px; min-height: 64px; } }
+.save { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted-foreground); white-space: nowrap; }
+.save.err { color: var(--destructive); }
+.ed-weekbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 16px; }
+.ed-layout { display: block; }
+.ed-rail { display: none; }
+@container (min-width: 1024px) {
+  .ed-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 32px; padding: 0 32px; max-width: 1216px; margin: 0 auto; }
+  .ed-rail { display: flex; flex-direction: column; gap: 2px; padding-top: 24px; position: sticky; top: 0; align-self: start; }
+  .ed-rail a { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-radius: var(--radius-sm); color: var(--text-secondary); text-decoration: none; font-size: 14px; }
+  .ed-rail a[aria-current="true"] { background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: inset 2px 0 0 var(--primary), 0 0 0 1px var(--border); }
+  .ed-tabs { display: none; }
+  .ed-weekbar { padding: 24px 0 8px; }
+}
+.ses { margin: 8px 16px 16px; }
+@container (min-width: 1024px) { .ses { margin: 8px 0 16px; } }
+.ses-head { padding: 12px 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+.ses-title { display: flex; align-items: center; gap: 8px; }
+.ses-title input { flex: 1; min-width: 0; min-height: 44px; border: 1px solid transparent; border-radius: var(--radius-sm); background: none; color: var(--foreground); font: 600 17px var(--font-sans); padding: 0 8px; }
+.ses-title input:hover { border-color: var(--border); }
+.erows { list-style: none; margin: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+.erow { display: flex; align-items: center; gap: 4px; min-height: 56px; padding: 4px 4px 4px 0; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--background); }
+.erow .handle { width: 32px; display: grid; place-items: center; color: var(--muted-foreground); align-self: stretch; }
+.erow .nm { font-weight: 600; font-size: 15px; }
+.erow .sm { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.egroup { border-left: 2px solid var(--chart-neutral); padding-left: 8px; display: flex; flex-direction: column; gap: 6px; }
+.egroup-l { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-foreground); display: flex; gap: 4px; align-items: center; }
+.eedit { border: 1px solid var(--ring); border-radius: var(--radius-sm); background: var(--background); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.inline-fields { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.inline-fields .input { width: 76px; text-align: center; font-variant-numeric: tabular-nums; }
+.times { color: var(--muted-foreground); padding-bottom: 12px; }
+.seg.sm button { min-height: 36px; padding: 0 10px; font-size: 13px; }
+.addbtn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: none; color: var(--text-secondary); font: 500 14px var(--font-sans); cursor: pointer; }
+/* desktop entry table */
+.etable { display: none; }
+@container (min-width: 1024px) {
+  .erows.m-only { display: none; }
+  .etable { display: block; padding: 0 12px 12px; }
+  .etr { display: grid; grid-template-columns: 28px minmax(0, 2.2fr) 120px 130px 110px 90px 44px; gap: 8px; align-items: center; min-height: 52px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .etr.th { min-height: 32px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-foreground); }
+  .etr .input { min-height: 36px; padding: 0 8px; font-size: 14px; }
+  .etr.grp { box-shadow: inset 2px 0 0 var(--chart-neutral); }
+  .cellpair { display: flex; gap: 4px; align-items: center; }
+  .cellpair .input { width: 48px; text-align: center; }
+}
+.opt-row { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-chain" viewBox="0 0 24 24"><path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></symbol>
+</svg>
+<header class="sk-bar">
+  <a class="link link-quiet" href="index.html"><svg class="i i-sm"><use href="#i-chev-l"/></svg>Index</a>
+  <h1>editor</h1>
+  <span class="badge badge-public">P0</span>
+  <span class="sk-meta">Author editor · <code>/programs/$programId</code> (author only) · journeys A7, B2, B3, C1, C2</span>
+  <span class="sk-spacer"></span>
+  <button class="btn btn-secondary" data-toggle-theme>Switch to dark</button>
+</header>
+<div class="sk-intro">
+  <p>Week tabs → session cards → entry rows. Autosave per session (whole-session payload with the program revision); the save indicator is the only "save" UI. Optional fields say "(optional)" and never block sharing. Mobile: one entry expanded at a time. Desktop: weeks move to a left rail and entries become an inline-editable table.</p>
+</div>
+<section class="sk-group">
+  <h2>1 · Populated + long content — live public program (C1, C2)</h2>
+  <p class="sk-note">12 weeks, 8-entry session with two superset chains, one entry expanded. "Copy week" sits beside the week heading — the most prominent action after content. On public programs a one-line note answers the C2 fear: edits never change addresses.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· editing an entry</span></figcaption>
+      <div class="scr tall">
+<div class="ed-bar">
+  <a class="btn btn-ghost btn-icon" href="#" aria-label="Back to programs"><svg class="i"><use href="#i-chev-l"/></svg></a>
+  <span class="ttl grow">Hypertrophy Base</span>
+  <span class="save" role="status"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span>
+  <button class="btn btn-ghost btn-icon" aria-label="Program settings"><svg class="i"><use href="#i-gear"/></svg></button>
+  <button class="btn btn-secondary">Share</button>
+</div>
+<div class="banner" role="note"><svg class="i"><use href="#i-globe"/></svg><p class="grow"><span class="badge badge-public" style="margin-right:6px">Public</span>Changes go live as they save. Addresses and links don't change.</p></div>
+<div class="tabs ed-tabs" role="tablist" aria-label="Weeks" style="padding:0 8px">
+  <button class="tab" role="tab" aria-selected="false">Week 1</button><button class="tab" role="tab" aria-selected="false">Week 2</button><button class="tab" role="tab" aria-selected="false">Week 3</button><button class="tab" role="tab" aria-selected="true">Week 4</button><button class="tab" role="tab" aria-selected="false">Week 5</button><button class="tab" role="tab" aria-selected="false">Week 6</button><button class="tab" role="tab" aria-selected="false">Week 7</button><button class="tab" role="tab" aria-selected="false">Week 8</button><button class="tab" role="tab" aria-selected="false">Week 9</button><button class="tab" role="tab" aria-selected="false">Week 10</button><button class="tab" role="tab" aria-selected="false">Week 11</button><button class="tab" role="tab" aria-selected="false">Week 12</button>
+  <button class="tab" aria-label="Add week"><svg class="i i-sm"><use href="#i-plus"/></svg></button>
+</div>
+<div class="ed-weekbar">
+  <div><p class="h-card">Week 4</p><p class="cap num">4 sessions · 92 sets</p></div>
+  <button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy week</button>
+</div>
+<div class="card ses">
+  <div class="ses-head">
+    <div class="ses-title"><label class="sr-only" for="st1">Session title</label><input id="st1" value="Upper A"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <p class="cap" style="padding:0 8px">Warm up with two lighter bench sets before the first working set.</p>
+  </div>
+  <ol class="erows m-only">
+    <li class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Barbell bench press</p><p class="sm">4 × 8 · 72.5% 1RM · RPE 7.5 · 2:30</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></li>
+    <li class="eedit" aria-label="Editing Chest-supported row">
+      <div class="row between"><p class="nm" style="font-weight:600">Chest-supported row</p><button class="btn btn-ghost">Change</button></div>
+      <div class="inline-fields">
+        <div class="field"><label class="label" for="e-s">Sets</label><input id="e-s" class="input" inputmode="numeric" value="4"></div>
+        <span class="times">×</span>
+        <div class="field"><label class="label" for="e-r">Reps</label><input id="e-r" class="input is-focus" inputmode="numeric" value="10"></div>
+        <div class="seg sm" role="group" aria-label="Reps type"><button aria-pressed="true">Reps</button><button>Max</button><button>Seconds</button></div>
+      </div>
+      <div class="field"><span class="label">Load <span class="opt">(optional)</span></span><div class="inline-fields"><div class="seg sm" role="group" aria-label="Load type"><button>None</button><button aria-pressed="true">kg</button><button>%1RM</button></div><input class="input" inputmode="decimal" value="32.5" aria-label="Load in kg"></div></div>
+      <div class="field"><span class="label">Intensity <span class="opt">(optional)</span></span><div class="inline-fields"><div class="seg sm" role="group" aria-label="Intensity type"><button>None</button><button>RPE</button><button aria-pressed="true">RIR</button></div><input class="input" inputmode="decimal" value="2" aria-label="Reps in reserve"></div></div>
+      <div class="field"><label class="label" for="e-rest">Rest <span class="opt">(optional, min:sec)</span></label><input id="e-rest" class="input" style="width:96px" inputmode="numeric" value="2:00"></div>
+      <div class="toggle-row"><span id="ss1" class="body-sm">Superset with previous</span><button class="switch" role="switch" aria-checked="false" aria-labelledby="ss1"></button></div>
+      <div class="field"><label class="label" for="e-c">Cues <span class="opt">(optional)</span></label><textarea id="e-c" class="textarea" placeholder="Tempo, setup, what to feel"></textarea></div>
+      <div class="field"><label class="label" for="e-u">Reference link <span class="opt">(optional)</span></label><input id="e-u" class="input" type="url" placeholder="https://"></div>
+      <div class="row between"><div class="row g4"><button class="btn btn-ghost btn-icon" aria-label="Move up"><svg class="i"><use href="#i-up"/></svg></button><button class="btn btn-ghost btn-icon" aria-label="Move down"><svg class="i"><use href="#i-down"/></svg></button></div><button class="btn btn-ghost" style="color:var(--destructive)"><svg class="i"><use href="#i-trash"/></svg>Remove</button></div>
+    </li>
+    <li class="egroup"><span class="egroup-l"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset</span>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Incline dumbbell press</p><p class="sm">3 × 12 · 24 kg</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Cable fly</p><p class="sm">3 × 15 · 12.5 kg · 1:30</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+    </li>
+    <li class="egroup"><span class="egroup-l"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset</span>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Lateral raise</p><p class="sm">3 × 15 · 8 kg</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Rear-delt fly</p><p class="sm">3 × 15 · 6 kg</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Face pull</p><p class="sm">3 × 15 · 15 kg · 1:00</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+    </li>
+    <li class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Dead bug</p><p class="sm">3 × 30 s · 0:45</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></li>
+    <li><button class="addbtn"><svg class="i"><use href="#i-plus"/></svg>Add exercise</button></li>
+  </ol>
+  <div class="etable" role="table" aria-label="Exercises in Upper A">
+    <div class="etr th" role="row"><span></span><span>Exercise</span><span>Sets × reps</span><span>Load</span><span>Intensity</span><span>Rest</span><span></span></div>
+    <div class="etr" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-grip"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Barbell bench press</button><span class="cellpair"><input class="input" value="4">×<input class="input" value="8"></span><span class="cellpair"><input class="input" style="width:60px" value="72.5"><span class="cap">%1RM</span></span><span class="cellpair"><span class="cap">RPE</span><input class="input" value="7.5"></span><input class="input" value="2:30"><button class="btn btn-ghost btn-icon" aria-label="More for bench press"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-grip"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Chest-supported row</button><span class="cellpair"><input class="input" value="4">×<input class="input is-focus" value="10"></span><span class="cellpair"><input class="input" style="width:60px" value="32.5"><span class="cap">kg</span></span><span class="cellpair"><span class="cap">RIR</span><input class="input" value="2"></span><input class="input" value="2:00"><button class="btn btn-ghost btn-icon" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr grp" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-chain"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Incline dumbbell press</button><span class="cellpair"><input class="input" value="3">×<input class="input" value="12"></span><span class="cellpair"><input class="input" style="width:60px" value="24"><span class="cap">kg</span></span><span class="cap">—</span><span class="cap">—</span><button class="btn btn-ghost btn-icon" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr grp" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-chain"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Cable fly</button><span class="cellpair"><input class="input" value="3">×<input class="input" value="15"></span><span class="cellpair"><input class="input" style="width:60px" value="12.5"><span class="cap">kg</span></span><span class="cap">—</span><input class="input" value="1:30"><button class="btn btn-ghost btn-icon" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-grip"/></svg></span><span class="cap">+ 4 more rows (superset of 3, dead bug)</span><span></span><span></span><span></span><span></span><span></span></div>
+    <button class="addbtn mt8"><svg class="i"><use href="#i-plus"/></svg>Add exercise</button>
+    <p class="cap mt8">Row "More" menu: superset with previous, cues, reference link, move, remove — opens the same fields as the mobile expanded row in a popover.</p>
+  </div>
+</div>
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Lower A" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">6 exercises · 20 sets</p></div></div>
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Upper B" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">7 exercises · 22 sets</p></div></div>
+<div style="padding:0 16px 24px"><button class="addbtn"><svg class="i"><use href="#i-plus"/></svg>Add session</button></div>
+      </div>
+      <p class="sk-note-inline">Reps type: Reps / Max / Seconds (Max hides the value field). Load: None / kg / %1RM — label follows the author's unit (lb users see "lb"; stored as kg). Superset toggle bracket-joins the entry to the one above. Reorder: drag handle plus Move up/down buttons for keyboard and screen readers.</p>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop <span>· structural divergence: week rail + entry table</span></figcaption>
+      <div class="scr tall">
+<div class="ed-bar">
+  <a class="btn btn-ghost btn-icon" href="#" aria-label="Back to programs"><svg class="i"><use href="#i-chev-l"/></svg></a>
+  <span class="ttl grow">Hypertrophy Base</span>
+  <span class="save" role="status"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span>
+  <button class="btn btn-ghost btn-icon" aria-label="Program settings"><svg class="i"><use href="#i-gear"/></svg></button>
+  <button class="btn btn-secondary">Share</button>
+</div>
+<div class="banner" role="note"><svg class="i"><use href="#i-globe"/></svg><p class="grow"><span class="badge badge-public" style="margin-right:6px">Public</span>Changes go live as they save. Addresses and links don't change.</p></div>
+        <div class="ed-layout">
+<nav class="ed-rail" aria-label="Weeks">
+  <a href="#">Week 1 <span class="cap">4</span></a><a href="#">Week 2 <span class="cap">4</span></a><a href="#">Week 3 <span class="cap">4</span></a><a href="#" aria-current="true">Week 4 <span class="cap">4</span></a><a href="#">Week 5 <span class="cap">0</span></a><a href="#">Week 6 <span class="cap">0</span></a><a href="#">…</a><a href="#">Week 12 <span class="cap">0</span></a>
+  <button class="btn btn-ghost mt8" style="justify-content:flex-start"><svg class="i"><use href="#i-plus"/></svg>Add week</button>
+</nav>
+          <main>
+<div class="ed-weekbar">
+  <div><p class="h-card">Week 4</p><p class="cap num">4 sessions · 92 sets</p></div>
+  <button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy week</button>
+</div>
+<div class="card ses">
+  <div class="ses-head">
+    <div class="ses-title"><label class="sr-only" for="st1">Session title</label><input id="st1" value="Upper A"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <p class="cap" style="padding:0 8px">Warm up with two lighter bench sets before the first working set.</p>
+  </div>
+  <ol class="erows m-only">
+    <li class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Barbell bench press</p><p class="sm">4 × 8 · 72.5% 1RM · RPE 7.5 · 2:30</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></li>
+    <li class="eedit" aria-label="Editing Chest-supported row">
+      <div class="row between"><p class="nm" style="font-weight:600">Chest-supported row</p><button class="btn btn-ghost">Change</button></div>
+      <div class="inline-fields">
+        <div class="field"><label class="label" for="e-s">Sets</label><input id="e-s" class="input" inputmode="numeric" value="4"></div>
+        <span class="times">×</span>
+        <div class="field"><label class="label" for="e-r">Reps</label><input id="e-r" class="input is-focus" inputmode="numeric" value="10"></div>
+        <div class="seg sm" role="group" aria-label="Reps type"><button aria-pressed="true">Reps</button><button>Max</button><button>Seconds</button></div>
+      </div>
+      <div class="field"><span class="label">Load <span class="opt">(optional)</span></span><div class="inline-fields"><div class="seg sm" role="group" aria-label="Load type"><button>None</button><button aria-pressed="true">kg</button><button>%1RM</button></div><input class="input" inputmode="decimal" value="32.5" aria-label="Load in kg"></div></div>
+      <div class="field"><span class="label">Intensity <span class="opt">(optional)</span></span><div class="inline-fields"><div class="seg sm" role="group" aria-label="Intensity type"><button>None</button><button>RPE</button><button aria-pressed="true">RIR</button></div><input class="input" inputmode="decimal" value="2" aria-label="Reps in reserve"></div></div>
+      <div class="field"><label class="label" for="e-rest">Rest <span class="opt">(optional, min:sec)</span></label><input id="e-rest" class="input" style="width:96px" inputmode="numeric" value="2:00"></div>
+      <div class="toggle-row"><span id="ss1" class="body-sm">Superset with previous</span><button class="switch" role="switch" aria-checked="false" aria-labelledby="ss1"></button></div>
+      <div class="field"><label class="label" for="e-c">Cues <span class="opt">(optional)</span></label><textarea id="e-c" class="textarea" placeholder="Tempo, setup, what to feel"></textarea></div>
+      <div class="field"><label class="label" for="e-u">Reference link <span class="opt">(optional)</span></label><input id="e-u" class="input" type="url" placeholder="https://"></div>
+      <div class="row between"><div class="row g4"><button class="btn btn-ghost btn-icon" aria-label="Move up"><svg class="i"><use href="#i-up"/></svg></button><button class="btn btn-ghost btn-icon" aria-label="Move down"><svg class="i"><use href="#i-down"/></svg></button></div><button class="btn btn-ghost" style="color:var(--destructive)"><svg class="i"><use href="#i-trash"/></svg>Remove</button></div>
+    </li>
+    <li class="egroup"><span class="egroup-l"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset</span>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Incline dumbbell press</p><p class="sm">3 × 12 · 24 kg</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Cable fly</p><p class="sm">3 × 15 · 12.5 kg · 1:30</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+    </li>
+    <li class="egroup"><span class="egroup-l"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset</span>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Lateral raise</p><p class="sm">3 × 15 · 8 kg</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Rear-delt fly</p><p class="sm">3 × 15 · 6 kg</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+      <div class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Face pull</p><p class="sm">3 × 15 · 15 kg · 1:00</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></div>
+    </li>
+    <li class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Dead bug</p><p class="sm">3 × 30 s · 0:45</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></li>
+    <li><button class="addbtn"><svg class="i"><use href="#i-plus"/></svg>Add exercise</button></li>
+  </ol>
+  <div class="etable" role="table" aria-label="Exercises in Upper A">
+    <div class="etr th" role="row"><span></span><span>Exercise</span><span>Sets × reps</span><span>Load</span><span>Intensity</span><span>Rest</span><span></span></div>
+    <div class="etr" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-grip"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Barbell bench press</button><span class="cellpair"><input class="input" value="4">×<input class="input" value="8"></span><span class="cellpair"><input class="input" style="width:60px" value="72.5"><span class="cap">%1RM</span></span><span class="cellpair"><span class="cap">RPE</span><input class="input" value="7.5"></span><input class="input" value="2:30"><button class="btn btn-ghost btn-icon" aria-label="More for bench press"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-grip"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Chest-supported row</button><span class="cellpair"><input class="input" value="4">×<input class="input is-focus" value="10"></span><span class="cellpair"><input class="input" style="width:60px" value="32.5"><span class="cap">kg</span></span><span class="cellpair"><span class="cap">RIR</span><input class="input" value="2"></span><input class="input" value="2:00"><button class="btn btn-ghost btn-icon" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr grp" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-chain"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Incline dumbbell press</button><span class="cellpair"><input class="input" value="3">×<input class="input" value="12"></span><span class="cellpair"><input class="input" style="width:60px" value="24"><span class="cap">kg</span></span><span class="cap">—</span><span class="cap">—</span><button class="btn btn-ghost btn-icon" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr grp" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-chain"/></svg></span><button class="link link-quiet" style="color:var(--foreground);text-decoration:none;font-weight:600">Cable fly</button><span class="cellpair"><input class="input" value="3">×<input class="input" value="15"></span><span class="cellpair"><input class="input" style="width:60px" value="12.5"><span class="cap">kg</span></span><span class="cap">—</span><input class="input" value="1:30"><button class="btn btn-ghost btn-icon" aria-label="More"><svg class="i"><use href="#i-more"/></svg></button></div>
+    <div class="etr" role="row"><span class="handle t-muted"><svg class="i"><use href="#i-grip"/></svg></span><span class="cap">+ 4 more rows (superset of 3, dead bug)</span><span></span><span></span><span></span><span></span><span></span></div>
+    <button class="addbtn mt8"><svg class="i"><use href="#i-plus"/></svg>Add exercise</button>
+    <p class="cap mt8">Row "More" menu: superset with previous, cues, reference link, move, remove — opens the same fields as the mobile expanded row in a popover.</p>
+  </div>
+</div>
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Lower A" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">6 exercises · 20 sets</p></div></div>
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Upper B" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">7 exercises · 22 sets</p></div></div>
+<div style="padding:0 16px 24px"><button class="addbtn"><svg class="i"><use href="#i-plus"/></svg>Add session</button></div>
+          </main>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>2 · Copy week (C1)</h2>
+  <p class="sk-note">Default target = next week. Copying into a week that has sessions replaces them — the option says how many, and the button turns destructive. Target "new week" appends after the last week.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Copy week sheet</figcaption>
+      <div class="scr">
+<div class="ed-bar">
+  <a class="btn btn-ghost btn-icon" href="#" aria-label="Back to programs"><svg class="i"><use href="#i-chev-l"/></svg></a>
+  <span class="ttl grow">Hypertrophy Base</span>
+  <span class="save" role="status"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span>
+  <button class="btn btn-ghost btn-icon" aria-label="Program settings"><svg class="i"><use href="#i-gear"/></svg></button>
+  <button class="btn btn-secondary">Share</button>
+</div>
+<div class="tabs ed-tabs" role="tablist" aria-label="Weeks" style="padding:0 8px">
+  <button class="tab" role="tab" aria-selected="false">Week 1</button><button class="tab" role="tab" aria-selected="false">Week 2</button><button class="tab" role="tab" aria-selected="false">Week 3</button><button class="tab" role="tab" aria-selected="true">Week 4</button><button class="tab" role="tab" aria-selected="false">Week 5</button><button class="tab" role="tab" aria-selected="false">Week 6</button><button class="tab" role="tab" aria-selected="false">Week 7</button><button class="tab" role="tab" aria-selected="false">Week 8</button><button class="tab" role="tab" aria-selected="false">Week 9</button><button class="tab" role="tab" aria-selected="false">Week 10</button><button class="tab" role="tab" aria-selected="false">Week 11</button><button class="tab" role="tab" aria-selected="false">Week 12</button>
+  <button class="tab" aria-label="Add week"><svg class="i i-sm"><use href="#i-plus"/></svg></button>
+</div>
+        <div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true" aria-labelledby="cw-t">
+          <div class="grabber"></div>
+          <div class="sheet-head"><h2 id="cw-t" class="h-card" style="font-size:20px">Copy week 4 to…</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <fieldset class="vis mt16" role="radiogroup" style="border:0;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:8px">
+            <legend class="sr-only">Target week</legend>
+            <label class="chip-btn" style="justify-content:space-between" aria-pressed="true"><span>Week 5</span><span class="cap">empty</span></label>
+            <label class="chip-btn" style="justify-content:space-between"><span>Week 6</span><span class="cap">empty</span></label>
+            <label class="chip-btn" style="justify-content:space-between"><span>Week 3</span><span class="cap">replaces 4 sessions</span></label>
+            <label class="chip-btn" style="justify-content:space-between"><span>New week 13</span><span class="cap">adds a week</span></label>
+          </fieldset>
+          <p class="conseq mt12" style="font-size:13px;color:var(--text-secondary)">Copies all 4 sessions with every exercise, set, load and cue. Edit the copy afterwards; week 4 doesn't change.</p>
+          <button class="btn btn-block mt16 is-focus"><svg class="i"><use href="#i-copy"/></svg>Copy week</button>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Target has sessions</figcaption>
+      <div class="scr short" style="min-height:420px">
+        <div class="pad stack g12">
+          <label class="chip-btn" style="justify-content:space-between" aria-pressed="true"><span>Week 3</span><span class="cap">replaces 4 sessions</span></label>
+          <p class="body-sm t-sec">Week 3's 4 sessions are replaced by a copy of week 4.</p>
+          <button class="btn btn-danger btn-block">Replace week 3</button>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Done</figcaption>
+      <div class="scr short" style="min-height:420px">
+<div class="ed-bar">
+  <a class="btn btn-ghost btn-icon" href="#" aria-label="Back to programs"><svg class="i"><use href="#i-chev-l"/></svg></a>
+  <span class="ttl grow">Hypertrophy Base</span>
+  <span class="save" role="status"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span>
+  <button class="btn btn-ghost btn-icon" aria-label="Program settings"><svg class="i"><use href="#i-gear"/></svg></button>
+  <button class="btn btn-secondary">Share</button>
+</div>
+        <div class="toast" role="status"><svg class="i"><use href="#i-check"/></svg><span class="grow">Week 4 copied to week 5</span><button class="btn btn-ghost" style="color:inherit">Go to week 5</button></div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>3 · Autosave and stale revision (C2)</h2>
+  <p class="sk-note">Indicator states in the top bar. A stale revision (another tab or device saved first) pins a banner, pauses autosave, and keeps the author's unsaved session visible so nothing is silently lost. Reload is the only primary action.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Save indicator states</figcaption>
+      <div class="scr short" style="min-height:0">
+        <div class="pad stack g12">
+          <span class="save"><svg class="i i-sm"><use href="#i-cloud"/></svg>Saving…</span>
+          <span class="save"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span>
+          <span class="save err"><svg class="i i-sm"><use href="#i-alert"/></svg>Not saved · <button class="link" style="min-height:44px;color:var(--destructive)">Retry</button></span>
+          <span class="save err"><svg class="i i-sm"><use href="#i-alert"/></svg>Offline · changes kept on this device until you reconnect</span>
+          <span class="save"><svg class="i i-sm"><use href="#i-alert"/></svg>Fix 1 entry to save</span>
+        </div>
+      </div>
+      <p class="sk-note-inline">"Offline · kept on this device" assumes local buffering — not in the plan; notes §5.</p>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Stale revision</figcaption>
+      <div class="scr">
+        <div class="ed-bar"><a class="btn btn-ghost btn-icon" href="#" aria-label="Back"><svg class="i"><use href="#i-chev-l"/></svg></a><span class="ttl grow">Hypertrophy Base</span><span class="save err"><svg class="i i-sm"><use href="#i-alert"/></svg>Not saved</span></div>
+        <div class="banner brand" role="alert" style="flex-direction:column;align-items:stretch">
+          <div class="row g8" style="align-items:flex-start"><svg class="i"><use href="#i-alert"/></svg><p class="grow">This program changed in another tab or on another device. Reload to see the latest version before editing.</p></div>
+          <p class="cap">Your last change to “Upper A” wasn't saved. It stays on screen until you reload so you can note it.</p>
+          <div class="row g8"><button class="btn is-focus">Reload</button><button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy my change</button></div>
+        </div>
+<div class="tabs ed-tabs" role="tablist" aria-label="Weeks" style="padding:0 8px">
+  <button class="tab" role="tab" aria-selected="false">Week 1</button><button class="tab" role="tab" aria-selected="false">Week 2</button><button class="tab" role="tab" aria-selected="false">Week 3</button><button class="tab" role="tab" aria-selected="true">Week 4</button><button class="tab" role="tab" aria-selected="false">Week 5</button><button class="tab" role="tab" aria-selected="false">Week 6</button><button class="tab" role="tab" aria-selected="false">Week 7</button><button class="tab" role="tab" aria-selected="false">Week 8</button><button class="tab" role="tab" aria-selected="false">Week 9</button><button class="tab" role="tab" aria-selected="false">Week 10</button><button class="tab" role="tab" aria-selected="false">Week 11</button><button class="tab" role="tab" aria-selected="false">Week 12</button>
+  <button class="tab" aria-label="Add week"><svg class="i i-sm"><use href="#i-plus"/></svg></button>
+</div>
+<div class="ed-weekbar">
+  <div><p class="h-card">Week 4</p><p class="cap num">4 sessions · 92 sets</p></div>
+  <button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy week</button>
+</div>
+        <div style="opacity:.6" aria-disabled="true">
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Lower A" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">6 exercises · 20 sets</p></div></div>
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Upper B" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">7 exercises · 22 sets</p></div></div>
+<div style="padding:0 16px 24px"><button class="addbtn"><svg class="i"><use href="#i-plus"/></svg>Add session</button></div>
+</div>
+      </div>
+      <p class="sk-note-inline">"Copy my change" copies a plain-text summary of the unsaved session to the clipboard. Merge is out of scope (plan: reload prompt only).</p>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Entry validation</figcaption>
+      <div class="scr short" style="min-height:420px">
+        <div class="pad">
+          <div class="eedit">
+            <p style="font-weight:600">Plank</p>
+            <div class="inline-fields">
+              <div class="field"><label class="label" for="v-s">Sets</label><input id="v-s" class="input" value="3"></div><span class="times">×</span>
+              <div class="field"><label class="label" for="v-r">Seconds</label><input id="v-r" class="input" aria-invalid="true" aria-describedby="v-re" value=""></div>
+              <div class="seg sm" role="group" aria-label="Reps type"><button>Reps</button><button>Max</button><button aria-pressed="true">Seconds</button></div>
+            </div>
+            <p id="v-re" class="field-error"><svg class="i i-sm"><use href="#i-alert"/></svg>Add seconds, or choose Max.</p>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>4 · Program settings sheet</h2>
+  <p class="sk-note">Everything not asked at creation. Visibility is a row that opens the share dialog — one place for state changes. Program address appears only after first share (slug is minted then); renaming it redirects old addresses.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Settings <span>· after first share</span></figcaption>
+      <div class="scr tall" style="min-height:1000px">
+<div class="ed-bar">
+  <a class="btn btn-ghost btn-icon" href="#" aria-label="Back to programs"><svg class="i"><use href="#i-chev-l"/></svg></a>
+  <span class="ttl grow">Hypertrophy Base</span>
+  <span class="save" role="status"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span>
+  <button class="btn btn-ghost btn-icon" aria-label="Program settings"><svg class="i"><use href="#i-gear"/></svg></button>
+  <button class="btn btn-secondary">Share</button>
+</div>
+        <div class="scrim"></div>
+        <div class="sheet as-panel" role="dialog" aria-modal="true" aria-labelledby="ps-t" style="max-height:94%">
+          <div class="grabber"></div>
+          <div class="sheet-head"><h2 id="ps-t" class="h-card" style="font-size:20px">Program settings</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="field mt16"><label class="label" for="ps1">Title</label><input id="ps1" class="input" value="Hypertrophy Base"></div>
+          <div class="field mt12"><label class="label" for="ps2">Description <span class="opt">(optional)</span></label><textarea id="ps2" class="textarea">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</textarea></div>
+          <div class="field mt12"><span class="label">Goal</span><div class="seg full" role="group"><button>Strength</button><button aria-pressed="true">Hypertrophy</button><button>Fat loss</button><button>General</button></div></div>
+          <div class="field mt12"><span class="label">Level</span><div class="seg full" role="group"><button>Beginner</button><button aria-pressed="true">Intermediate</button><button>Advanced</button></div></div>
+          <div class="grid2 mt12">
+            <div class="field"><span class="label">Sessions per week</span><div class="stepper" style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--muted)"><button class="btn btn-ghost btn-icon" aria-label="Fewer">−</button><output class="num" style="min-width:32px;text-align:center;font-weight:600">4</output><button class="btn btn-ghost btn-icon" aria-label="More">+</button></div></div>
+            <div class="field"><span class="label">Weeks</span><p class="num" style="min-height:44px;display:flex;align-items:center;font-weight:600">12</p><p class="hint" style="margin-top:0">Add or remove weeks from the week tabs.</p></div>
+          </div>
+          <div class="field mt12"><span class="label">Equipment <span class="opt">(optional)</span></span><div class="opt-row"><button class="chip-btn" aria-pressed="true">Barbell</button><button class="chip-btn" aria-pressed="true">Dumbbell</button><button class="chip-btn">Machine</button><button class="chip-btn" aria-pressed="true">Cable</button><button class="chip-btn">Bodyweight</button><button class="chip-btn">Kettlebell</button><button class="chip-btn">Band</button><button class="chip-btn">Other</button></div></div>
+          <div class="field mt16"><label class="label" for="ps3">Program address</label><div class="prefix-input"><span>/u/tara/</span><input id="ps3" value="hypertrophy-base"></div><p class="hint">Old addresses redirect here after a change. Share links keep working.</p></div>
+          <hr class="divider mt16">
+          <button class="row between" style="width:100%;min-height:56px;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer"><span class="stack" style="text-align:left"><span class="label" style="margin:0">Who can open it</span><span class="row g8"><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span><span class="body-sm">Change in Share</span></span></span><svg class="i"><use href="#i-chev-r"/></svg></button>
+          <hr class="divider">
+          <button class="btn btn-ghost mt8" style="color:var(--destructive)"><svg class="i"><use href="#i-trash"/></svg>Delete program…</button>
+        </div>
+      </div>
+      <p class="sk-note-inline">Desktop: same sheet as a right side panel (<code>.as-panel</code>). Delete opens the same confirm as library §2.</p>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>5 · Empty · minimal · fork landing · loading · error</h2>
+  <p class="sk-note">New program lands on week 1 with one primary action. Empty session shows its own add button. Minimal (Leo) rows show only sets × reps. Fork landing shows attribution under the title (A7). Non-author opening this URL → plain 404 (<code>NOT_AUTHOR</code> is never surfaced as text). Anonymous → sign-in.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Empty program</figcaption>
+      <div class="scr short" style="min-height:520px">
+        <div class="ed-bar"><a class="btn btn-ghost btn-icon" href="#" aria-label="Back"><svg class="i"><use href="#i-chev-l"/></svg></a><span class="ttl grow">Push Pull Legs</span><span class="save"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span><button class="btn btn-ghost btn-icon" aria-label="Program settings"><svg class="i"><use href="#i-gear"/></svg></button><button class="btn btn-secondary">Share</button></div>
+        <div class="tabs" role="tablist" style="padding:0 8px"><button class="tab" role="tab" aria-selected="true">Week 1</button><button class="tab" aria-label="Add week"><svg class="i i-sm"><use href="#i-plus"/></svg></button></div>
+        <div class="pad stack g12" style="padding-top:32px">
+          <h2 class="h-card">No sessions yet</h2>
+          <p class="body-sm t-sec">Add the first session of week 1, then add exercises to it.</p>
+          <button class="btn btn-block"><svg class="i"><use href="#i-plus"/></svg>Add session</button>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Empty session + minimal rows</figcaption>
+      <div class="scr short" style="min-height:520px">
+        <div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Push" aria-label="Session title"></div></div>
+          <ol class="erows">
+            <li class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Bench press</p><p class="sm">3 × 8 · 60 kg</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></li>
+            <li class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Landmine press</p><p class="sm">3 × 10</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></li>
+            <li class="erow"><span class="handle"><svg class="i"><use href="#i-grip"/></svg></span><div class="grow"><p class="nm">Dips</p><p class="sm">3 × max</p></div><svg class="i t-muted"><use href="#i-chev-d"/></svg></li>
+            <li><button class="addbtn"><svg class="i"><use href="#i-plus"/></svg>Add exercise</button></li>
+          </ol>
+        </div>
+        <div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Pull" aria-label="Session title"></div><p class="cap" style="padding:0 8px">No exercises yet.</p></div><div style="padding:0 12px 12px"><button class="btn btn-block"><svg class="i"><use href="#i-plus"/></svg>Add exercise</button></div></div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Fork landing (A7)</figcaption>
+      <div class="scr short" style="min-height:520px">
+        <div class="ed-bar"><a class="btn btn-ghost btn-icon" href="#" aria-label="Back"><svg class="i"><use href="#i-chev-l"/></svg></a><span class="ttl grow">Hypertrophy Base</span><span class="save"><svg class="i i-sm"><use href="#i-check"/></svg>Saved</span><button class="btn btn-ghost btn-icon" aria-label="Program settings"><svg class="i"><use href="#i-gear"/></svg></button><button class="btn btn-secondary">Share</button></div>
+        <div class="pad stack g4"><span class="badge badge-draft" style="align-self:flex-start"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span><p class="cap mt4">Based on Tara · Hypertrophy Base</p></div>
+<div class="tabs ed-tabs" role="tablist" aria-label="Weeks" style="padding:0 8px">
+  <button class="tab" role="tab" aria-selected="false">Week 1</button><button class="tab" role="tab" aria-selected="false">Week 2</button><button class="tab" role="tab" aria-selected="false">Week 3</button><button class="tab" role="tab" aria-selected="true">Week 4</button><button class="tab" role="tab" aria-selected="false">Week 5</button><button class="tab" role="tab" aria-selected="false">Week 6</button><button class="tab" role="tab" aria-selected="false">Week 7</button><button class="tab" role="tab" aria-selected="false">Week 8</button><button class="tab" role="tab" aria-selected="false">Week 9</button><button class="tab" role="tab" aria-selected="false">Week 10</button><button class="tab" role="tab" aria-selected="false">Week 11</button><button class="tab" role="tab" aria-selected="false">Week 12</button>
+  <button class="tab" aria-label="Add week"><svg class="i i-sm"><use href="#i-plus"/></svg></button>
+</div>
+        <div style="opacity:1">
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Lower A" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">6 exercises · 20 sets</p></div></div>
+<div class="card ses"><div class="ses-head"><div class="ses-title"><input value="Upper B" aria-label="Session title"><button class="btn btn-ghost btn-icon" aria-label="Session options"><svg class="i"><use href="#i-more"/></svg></button></div><p class="cap" style="padding:0 8px">7 exercises · 22 sets</p></div></div>
+<div style="padding:0 16px 24px"><button class="addbtn"><svg class="i"><use href="#i-plus"/></svg>Add session</button></div>
+</div>
+      </div>
+      <p class="sk-note-inline">Full first-landing confirmation is the P1 <a class="link" href="fork-confirmation.html">fork-confirmation</a> sketch.</p>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Loading</figcaption>
+      <div class="scr short" style="min-height:520px" aria-busy="true">
+        <div class="ed-bar"><div class="skel" style="width:180px;height:20px;margin-left:12px"></div></div>
+        <div class="pad stack g12"><div class="row g8"><div class="skel" style="width:70px;height:28px"></div><div class="skel" style="width:70px;height:28px"></div><div class="skel" style="width:70px;height:28px"></div></div><div class="skel" style="height:160px"></div><div class="skel" style="height:80px"></div></div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Error</figcaption>
+      <div class="scr short" style="min-height:520px">
+        <div class="ed-bar"><a class="btn btn-ghost btn-icon" href="#" aria-label="Back"><svg class="i"><use href="#i-chev-l"/></svg></a><span class="ttl grow">Program</span></div>
+        <div class="pad"><div class="notice danger" role="alert"><svg class="i"><use href="#i-alert"/></svg><div class="grow"><p>This program didn't load.</p><button class="btn btn-secondary mt8">Try again</button></div></div></div>
+      </div>
+    </figure>
+  </div>
+</section>
+<script>
+(function () {
+  var k = "physlane-sketch-theme", r = document.documentElement;
+  r.dataset.theme = localStorage.getItem(k) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  function label() { document.querySelectorAll("[data-toggle-theme]").forEach(function (b) { b.textContent = r.dataset.theme === "dark" ? "Switch to light" : "Switch to dark"; }); }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-toggle-theme]");
+    if (t) { r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark"; localStorage.setItem(k, r.dataset.theme); label(); return; }
+    var tab = e.target.closest('[role="tab"]');
+    if (tab) {
+      var list = tab.closest('[role="tablist"]'), scope = tab.closest("[data-tabs]") || document;
+      list.querySelectorAll('[role="tab"]').forEach(function (x) {
+        var on = x === tab; x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1;
+        var p = x.getAttribute("aria-controls") && scope.querySelector("#" + x.getAttribute("aria-controls"));
+        if (p) p.hidden = !on;
+      });
+    }
+    var acc = e.target.closest("[data-acc]");
+    if (acc) { var open = acc.getAttribute("aria-expanded") === "true"; acc.setAttribute("aria-expanded", !open); var id = acc.getAttribute("aria-controls"), body = id && acc.parentElement.querySelector("#" + id); if (body) body.hidden = open; }
+  });
+  label();
+})();
+</script>
+</body>
+</html>

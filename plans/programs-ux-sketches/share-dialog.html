@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>share-dialog — physlane programs sketch</title>
+<style>
+/* ---- Fonts: self-hosted repo copies (no CDN). Serve repo root over HTTP. ---- */
+@font-face {
+  font-family: "Instrument Serif";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../public/fonts/instrument-serif-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../../public/fonts/inter-latin-var.woff2") format("woff2");
+}
+
+/* ---- Tokens: DESIGN.md v2 values under shadcn-canonical names (mirrors src/styles.css) ---- */
+:root {
+  --background: #f7f4ee;
+  --card: #fffefc;
+  --muted: #eeeae2;
+  --popover: #ffffff;
+  --foreground: #171717;
+  --text-secondary: #62615e;
+  --muted-foreground: #6b6964; /* Appendix A adjustment */
+  --border: #e3ded5;
+  --primary: #d92f28;
+  --primary-foreground: #fffefc;
+  --brand-hover: #b92520;
+  --brand-soft: #f5dcd7;
+  --brand-text: #b92520; /* small red text, Appendix A */
+  --destructive: #b92520;
+  --chart-grid: #e7e2d9;
+  --chart-neutral: #777773;
+  --data-positive: #426c56;
+  --ring: #345b9a;
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --radius: 12px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #101112;
+  --card: #171819;
+  --muted: #1e2021;
+  --popover: #242526;
+  --foreground: #f4f1ea;
+  --text-secondary: #b6b3ad;
+  --muted-foreground: #8d8a84;
+  --border: #343332;
+  --primary: #e63a33;
+  --primary-foreground: #101112; /* Appendix A: dark primary label = background */
+  --brand-hover: #f04a42;
+  --brand-soft: #482321;
+  --brand-text: #e63a33;
+  --destructive: #f04a42;
+  --chart-grid: #343332;
+  --chart-neutral: #aaa79f;
+  --data-positive: #8db69a;
+  --ring: #a8c7ff;
+}
+
+/* ---- Sketch canvas (presentation chrome, not product UI) ---- */
+* { box-sizing: border-box; }
+html { background: var(--muted); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--muted);
+  -webkit-font-smoothing: antialiased;
+}
+.sk-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding: 12px 24px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+.sk-bar h1 { margin: 0; font: 400 26px/1.1 var(--font-display); }
+.sk-bar .sk-meta { font-size: 13px; color: var(--muted-foreground); }
+.sk-bar .sk-spacer { flex: 1; }
+.sk-intro { max-width: 880px; padding: 24px 24px 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.sk-intro p { margin: 0 0 8px; }
+.sk-group { padding: 24px 24px 8px; }
+.sk-group > h2 { margin: 0 0 4px; font: 600 15px/1.3 var(--font-sans); }
+.sk-group > p.sk-note { margin: 0 0 16px; max-width: 880px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.sk-row { display: flex; gap: 24px; align-items: flex-start; overflow-x: auto; padding-bottom: 16px; }
+.sk-frame { margin: 0; flex: none; }
+.sk-frame > figcaption {
+  margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted-foreground);
+}
+.sk-frame > figcaption span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.sk-note-inline {
+  margin: 8px 0 0; max-width: 390px; font-size: 12px; line-height: 1.45;
+  color: var(--muted-foreground); border-left: 2px dashed var(--border); padding-left: 8px;
+}
+.sk-frame.d .sk-note-inline { max-width: 720px; }
+
+/* ---- Screen container: container queries make one markup serve 390 and 1280 ---- */
+.scr {
+  position: relative;
+  container-type: inline-size;
+  width: 390px;
+  min-height: 720px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sk-frame.d .scr { width: 1280px; min-height: 760px; border-radius: 10px; }
+.scr.short { min-height: 0; }
+.scr.tall { min-height: 1100px; }
+
+/* ---- Type ---- */
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.015em; line-height: 1.08; text-wrap: balance; margin: 0; }
+.display-lg { font-size: 36px; }
+.display-md { font-size: 28px; }
+@container (min-width: 1024px) { .display-lg { font-size: 52px; } .display-md { font-size: 34px; } }
+.h-card { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.h-sec { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.body-sm { font-size: 14px; }
+.t-sec { color: var(--text-secondary); }
+.t-muted { color: var(--muted-foreground); }
+.cap { font-size: 13px; color: var(--muted-foreground); }
+.num { font-variant-numeric: tabular-nums; }
+.m0 { margin: 0; }
+p { margin: 0; }
+
+/* ---- Layout helpers ---- */
+.pad { padding: 16px; }
+.px { padding-left: 16px; padding-right: 16px; }
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.wrap { flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.g4 { gap: 4px; } .g8 { gap: 8px; } .g12 { gap: 12px; } .g16 { gap: 16px; } .g24 { gap: 24px; }
+.mt4 { margin-top: 4px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt24 { margin-top: 24px; } .mt32 { margin-top: 32px; }
+.grow { flex: 1; min-width: 0; }
+.only-d { display: none !important; }
+@container (min-width: 1024px) {
+  .only-m { display: none !important; }
+  .only-d { display: revert !important; }
+  .pad, .px { padding-left: 32px; padding-right: 32px; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Icons (sprite in body) ---- */
+.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.i-sm { width: 14px; height: 14px; }
+.i-fill { fill: currentColor; stroke: none; }
+
+/* ---- App header ---- */
+.app-head {
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+.wordmark { font: 400 24px/1 var(--font-display); color: var(--foreground); text-decoration: none; letter-spacing: -0.01em; }
+.app-nav { display: flex; gap: 4px; margin-left: 16px; }
+.app-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; border-radius: var(--radius-sm); }
+.app-nav a[aria-current="page"] { color: var(--foreground); box-shadow: inset 0 -2px 0 var(--primary); border-radius: 0; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--muted); border: 1px solid var(--border); display: inline-grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); flex: none; }
+.avatar-lg { width: 72px; height: 72px; font-size: 26px; }
+@container (min-width: 1024px) { .app-head { padding: 0 32px; height: 64px; } }
+
+/* ---- Buttons (DESIGN §9.1 + src/styles.css .btn-primary) ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--primary); color: var(--primary-foreground);
+  font: 600 14px/1 var(--font-sans); text-decoration: none; cursor: pointer;
+  transition: background 150ms ease-out;
+  white-space: nowrap;
+}
+.btn:hover, .btn.is-hover { background: var(--brand-hover); }
+.btn.is-active { background: var(--brand-hover); transform: translateY(1px); }
+.btn:disabled, .btn.is-disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: transparent; color: var(--foreground); border-color: var(--border); }
+.btn-secondary:hover, .btn-secondary.is-hover { background: var(--muted); }
+.btn-secondary.is-active { background: var(--muted); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover, .btn-ghost.is-hover { background: var(--muted); color: var(--foreground); }
+.btn-danger { background: var(--destructive); color: var(--primary-foreground); }
+.btn-danger:hover { background: var(--destructive); filter: none; }
+.btn-block { width: 100%; }
+.btn-icon { width: 44px; padding: 0; }
+.btn.is-loading { pointer-events: none; }
+.btn.is-loading::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+}
+:focus-visible, .is-focus { outline: 2px solid var(--ring) !important; outline-offset: 2px; }
+.link {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
+  color: var(--brand-text); font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
+  background: none; border: 0; padding: 0; font-size: inherit; font-family: inherit; cursor: pointer;
+}
+.link-quiet { color: var(--text-secondary); text-decoration-color: var(--border); }
+
+/* ---- Chips, badges ---- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); color: var(--text-secondary);
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--text-secondary);
+  font: 500 14px/1 var(--font-sans); white-space: nowrap; cursor: pointer;
+}
+.chip-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--brand-soft); color: var(--foreground); }
+.chip-btn[aria-pressed="true"]::before { content: "\2713"; font-weight: 700; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border: 1px solid; border-radius: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.4; white-space: nowrap;
+}
+.badge-draft { color: var(--muted-foreground); border-color: var(--border); background: var(--muted); }
+.badge-unlisted { color: var(--foreground); border-color: var(--chart-neutral); }
+.badge-public { color: var(--brand-text); border-color: var(--brand-text); }
+.scroll-x { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+
+/* ---- Surfaces ---- */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.divider { border: 0; border-top: 1px solid var(--border); margin: 0; }
+.banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px; font-size: 14px; line-height: 1.45;
+  background: var(--muted); border-bottom: 1px solid var(--border); color: var(--foreground);
+}
+.banner.brand { background: var(--brand-soft); }
+.banner .i { margin-top: 1px; }
+.notice {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); font-size: 14px; line-height: 1.45;
+}
+.notice.danger { border-color: var(--destructive); }
+.notice.danger .i { color: var(--destructive); }
+
+/* ---- Tabs ---- */
+.tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tab {
+  flex: none; min-height: 44px; padding: 0 14px;
+  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  color: var(--text-secondary); font: 500 14px/1 var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--foreground); font-weight: 600; border-bottom-color: var(--primary); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.seg button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--text-secondary); font: 500 14px var(--font-sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+
+/* ---- Forms (mirrors src/styles.css .input/.label/.hint/.field-error) ---- */
+.field { display: flex; flex-direction: column; }
+.label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+.label .opt { font-weight: 400; }
+.input, .select, .textarea {
+  display: block; width: 100%; min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); color: var(--foreground);
+  font: 400 15px/1.4 var(--font-sans);
+}
+.textarea { padding: 10px 12px; min-height: 76px; resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--muted-foreground); }
+.input.is-focus, .select.is-focus { border-color: var(--ring); }
+.input[aria-invalid="true"], .select[aria-invalid="true"] { border-color: var(--destructive); }
+.hint { margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
+.field-error { margin-top: 6px; font-size: 13px; color: var(--destructive); display: flex; gap: 6px; align-items: center; }
+.field-ok { margin-top: 6px; font-size: 13px; color: var(--data-positive); display: flex; gap: 6px; align-items: center; }
+.prefix-input { display: flex; align-items: stretch; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted); overflow: hidden; }
+.prefix-input span { display: inline-flex; align-items: center; padding: 0 0 0 12px; color: var(--muted-foreground); font-size: 15px; white-space: nowrap; }
+.prefix-input input { border: 0; background: none; min-height: 44px; flex: 1; min-width: 0; padding: 0 12px 0 0; font: 400 15px var(--font-sans); color: var(--foreground); }
+.prefix-input.is-invalid { border-color: var(--destructive); }
+.prefix-input.is-ok { border-color: var(--data-positive); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.switch { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; flex: none; border: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+.switch[aria-checked="true"] { background: var(--primary); }
+.switch[aria-checked="true"]::after { left: 21px; }
+
+/* ---- Overlays ---- */
+.scrim { position: absolute; inset: 0; background: color-mix(in srgb, var(--foreground) 50%, transparent); z-index: 10; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 11;
+  max-height: 88%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
+  padding: 8px 16px 24px;
+}
+.sheet .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.dialog {
+  position: absolute; z-index: 11; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(480px, calc(100% - 32px)); max-height: 90%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+}
+.side-panel {
+  position: absolute; z-index: 11; top: 0; right: 0; bottom: 0; width: 440px; overflow: auto;
+  background: var(--popover); border-left: 1px solid var(--border); padding: 24px;
+}
+/* One overlay markup: bottom sheet on mobile, dialog/side panel on desktop */
+@container (min-width: 1024px) {
+  .sheet.as-dialog { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%, -50%); width: 520px; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .sheet.as-panel { left: auto; top: 0; width: 440px; max-height: none; border-radius: 0; border-top: 0; border-left: 1px solid var(--border); padding: 24px; }
+  .sheet.as-dialog .grabber, .sheet.as-panel .grabber { display: none; }
+}
+.toast {
+  position: absolute; z-index: 12; left: 16px; right: 16px; bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  background: var(--foreground); color: var(--background); font-size: 14px;
+}
+@container (min-width: 1024px) { .toast { left: auto; right: 32px; width: 380px; } }
+
+/* ---- Skeleton (static; pulse noted in design-notes §4) ---- */
+.skel { background: var(--muted); border-radius: 6px; }
+.skel-line { height: 12px; }
+.skel-title { height: 30px; border-radius: 8px; }
+
+/* ---- Owner bar ---- */
+.owner-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 16px; min-height: 52px;
+  background: var(--muted); border-bottom: 1px solid var(--border); font-size: 14px;
+}
+@container (min-width: 1024px) { .owner-bar { padding: 8px 32px; } }
+
+/* ---- QR placeholder ---- */
+.qr {
+  width: 120px; height: 120px; flex: none; padding: 8px; border-radius: 6px;
+  background: var(--popover); border: 1px solid var(--border);
+}
+.qr svg { width: 100%; height: 100%; fill: var(--foreground); }
+html[data-theme="dark"] .qr { background: var(--foreground); }
+html[data-theme="dark"] .qr svg { fill: var(--background); }
+.url-box {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted);
+  font-size: 14px; overflow: hidden;
+}
+.url-box code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-sans); color: var(--foreground); }
+.vis { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; border: 0; }
+.vis legend { font-size: 13px; font-weight: 500; color: var(--muted-foreground); margin-bottom: 8px; padding: 0; }
+.vis-opt { display: flex; gap: 12px; align-items: flex-start; padding: 12px; min-height: 56px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--card); cursor: pointer; }
+.vis-opt .rdot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--chart-neutral); flex: none; margin-top: 1px; display: grid; place-items: center; }
+.vis-opt[aria-checked="true"] { border-color: var(--primary); }
+.vis-opt[aria-checked="true"] .rdot { border-color: var(--primary); }
+.vis-opt[aria-checked="true"] .rdot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
+.vis-opt.is-current .cur { display: inline; }
+.vis-opt .cur { display: none; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-foreground); margin-left: 6px; }
+.vis-opt .t { font-weight: 600; font-size: 15px; }
+.vis-opt .d { font-size: 13px; color: var(--text-secondary); }
+.vis-opt[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
+.act { margin-top: 16px; padding: 16px; border-radius: var(--radius-sm); background: var(--muted); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; }
+.conseq { font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+.conseq-list { margin: 0; padding-left: 18px; font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+.share-body { display: flex; gap: 16px; align-items: flex-start; }
+.changed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.changed li { display: flex; gap: 8px; align-items: flex-start; }
+.changed .i { color: var(--data-positive); margin-top: 2px; }
+.steps { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-foreground); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-chain" viewBox="0 0 24 24"><path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></symbol>
+</svg>
+<header class="sk-bar">
+  <a class="link link-quiet" href="index.html"><svg class="i i-sm"><use href="#i-chev-l"/></svg>Index</a>
+  <h1>share-dialog</h1>
+  <span class="badge badge-public">P0</span>
+  <span class="sk-meta">Visibility state machine made legible · opened from editor and library · journeys B4, B5, C3, C4</span>
+  <span class="sk-spacer"></span>
+  <button class="btn btn-secondary" data-toggle-theme>Switch to dark</button>
+</header>
+<div class="sk-intro">
+  <p>One question — "Who can open this program?" — with three answers. The current state is marked "Current". Selecting another answer only reveals its action and consequence; nothing changes until the action button. Mobile: bottom sheet. Desktop: centered dialog (same markup). Author-side words (Draft / Unlisted / Public) are the CONTEXT.md terms, each with a plain-language line.</p>
+</div>
+<section class="sk-group">
+  <h2>1 · Draft → share link in one tap (B4, Leo's path)</h2>
+  <p class="sk-note">Default selection in Draft is Unlisted, so the primary button is already "Create share link". Tap 1: Share. Tap 2: Create share link. Tap 3: Copy. Slugs are minted silently from the display name at this moment — no profile setup here.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· draft, default action</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt is-current" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="true" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+          <div class="act">
+            <button class="btn btn-block is-focus"><svg class="i"><use href="#i-link"/></svg>Create share link</button>
+            <p class="conseq">Anyone with the link can open and copy this program. You can replace the link or turn it off later.</p>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· link created, copied</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="stack g8 mt16">
+            <label class="label" style="margin:0">Share link</label>
+            <div class="url-box"><code>physlane.app/u/leo/push-pull-legs/k7Qm2xPa9</code><button class="btn btn-secondary" aria-live="polite"><svg class="i"><use href="#i-check"/></svg>Copied</button></div>
+          </div>
+          <div class="share-body mt16">
+<div class="qr" role="img" aria-label="QR code for the link (placeholder)"><svg viewBox="0 0 21 21"><path d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM14 0h7v7h-7zM15 1v5h5V1zM16 2h3v3h-3zM0 14h7v7H0zM1 15v5h5v-5zM2 16h3v3H2zM8 0h1v2H8zM10 1h2v1h-2zM9 3h3v1H9zM8 5h2v3H8zM11 6h2v2h-2zM0 8h2v1H0zM3 8h3v2H3zM14 8h2v1h-2zM17 9h4v1h-4zM8 9h1v3H8zM10 10h3v1h-3zM14 11h3v2h-3zM18 12h3v1h-3zM9 13h2v2H9zM12 14h2v1h-2zM8 16h4v1H8zM13 16h1v3h-1zM15 15h2v2h-2zM18 15h3v1h-3zM16 18h5v1h-5zM9 18h3v3H9zM15 20h2v1h-2zM19 20h2v1h-2z"/></svg></div>
+<p class="cap">Scan to open the same link. Anyone who scans it can open the program.</p></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt is-current" role="radio" aria-checked="true" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+          <p class="cap mt12">Change the selection above to make it public or move it back to draft.</p>
+        </div>
+      </div>
+      <p class="sk-note-inline">Host shown as <code>physlane.app</code> placeholder; real host per deploy. Copy button flips to "Copied" for ~2 s, announced via aria-live.</p>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop <span>· unlisted, centered dialog</span></figcaption>
+      <div class="scr short" style="min-height:720px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="stack g8 mt16">
+            <label class="label" style="margin:0">Share link</label>
+            <div class="url-box"><code>physlane.app/u/tara/hypertrophy-base/k7Qm2xPa9</code><button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+            <div class="row g8"><button class="btn btn-ghost"><svg class="i"><use href="#i-rotate"/></svg>Replace link…</button></div>
+          </div>
+          <div class="share-body mt8">
+<div class="qr" role="img" aria-label="QR code for the link (placeholder)"><svg viewBox="0 0 21 21"><path d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM14 0h7v7h-7zM15 1v5h5V1zM16 2h3v3h-3zM0 14h7v7H0zM1 15v5h5v-5zM2 16h3v3H2zM8 0h1v2H8zM10 1h2v1h-2zM9 3h3v1H9zM8 5h2v3H8zM11 6h2v2h-2zM0 8h2v1H0zM3 8h3v2H3zM14 8h2v1h-2zM17 9h4v1h-4zM8 9h1v3H8zM10 10h3v1h-3zM14 11h3v2h-3zM18 12h3v1h-3zM9 13h2v2H9zM12 14h2v1h-2zM8 16h4v1H8zM13 16h1v3h-1zM15 15h2v2h-2zM18 15h3v1h-3zM16 18h5v1h-5zM9 18h3v3H9zM15 20h2v1h-2zM19 20h2v1h-2z"/></svg></div>
+<p class="cap">Scan to open the same link.</p></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt is-current" role="radio" aria-checked="true" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>2 · Unlisted: replace link, make public, move to draft (C3, C4)</h2>
+  <p class="sk-note">Every link-killing action is confirm-gated with one consequence sentence. Replace = rotation (author label chosen over "rotate" for plainness; see notes §5).</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· replace link confirm</span></figcaption>
+      <div class="scr short" style="min-height:560px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="alertdialog" aria-modal="true">
+          <div class="grabber"></div>
+          <h2 class="h-card" style="font-size:20px">Replace the share link?</h2>
+          <p class="body-sm t-sec mt8">The current link stops working for everyone who has it. You get a new link to send to the people who should keep access.</p>
+          <div class="stack g8 mt16"><button class="btn btn-danger btn-block">Replace link</button><button class="btn btn-secondary btn-block">Cancel</button></div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· unlisted → draft selected</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt" role="radio" aria-checked="true" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt is-current" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+          <div class="act">
+            <button class="btn btn-danger btn-block">Move to draft</button>
+            <p class="conseq">The share link stops working. If you share again later, you get a different link.</p>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· unlisted → public selected (not first time)</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt is-current" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="true" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+          <div class="act">
+            <button class="btn btn-block"><svg class="i"><use href="#i-globe"/></svg>Go public</button>
+            <p class="conseq">Listed on your profile at physlane.app/u/tara. Search engines can index it. Your share link keeps working and opens the public page.</p>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>3 · First go-public: profile setup step, then "what changed" (B5)</h2>
+  <p class="sk-note">Only the first time an author goes public. Two steps inside the same dialog; display name prefilled from the account first name, author slug prefilled from the slug minted at first share (or suggested from the display name). Full validation states live in <a class="link" href="profile-setup.html">profile-setup</a>.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· step 1 of 2</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+          <p class="steps">Step 1 of 2</p>
+          <h2 class="h-card mt4" style="font-size:20px">Your public profile</h2>
+          <p class="body-sm t-sec mt4">Public programs are listed on a profile page. You can change this later.</p>
+          <div class="field mt16"><label class="label" for="dn1">Display name</label><input id="dn1" class="input" value="Tara"></div>
+          <div class="field mt12"><label class="label" for="sl1">Profile address</label><div class="prefix-input is-ok"><span>physlane.app/u/</span><input id="sl1" value="tara"></div><p class="field-ok"><svg class="i i-sm"><use href="#i-check"/></svg>Available</p></div>
+          <div class="field mt12"><label class="label" for="bio1">Bio <span class="opt">(optional)</span></label><textarea id="bio1" class="textarea" placeholder="One or two lines about you"></textarea></div>
+          <button class="btn btn-block mt16">Continue</button>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· step 2 of 2 — confirm</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+          <p class="steps">Step 2 of 2</p>
+          <h2 class="h-card mt4" style="font-size:20px">Make “Hypertrophy Base” public?</h2>
+          <ul class="conseq-list mt12">
+            <li>Listed on your profile at physlane.app/u/tara.</li>
+            <li>Search engines can index it.</li>
+            <li>Your share link keeps working and opens the public page.</li>
+          </ul>
+          <div class="stack g8 mt16"><button class="btn btn-block"><svg class="i"><use href="#i-globe"/></svg>Go public</button><button class="btn btn-secondary btn-block">Back</button></div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· now public — what changed</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <ul class="changed mt16" role="status">
+            <li><svg class="i i-sm"><use href="#i-check"/></svg>Public. Listed on your profile.</li>
+            <li><svg class="i i-sm"><use href="#i-check"/></svg>Your profile page is live at physlane.app/u/tara.</li>
+            <li><svg class="i i-sm"><use href="#i-check"/></svg>Old share links open this public page.</li>
+          </ul>
+          <div class="stack g8 mt16">
+            <label class="label" style="margin:0">Public address</label>
+            <div class="url-box"><code>physlane.app/u/tara/hypertrophy-base</code><button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div>
+          </div>
+          <div class="stack g8 mt16">
+            <label class="label" style="margin:0">QR and print link</label>
+            <div class="share-body">
+<div class="qr" role="img" aria-label="QR code for the link (placeholder)"><svg viewBox="0 0 21 21"><path d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM14 0h7v7h-7zM15 1v5h5V1zM16 2h3v3h-3zM0 14h7v7H0zM1 15v5h5v-5zM2 16h3v3H2zM8 0h1v2H8zM10 1h2v1h-2zM9 3h3v1H9zM8 5h2v3H8zM11 6h2v2h-2zM0 8h2v1H0zM3 8h3v2H3zM14 8h2v1h-2zM17 9h4v1h-4zM8 9h1v3H8zM10 10h3v1h-3zM14 11h3v2h-3zM18 12h3v1h-3zM9 13h2v2H9zM12 14h2v1h-2zM8 16h4v1H8zM13 16h1v3h-1zM15 15h2v2h-2zM18 15h3v1h-3zM16 18h5v1h-5zM9 18h3v3H9zM15 20h2v1h-2zM19 20h2v1h-2z"/></svg></div>
+<div class="stack g8 grow"><div class="url-box"><code>physlane.app/u/tara/p/9f3c1e2a</code></div><p class="cap">Keeps working if you rename your profile or this program. Use it on print.</p></div></div>
+          </div>
+          <a class="link mt8" href="#">View public page <svg class="i i-sm"><use href="#i-chev-r"/></svg></a>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>4 · Public: de-list (C4) — confirm-gated</h2>
+  <p class="sk-note">Public → Draft and Public → Unlisted both remove the public address; each confirm says exactly which addresses die and that the address is kept for re-listing.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· public, idle</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="stack g8 mt16"><label class="label" style="margin:0">Public address</label><div class="url-box"><code>physlane.app/u/tara/hypertrophy-base</code><button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div></div>
+          <div class="row g8 mt8"><button class="btn btn-ghost"><svg class="i"><use href="#i-qr"/></svg>QR and print link</button></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt is-current" role="radio" aria-checked="true" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· public → draft confirm</span></figcaption>
+      <div class="scr short" style="min-height:620px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="alertdialog" aria-modal="true">
+          <div class="grabber"></div>
+          <h2 class="h-card" style="font-size:20px">Move to draft?</h2>
+          <ul class="conseq-list mt12">
+            <li>Removed from your profile and from search.</li>
+            <li>The public address, the QR and print link, and any share links stop working.</li>
+            <li>The address is kept for you: going public again reuses it.</li>
+          </ul>
+          <div class="stack g8 mt16"><button class="btn btn-danger btn-block is-focus">Move to draft</button><button class="btn btn-secondary btn-block">Cancel</button></div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· public → unlisted confirm</span></figcaption>
+      <div class="scr short" style="min-height:620px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="alertdialog" aria-modal="true">
+          <div class="grabber"></div>
+          <h2 class="h-card" style="font-size:20px">Make unlisted?</h2>
+          <ul class="conseq-list mt12">
+            <li>Removed from your profile and from search.</li>
+            <li>The public address and the QR and print link stop working.</li>
+            <li>You get a new share link. Older share links stop working.</li>
+          </ul>
+          <div class="stack g8 mt16"><button class="btn btn-danger btn-block">Make unlisted</button><button class="btn btn-secondary btn-block">Cancel</button></div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop <span>· public, QR expanded</span></figcaption>
+      <div class="scr short" style="min-height:760px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="stack g8 mt16"><label class="label" style="margin:0">Public address</label><div class="url-box"><code>physlane.app/u/tara/hypertrophy-base</code><button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div></div>
+          <div class="stack g8 mt16"><label class="label" style="margin:0">QR and print link</label><div class="share-body">
+<div class="qr" role="img" aria-label="QR code for the link (placeholder)"><svg viewBox="0 0 21 21"><path d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM14 0h7v7h-7zM15 1v5h5V1zM16 2h3v3h-3zM0 14h7v7H0zM1 15v5h5v-5zM2 16h3v3H2zM8 0h1v2H8zM10 1h2v1h-2zM9 3h3v1H9zM8 5h2v3H8zM11 6h2v2h-2zM0 8h2v1H0zM3 8h3v2H3zM14 8h2v1h-2zM17 9h4v1h-4zM8 9h1v3H8zM10 10h3v1h-3zM14 11h3v2h-3zM18 12h3v1h-3zM9 13h2v2H9zM12 14h2v1h-2zM8 16h4v1H8zM13 16h1v3h-1zM15 15h2v2h-2zM18 15h3v1h-3zM16 18h5v1h-5zM9 18h3v3H9zM15 20h2v1h-2zM19 20h2v1h-2z"/></svg></div>
+<div class="stack g8 grow"><div class="url-box"><code>physlane.app/u/tara/p/9f3c1e2a</code><button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div><p class="cap">Keeps working if you rename your profile or this program.</p></div></div></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt" role="radio" aria-checked="true" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt is-current" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+          <div class="act"><button class="btn btn-danger">Move to draft…</button><p class="conseq">Takes it off your profile and turns off every link to it. You confirm on the next step.</p></div>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>5 · Pending · error · moderation-hidden · long URL</h2>
+  <p class="sk-note">Pending: the action button shows its loading state; radios disabled. Error: nothing changed, say so. Hidden by moderation (<code>hiddenAt</code>): core refuses transitions, so all options are disabled with the reason. Long slugs truncate with ellipsis; Copy always copies the full URL. Empty / anonymous / minimal: not applicable (author-only dialog; Draft is the empty state).</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Pending</figcaption>
+      <div class="scr short" style="min-height:540px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true" aria-busy="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt is-current" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="true" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+          <div class="act"><button class="btn btn-block is-loading">Creating link…</button></div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Error</figcaption>
+      <div class="scr short" style="min-height:540px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+<fieldset class="vis mt16" role="radiogroup">
+  <legend>Who can open this program?</legend>
+  <div class="vis-opt is-current" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span><span class="grow"><span class="t">Draft</span><span class="cur">Current</span><br><span class="d">Only you.</span></span><svg class="i t-muted"><use href="#i-lock"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="false" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Unlisted</span><span class="cur">Current</span><br><span class="d">Anyone with the link. Not on your profile, not in search.</span></span><svg class="i t-muted"><use href="#i-link"/></svg></div>
+  <div class="vis-opt" role="radio" aria-checked="true" tabindex="-1"><span class="rdot"></span><span class="grow"><span class="t">Public</span><span class="cur">Current</span><br><span class="d">On your profile. Search engines can find it.</span></span><svg class="i t-muted"><use href="#i-globe"/></svg></div>
+</fieldset>
+          <div class="act">
+            <div class="notice danger" role="alert"><svg class="i"><use href="#i-alert"/></svg><span>Couldn't change who can open this program. Nothing changed. Try again.</span></div>
+            <button class="btn btn-block"><svg class="i"><use href="#i-globe"/></svg>Go public</button>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Hidden by moderation</figcaption>
+      <div class="scr short" style="min-height:540px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="pad"><p class="display display-md">Hypertrophy Base</p><p class="cap mt4">Editor</p></div>
+<div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true">
+          <div class="grabber"></div>
+<div class="sheet-head"><h2 class="h-card" style="font-size:20px">Share “Hypertrophy Base”</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="notice mt16"><svg class="i"><use href="#i-alert"/></svg><span>physlane moderation hid this program. Only you can see it, and its visibility can't be changed.</span></div>
+          <fieldset class="vis mt16" role="radiogroup" aria-disabled="true"><legend>Who can open this program?</legend>
+            <div class="vis-opt is-current" role="radio" aria-checked="true" aria-disabled="true"><span class="rdot"></span><span class="grow"><span class="t">Hidden</span><br><span class="d">Only you.</span></span></div>
+          </fieldset>
+        </div>
+      </div>
+      <p class="sk-note-inline">Whether hidden programs keep an appeal/contact path is not in the plan — notes §5.</p>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Long URL</figcaption>
+      <div class="scr short" style="min-height:300px">
+        <div class="pad stack g8"><label class="label" style="margin:0">Share link</label><div class="url-box"><code>physlane.app/u/tara-strength-and-conditioning/twelve-week-hypertrophy-base-intermediate/k7Qm2xPa9</code><button class="btn btn-secondary"><svg class="i"><use href="#i-copy"/></svg>Copy</button></div></div>
+      </div>
+    </figure>
+  </div>
+</section>
+<script>
+(function () {
+  var k = "physlane-sketch-theme", r = document.documentElement;
+  r.dataset.theme = localStorage.getItem(k) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  function label() { document.querySelectorAll("[data-toggle-theme]").forEach(function (b) { b.textContent = r.dataset.theme === "dark" ? "Switch to light" : "Switch to dark"; }); }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-toggle-theme]");
+    if (t) { r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark"; localStorage.setItem(k, r.dataset.theme); label(); return; }
+    var tab = e.target.closest('[role="tab"]');
+    if (tab) {
+      var list = tab.closest('[role="tablist"]'), scope = tab.closest("[data-tabs]") || document;
+      list.querySelectorAll('[role="tab"]').forEach(function (x) {
+        var on = x === tab; x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1;
+        var p = x.getAttribute("aria-controls") && scope.querySelector("#" + x.getAttribute("aria-controls"));
+        if (p) p.hidden = !on;
+      });
+    }
+    var acc = e.target.closest("[data-acc]");
+    if (acc) { var open = acc.getAttribute("aria-expanded") === "true"; acc.setAttribute("aria-expanded", !open); var id = acc.getAttribute("aria-controls"), body = id && acc.parentElement.querySelector("#" + id); if (body) body.hidden = open; }
+  });
+  label();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>program-view — physlane programs sketch</title>
+<style>
+/* ---- Fonts: self-hosted repo copies (no CDN). Serve repo root over HTTP. ---- */
+@font-face {
+  font-family: "Instrument Serif";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../public/fonts/instrument-serif-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../../public/fonts/inter-latin-var.woff2") format("woff2");
+}
+
+/* ---- Tokens: DESIGN.md v2 values under shadcn-canonical names (mirrors src/styles.css) ---- */
+:root {
+  --background: #f7f4ee;
+  --card: #fffefc;
+  --muted: #eeeae2;
+  --popover: #ffffff;
+  --foreground: #171717;
+  --text-secondary: #62615e;
+  --muted-foreground: #6b6964; /* Appendix A adjustment */
+  --border: #e3ded5;
+  --primary: #d92f28;
+  --primary-foreground: #fffefc;
+  --brand-hover: #b92520;
+  --brand-soft: #f5dcd7;
+  --brand-text: #b92520; /* small red text, Appendix A */
+  --destructive: #b92520;
+  --chart-grid: #e7e2d9;
+  --chart-neutral: #777773;
+  --data-positive: #426c56;
+  --ring: #345b9a;
+  /* GAP (design-notes §3): no scrim token; mirrors shipped sheet.tsx bg-black/50 */
+  --sketch-scrim: rgb(0 0 0 / 0.5);
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --radius: 12px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #101112;
+  --card: #171819;
+  --muted: #1e2021;
+  --popover: #242526;
+  --foreground: #f4f1ea;
+  --text-secondary: #b6b3ad;
+  --muted-foreground: #8d8a84;
+  --border: #343332;
+  --primary: #e63a33;
+  --primary-foreground: #101112; /* Appendix A: dark primary label = background */
+  --brand-hover: #f04a42;
+  --brand-soft: #482321;
+  --brand-text: #e63a33;
+  --destructive: #f04a42;
+  --chart-grid: #343332;
+  --chart-neutral: #aaa79f;
+  --data-positive: #8db69a;
+  --ring: #a8c7ff;
+}
+
+/* ---- Sketch canvas (presentation chrome, not product UI) ---- */
+* { box-sizing: border-box; }
+html { background: var(--muted); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--muted);
+  -webkit-font-smoothing: antialiased;
+}
+.sk-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding: 12px 24px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+.sk-bar h1 { margin: 0; font: 400 26px/1.1 var(--font-display); }
+.sk-bar .sk-meta { font-size: 13px; color: var(--muted-foreground); }
+.sk-bar .sk-spacer { flex: 1; }
+.sk-intro { max-width: 880px; padding: 24px 24px 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.sk-intro p { margin: 0 0 8px; }
+.sk-group { padding: 24px 24px 8px; }
+.sk-group > h2 { margin: 0 0 4px; font: 600 15px/1.3 var(--font-sans); }
+.sk-group > p.sk-note { margin: 0 0 16px; max-width: 880px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.sk-row { display: flex; gap: 24px; align-items: flex-start; overflow-x: auto; padding-bottom: 16px; }
+.sk-frame { margin: 0; flex: none; }
+.sk-frame > figcaption {
+  margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted-foreground);
+}
+.sk-frame > figcaption span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.sk-note-inline {
+  margin: 8px 0 0; max-width: 390px; font-size: 12px; line-height: 1.45;
+  color: var(--muted-foreground); border-left: 2px dashed var(--border); padding-left: 8px;
+}
+.sk-frame.d .sk-note-inline { max-width: 720px; }
+
+/* ---- Screen container: container queries make one markup serve 390 and 1280 ---- */
+.scr {
+  position: relative;
+  container-type: inline-size;
+  width: 390px;
+  min-height: 720px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sk-frame.d .scr { width: 1280px; min-height: 760px; border-radius: 10px; }
+.scr.short { min-height: 0; }
+.scr.tall { min-height: 1100px; }
+
+/* ---- Type ---- */
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.015em; line-height: 1.08; text-wrap: balance; margin: 0; }
+.display-lg { font-size: 36px; }
+.display-md { font-size: 28px; }
+@container (min-width: 1024px) { .display-lg { font-size: 52px; } .display-md { font-size: 34px; } }
+.h-card { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.h-sec { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.body-sm { font-size: 14px; }
+.t-sec { color: var(--text-secondary); }
+.t-muted { color: var(--muted-foreground); }
+.cap { font-size: 13px; color: var(--muted-foreground); }
+.num { font-variant-numeric: tabular-nums; }
+.m0 { margin: 0; }
+p { margin: 0; }
+
+/* ---- Layout helpers ---- */
+.pad { padding: 16px; }
+.px { padding-left: 16px; padding-right: 16px; }
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.wrap { flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.g4 { gap: 4px; } .g8 { gap: 8px; } .g12 { gap: 12px; } .g16 { gap: 16px; } .g24 { gap: 24px; }
+.mt4 { margin-top: 4px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt24 { margin-top: 24px; } .mt32 { margin-top: 32px; }
+.grow { flex: 1; min-width: 0; }
+.only-d { display: none !important; }
+@container (min-width: 1024px) {
+  .only-m { display: none !important; }
+  .only-d { display: revert !important; }
+  .pad, .px { padding-left: 32px; padding-right: 32px; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Icons (sprite in body) ---- */
+.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.i-sm { width: 14px; height: 14px; }
+.i-fill { fill: currentColor; stroke: none; }
+
+/* ---- App header ---- */
+.app-head {
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+.wordmark { font: 400 24px/1 var(--font-display); color: var(--foreground); text-decoration: none; letter-spacing: -0.01em; }
+.app-nav { display: flex; gap: 4px; margin-left: 16px; }
+.app-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; border-radius: var(--radius-sm); }
+.app-nav a[aria-current="page"] { color: var(--foreground); box-shadow: inset 0 -2px 0 var(--primary); border-radius: 0; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--muted); border: 1px solid var(--border); display: inline-grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); flex: none; }
+.avatar-lg { width: 72px; height: 72px; font-size: 26px; }
+@container (min-width: 1024px) { .app-head { padding: 0 32px; height: 64px; } }
+
+/* ---- Buttons (DESIGN §9.1 + src/styles.css .btn-primary) ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--primary); color: var(--primary-foreground);
+  font: 600 14px/1 var(--font-sans); text-decoration: none; cursor: pointer;
+  transition: background 150ms ease-out;
+  white-space: nowrap;
+}
+.btn:hover, .btn.is-hover { background: var(--brand-hover); }
+.btn.is-active { background: var(--brand-hover); transform: translateY(1px); }
+.btn:disabled, .btn.is-disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: transparent; color: var(--foreground); border-color: var(--border); }
+.btn-secondary:hover, .btn-secondary.is-hover { background: var(--muted); }
+.btn-secondary.is-active { background: var(--muted); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover, .btn-ghost.is-hover { background: var(--muted); color: var(--foreground); }
+.btn-danger { background: var(--destructive); color: var(--primary-foreground); }
+.btn-danger:hover { background: var(--destructive); filter: none; }
+.btn-block { width: 100%; }
+.btn-icon { width: 44px; padding: 0; }
+.btn.is-loading { pointer-events: none; }
+.btn.is-loading::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+}
+:focus-visible, .is-focus { outline: 2px solid var(--ring) !important; outline-offset: 2px; }
+.link {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
+  color: var(--brand-text); font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
+  background: none; border: 0; padding: 0; font-size: inherit; font-family: inherit; cursor: pointer;
+}
+.link-quiet { color: var(--text-secondary); text-decoration-color: var(--border); }
+
+/* ---- Chips, badges ---- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); color: var(--text-secondary);
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--text-secondary);
+  font: 500 14px/1 var(--font-sans); white-space: nowrap; cursor: pointer;
+}
+.chip-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--brand-soft); color: var(--foreground); }
+.chip-btn[aria-pressed="true"]::before { content: "\2713"; font-weight: 700; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border: 1px solid; border-radius: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.4; white-space: nowrap;
+}
+.badge-draft { color: var(--muted-foreground); border-color: var(--border); background: var(--muted); }
+.badge-unlisted { color: var(--foreground); border-color: var(--chart-neutral); }
+.badge-public { color: var(--brand-text); border-color: var(--brand-text); }
+.scroll-x { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+
+/* ---- Surfaces ---- */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.divider { border: 0; border-top: 1px solid var(--border); margin: 0; }
+.banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px; font-size: 14px; line-height: 1.45;
+  background: var(--muted); border-bottom: 1px solid var(--border); color: var(--foreground);
+}
+.banner.brand { background: var(--brand-soft); }
+.banner .i { margin-top: 1px; }
+.notice {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); font-size: 14px; line-height: 1.45;
+}
+.notice.danger { border-color: var(--destructive); }
+.notice.danger .i { color: var(--destructive); }
+
+/* ---- Tabs ---- */
+.tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tab {
+  flex: none; min-height: 44px; padding: 0 14px;
+  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  color: var(--text-secondary); font: 500 14px/1 var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--foreground); font-weight: 600; border-bottom-color: var(--primary); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.seg button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--text-secondary); font: 500 14px var(--font-sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+
+/* ---- Forms (mirrors src/styles.css .input/.label/.hint/.field-error) ---- */
+.field { display: flex; flex-direction: column; }
+.label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+.label .opt { font-weight: 400; }
+.input, .select, .textarea {
+  display: block; width: 100%; min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); color: var(--foreground);
+  font: 400 15px/1.4 var(--font-sans);
+}
+.textarea { padding: 10px 12px; min-height: 76px; resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--muted-foreground); }
+.input.is-focus, .select.is-focus { border-color: var(--ring); }
+.input[aria-invalid="true"], .select[aria-invalid="true"] { border-color: var(--destructive); }
+.hint { margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
+.field-error { margin-top: 6px; font-size: 13px; color: var(--destructive); display: flex; gap: 6px; align-items: center; }
+.field-ok { margin-top: 6px; font-size: 13px; color: var(--data-positive); display: flex; gap: 6px; align-items: center; }
+.prefix-input { display: flex; align-items: stretch; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted); overflow: hidden; }
+.prefix-input span { display: inline-flex; align-items: center; padding: 0 0 0 12px; color: var(--muted-foreground); font-size: 15px; white-space: nowrap; }
+.prefix-input input { border: 0; background: none; min-height: 44px; flex: 1; min-width: 0; padding: 0 12px 0 0; font: 400 15px var(--font-sans); color: var(--foreground); }
+.prefix-input.is-invalid { border-color: var(--destructive); }
+.prefix-input.is-ok { border-color: var(--data-positive); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.switch { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; flex: none; border: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+.switch[aria-checked="true"] { background: var(--primary); }
+.switch[aria-checked="true"]::after { left: 21px; }
+
+/* ---- Overlays ---- */
+.scrim { position: absolute; inset: 0; background: var(--sketch-scrim); z-index: 10; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 11;
+  max-height: 88%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
+  padding: 8px 16px 24px;
+}
+.sheet .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.dialog {
+  position: absolute; z-index: 11; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(480px, calc(100% - 32px)); max-height: 90%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+}
+.side-panel {
+  position: absolute; z-index: 11; top: 0; right: 0; bottom: 0; width: 440px; overflow: auto;
+  background: var(--popover); border-left: 1px solid var(--border); padding: 24px;
+}
+/* One overlay markup: bottom sheet on mobile, dialog/side panel on desktop */
+@container (min-width: 1024px) {
+  .sheet.as-dialog { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%, -50%); width: 520px; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .sheet.as-panel { left: auto; top: 0; width: 440px; max-height: none; border-radius: 0; border-top: 0; border-left: 1px solid var(--border); padding: 24px; }
+  .sheet.as-dialog .grabber, .sheet.as-panel .grabber { display: none; }
+}
+.toast {
+  position: absolute; z-index: 12; left: 16px; right: 16px; bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  background: var(--foreground); color: var(--background); font-size: 14px;
+}
+@container (min-width: 1024px) { .toast { left: auto; right: 32px; width: 380px; } }
+
+/* ---- Skeleton (static; pulse noted in design-notes §4) ---- */
+.skel { background: var(--muted); border-radius: 6px; }
+.skel-line { height: 12px; }
+.skel-title { height: 30px; border-radius: 8px; }
+
+/* ---- Owner bar ---- */
+.owner-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 16px; min-height: 52px;
+  background: var(--muted); border-bottom: 1px solid var(--border); font-size: 14px;
+}
+@container (min-width: 1024px) { .owner-bar { padding: 8px 32px; } }
+
+/* ---- QR placeholder ---- */
+.qr {
+  width: 120px; height: 120px; flex: none; padding: 8px; border-radius: 6px;
+  background: var(--popover); border: 1px solid var(--border);
+}
+.qr svg { width: 100%; height: 100%; fill: var(--foreground); }
+html[data-theme="dark"] .qr { background: var(--foreground); }
+html[data-theme="dark"] .qr svg { fill: var(--background); }
+.url-box {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted);
+  font-size: 14px; overflow: hidden;
+}
+.url-box code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-sans); color: var(--foreground); }
+
+/* ---- Program view (shared renderer) ---- */
+.pv-hero { padding: 24px 16px 20px; }
+@container (min-width: 1024px) { .pv-hero { padding: 48px 0 24px; } }
+.author-line { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; color: var(--text-secondary); }
+.author-line a { color: var(--foreground); font-weight: 600; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; display: inline-flex; align-items: center; min-height: 44px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.pv-desc { font-size: 15px; line-height: 1.55; color: var(--text-secondary); max-width: 62ch; }
+.attrib { font-size: 13px; color: var(--muted-foreground); }
+.pv-grid { display: block; }
+.pv-aside { display: none; }
+@container (min-width: 1024px) {
+  .pv-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 56px; max-width: 1216px; margin: 0 auto; padding: 0 32px; }
+  .pv-aside { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 24px; align-self: start; padding-top: 48px; }
+}
+.cta-block { padding: 0 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+@container (min-width: 1024px) { .cta-block.only-m { display: none; } }
+.week-nav { position: relative; }
+.week-nav .tabs { padding: 0 8px; }
+@container (min-width: 1024px) { .week-nav .tabs { padding: 0; } }
+.week-meta { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 13px; color: var(--muted-foreground); }
+@container (min-width: 1024px) { .week-meta { padding: 16px 0; } }
+.session { border-top: 1px solid var(--border); }
+.session:last-child { border-bottom: 1px solid var(--border); }
+.session-head {
+  display: flex; width: 100%; align-items: center; gap: 12px;
+  min-height: 64px; padding: 12px 16px;
+  background: none; border: 0; text-align: left; color: inherit; font: inherit; cursor: pointer;
+}
+@container (min-width: 1024px) { .session-head { padding: 16px 0; } }
+.session-head .i { transition: transform 200ms ease-out; }
+.session-head[aria-expanded="true"] .i { transform: rotate(180deg); }
+.session-title { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.session-sum { font-size: 13px; color: var(--muted-foreground); }
+.session-body { padding: 0 16px 20px; }
+@container (min-width: 1024px) { .session-body { padding: 0 0 24px; } }
+.session-notes { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+.entries { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.entry { padding: 4px 12px 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.entry-name {
+  display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 44px; padding: 0; background: none; border: 0; cursor: pointer;
+  font: 600 15px/1.3 var(--font-sans); color: var(--foreground); text-align: left;
+}
+.entry-name .hint-asset { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--muted-foreground); white-space: nowrap; }
+.rx { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 14px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.rx b { color: var(--foreground); font-weight: 600; }
+.cue { margin-top: 6px; font-size: 13px; color: var(--text-secondary); }
+.cue::before { content: "Cue: "; color: var(--muted-foreground); }
+.group { display: flex; flex-direction: column; gap: 8px; padding-left: 12px; border-left: 2px solid var(--chart-neutral); }
+.group-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.group-label span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.regions { display: grid; grid-template-columns: 84px 1fr 32px; gap: 6px 10px; align-items: center; font-size: 13px; margin-bottom: 16px; }
+.regions dt { color: var(--text-secondary); }
+.regions dd { margin: 0; }
+.regions .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--foreground); font-weight: 600; }
+.bar { height: 8px; background: var(--chart-grid); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--chart-neutral); }
+.pv-section { padding: 24px 16px; border-top: 1px solid var(--border); }
+@container (min-width: 1024px) { .pv-section { padding: 32px 0; } }
+.pv-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted-foreground); }
+@container (min-width: 1024px) { .pv-foot { padding: 16px 32px; margin-top: 48px; } }
+.video-ph {
+  position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm);
+  background: var(--muted); border: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  color: var(--text-secondary); font-size: 13px; text-align: center; padding: 16px;
+}
+.video-ph .play { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; border: 0; }
+.ref-list { list-style: none; margin: 0; padding: 0; }
+.ref-list a { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--border); color: var(--foreground); text-decoration: none; font-size: 14px; }
+.ref-list .kind { font-size: 12px; color: var(--muted-foreground); }
+.kv { display: grid; grid-template-columns: 96px 1fr; gap: 6px 12px; font-size: 14px; margin: 0; }
+.kv dt { color: var(--muted-foreground); }
+.kv dd { margin: 0; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-chain" viewBox="0 0 24 24"><path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></symbol>
+</svg>
+<header class="sk-bar">
+  <a class="link link-quiet" href="index.html"><svg class="i i-sm"><use href="#i-chev-l"/></svg>Index</a>
+  <h1>program-view</h1>
+  <span class="badge badge-public">P0</span>
+  <span class="sk-meta">Shared renderer, public variant · <code>/u/$authorSlug/$programSlug</code> · journeys A1–A6, C5</span>
+  <span class="sk-spacer"></span>
+  <button class="btn btn-secondary" data-toggle-theme>Switch to dark</button>
+</header>
+<div class="sk-intro">
+  <p>One markup per frame; container queries switch the 390px column to the 1280px two-column layout. Content first, no interstitial, no login wall. Week tabs and session accordions are clickable.</p>
+</div>
+<section class="sk-group">
+  <h2>1 · Populated + long content — anonymous viewer (A1–A3)</h2>
+  <p class="sk-note">Hero answers whose / goal / level / sessions per week / length above the fold (A2). 12 week tabs scroll horizontally; first session open, the rest collapsed with exercise and set counts so the week reads as a list, not a grid (A3 dip). 8-entry session with a 2-exercise and a 3-exercise superset. Sets-by-region summary sits at the top of each open session.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile 390 <span>· anonymous</span></figcaption>
+      <div class="scr tall">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+<div class="cta-block only-m">
+  <button class="btn btn-block">Copy to my programs</button>
+  <p class="cap">Reading needs no account. Copying needs one.</p>
+</div>
+<div class="week-nav" data-tabs>
+  <div class="tabs" role="tablist" aria-label="Weeks">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="wk1">Week 1</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="wk2">Week 2</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 3</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 4</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 5</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 6</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 7</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 8</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 9</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 10</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 11</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 12</button>
+  </div>
+  <div id="wk1" role="tabpanel">
+    <div class="week-meta"><span class="num">Week 1 of 12 · 4 sessions</span><span class="num">86 sets</span></div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="true" aria-controls="s-ua">
+        <span class="grow"><span class="session-title">Upper A</span><br><span class="session-sum num">8 exercises · 26 sets</span></span>
+        <svg class="i"><use href="#i-chev-d"/></svg>
+      </button>
+      <div class="session-body" id="s-ua">
+        <p class="session-notes">Warm up with two lighter bench sets before the first working set.</p>
+<dl class="regions" aria-label="Sets by body region, counted by primary muscle">
+  <dt>Chest</dt><dd><div class="bar"><i style="width:100%"></i></div></dd><dd class="n">10</dd>
+  <dt>Shoulders</dt><dd><div class="bar"><i style="width:90%"></i></div></dd><dd class="n">9</dd>
+  <dt>Back</dt><dd><div class="bar"><i style="width:40%"></i></div></dd><dd class="n">4</dd>
+  <dt>Core</dt><dd><div class="bar"><i style="width:30%"></i></div></dd><dd class="n">3</dd>
+</dl>
+<ol class="entries">
+  <li class="entry">
+    <button class="entry-name">Barbell bench press <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+    <div class="rx"><span><b>4 × 8</b></span><span>70% 1RM</span><span>RPE 7</span><span>Rest 2:30</span></div>
+    <p class="cue">Pause 1 s on the chest.</p>
+  </li>
+  <li class="entry">
+    <button class="entry-name">Chest-supported row <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+    <div class="rx"><span><b>4 × 10</b></span><span>30 kg</span><span>RIR 2</span><span>Rest 2:00</span></div>
+  </li>
+  <li class="group" aria-label="Superset, 2 exercises">
+    <p class="group-label"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset <span>— back to back, rest after the last</span></p>
+    <ol class="entries">
+      <li class="entry">
+        <button class="entry-name">Incline dumbbell press <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+        <div class="rx"><span><b>3 × 12</b></span><span>22 kg</span></div>
+      </li>
+      <li class="entry">
+        <button class="entry-name">Cable fly</button>
+        <div class="rx"><span><b>3 × 15</b></span><span>12.5 kg</span><span>Rest 1:30</span></div>
+      </li>
+    </ol>
+  </li>
+  <li class="group" aria-label="Superset, 3 exercises">
+    <p class="group-label"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset <span>— 3 exercises back to back</span></p>
+    <ol class="entries">
+      <li class="entry">
+        <button class="entry-name">Lateral raise <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+        <div class="rx"><span><b>3 × 15</b></span><span>8 kg</span></div>
+      </li>
+      <li class="entry">
+        <button class="entry-name">Rear-delt fly</button>
+        <div class="rx"><span><b>3 × 15</b></span><span>6 kg</span></div>
+      </li>
+      <li class="entry">
+        <button class="entry-name">Face pull <span class="hint-asset"><svg class="i i-sm"><use href="#i-link"/></svg>Link</span></button>
+        <div class="rx"><span><b>3 × 15</b></span><span>15 kg</span><span>Rest 1:00</span></div>
+        <p class="cue">Pull to the forehead, elbows high.</p>
+      </li>
+    </ol>
+  </li>
+  <li class="entry">
+    <button class="entry-name">Dead bug</button>
+    <div class="rx"><span><b>3 × 30 s</b></span><span>Rest 0:45</span></div>
+  </li>
+</ol>
+      </div>
+    </div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="false" aria-controls="s-la">
+        <span class="grow"><span class="session-title">Lower A</span><br><span class="session-sum num">6 exercises · 20 sets</span></span>
+        <svg class="i"><use href="#i-chev-d"/></svg>
+      </button>
+      <div class="session-body" id="s-la" hidden><p class="cap">Collapsed sessions expand in place.</p></div>
+    </div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Upper B</span><br><span class="session-sum num">7 exercises · 22 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button>
+    </div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Lower B</span><br><span class="session-sum num">6 exercises · 18 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button>
+    </div>
+  </div>
+  <div id="wk2" role="tabpanel" hidden>
+    <div class="week-meta"><span class="num">Week 2 of 12 · 4 sessions</span><span class="num">90 sets</span></div>
+    <div class="session"><button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Upper A</span><br><span class="session-sum num">8 exercises · 27 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button></div>
+    <div class="session"><button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Lower A</span><br><span class="session-sum num">6 exercises · 21 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button></div>
+  </div>
+</div>
+<section class="pv-section only-m" aria-labelledby="about-author">
+  <h2 id="about-author" class="h-sec">Author</h2>
+  <div class="row g12 mt12"><span class="avatar">T</span><div class="grow"><p style="font-weight:600">Tara</p><p class="cap">Strength coach. Programs for busy lifters.</p></div></div>
+  <a class="link mt4" href="#">View Tara's profile <svg class="i i-sm"><use href="#i-chev-r"/></svg></a>
+</section>
+<section class="pv-section only-m">
+  <button class="btn btn-block">Copy to my programs</button>
+</section>
+<footer class="pv-foot">
+  <span>Shared on physlane</span>
+  <button class="link link-quiet"><svg class="i i-sm"><use href="#i-flag"/></svg>Report this program</button>
+</footer>
+      </div>
+      <p class="sk-note-inline">"Video" / "Link" hints tell Vera which exercises open something useful before she taps (A4). Superset = neutral bracket + "Superset" label + instruction; never colour alone.</p>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop 1280 <span>· anonymous · structural divergence: sticky right aside holds the CTA and author card</span></figcaption>
+      <div class="scr tall">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="pv-grid">
+          <main>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+<div class="week-nav" data-tabs>
+  <div class="tabs" role="tablist" aria-label="Weeks">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="wk1">Week 1</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1" aria-controls="wk2">Week 2</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 3</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 4</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 5</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 6</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 7</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 8</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 9</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 10</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 11</button>
+    <button class="tab" role="tab" aria-selected="false" tabindex="-1">Week 12</button>
+  </div>
+  <div id="wk1" role="tabpanel">
+    <div class="week-meta"><span class="num">Week 1 of 12 · 4 sessions</span><span class="num">86 sets</span></div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="true" aria-controls="s-ua">
+        <span class="grow"><span class="session-title">Upper A</span><br><span class="session-sum num">8 exercises · 26 sets</span></span>
+        <svg class="i"><use href="#i-chev-d"/></svg>
+      </button>
+      <div class="session-body" id="s-ua">
+        <p class="session-notes">Warm up with two lighter bench sets before the first working set.</p>
+<dl class="regions" aria-label="Sets by body region, counted by primary muscle">
+  <dt>Chest</dt><dd><div class="bar"><i style="width:100%"></i></div></dd><dd class="n">10</dd>
+  <dt>Shoulders</dt><dd><div class="bar"><i style="width:90%"></i></div></dd><dd class="n">9</dd>
+  <dt>Back</dt><dd><div class="bar"><i style="width:40%"></i></div></dd><dd class="n">4</dd>
+  <dt>Core</dt><dd><div class="bar"><i style="width:30%"></i></div></dd><dd class="n">3</dd>
+</dl>
+<ol class="entries">
+  <li class="entry">
+    <button class="entry-name">Barbell bench press <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+    <div class="rx"><span><b>4 × 8</b></span><span>70% 1RM</span><span>RPE 7</span><span>Rest 2:30</span></div>
+    <p class="cue">Pause 1 s on the chest.</p>
+  </li>
+  <li class="entry">
+    <button class="entry-name">Chest-supported row <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+    <div class="rx"><span><b>4 × 10</b></span><span>30 kg</span><span>RIR 2</span><span>Rest 2:00</span></div>
+  </li>
+  <li class="group" aria-label="Superset, 2 exercises">
+    <p class="group-label"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset <span>— back to back, rest after the last</span></p>
+    <ol class="entries">
+      <li class="entry">
+        <button class="entry-name">Incline dumbbell press <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+        <div class="rx"><span><b>3 × 12</b></span><span>22 kg</span></div>
+      </li>
+      <li class="entry">
+        <button class="entry-name">Cable fly</button>
+        <div class="rx"><span><b>3 × 15</b></span><span>12.5 kg</span><span>Rest 1:30</span></div>
+      </li>
+    </ol>
+  </li>
+  <li class="group" aria-label="Superset, 3 exercises">
+    <p class="group-label"><svg class="i i-sm"><use href="#i-chain"/></svg>Superset <span>— 3 exercises back to back</span></p>
+    <ol class="entries">
+      <li class="entry">
+        <button class="entry-name">Lateral raise <span class="hint-asset"><svg class="i i-sm"><use href="#i-video"/></svg>Video</span></button>
+        <div class="rx"><span><b>3 × 15</b></span><span>8 kg</span></div>
+      </li>
+      <li class="entry">
+        <button class="entry-name">Rear-delt fly</button>
+        <div class="rx"><span><b>3 × 15</b></span><span>6 kg</span></div>
+      </li>
+      <li class="entry">
+        <button class="entry-name">Face pull <span class="hint-asset"><svg class="i i-sm"><use href="#i-link"/></svg>Link</span></button>
+        <div class="rx"><span><b>3 × 15</b></span><span>15 kg</span><span>Rest 1:00</span></div>
+        <p class="cue">Pull to the forehead, elbows high.</p>
+      </li>
+    </ol>
+  </li>
+  <li class="entry">
+    <button class="entry-name">Dead bug</button>
+    <div class="rx"><span><b>3 × 30 s</b></span><span>Rest 0:45</span></div>
+  </li>
+</ol>
+      </div>
+    </div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="false" aria-controls="s-la">
+        <span class="grow"><span class="session-title">Lower A</span><br><span class="session-sum num">6 exercises · 20 sets</span></span>
+        <svg class="i"><use href="#i-chev-d"/></svg>
+      </button>
+      <div class="session-body" id="s-la" hidden><p class="cap">Collapsed sessions expand in place.</p></div>
+    </div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Upper B</span><br><span class="session-sum num">7 exercises · 22 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button>
+    </div>
+    <div class="session">
+      <button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Lower B</span><br><span class="session-sum num">6 exercises · 18 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button>
+    </div>
+  </div>
+  <div id="wk2" role="tabpanel" hidden>
+    <div class="week-meta"><span class="num">Week 2 of 12 · 4 sessions</span><span class="num">90 sets</span></div>
+    <div class="session"><button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Upper A</span><br><span class="session-sum num">8 exercises · 27 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button></div>
+    <div class="session"><button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Lower A</span><br><span class="session-sum num">6 exercises · 21 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button></div>
+  </div>
+</div>
+          </main>
+<aside class="pv-aside" aria-label="Program actions">
+  <div class="card pad stack g8" style="padding:20px">
+    <button class="btn btn-block">Copy to my programs</button>
+    <p class="cap">Reading needs no account. Copying needs one.</p>
+  </div>
+  <div class="card stack g8" style="padding:20px">
+    <h2 class="h-sec">Author</h2>
+    <div class="row g12"><span class="avatar">T</span><div class="grow"><p style="font-weight:600">Tara</p><p class="cap">Strength coach. Programs for busy lifters.</p></div></div>
+    <a class="link" href="#">View Tara's profile <svg class="i i-sm"><use href="#i-chev-r"/></svg></a>
+  </div>
+</aside>
+        </div>
+<footer class="pv-foot">
+  <span>Shared on physlane</span>
+  <button class="link link-quiet"><svg class="i i-sm"><use href="#i-flag"/></svg>Report this program</button>
+</footer>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>2 · Exercise asset drawer (A4)</h2>
+  <p class="sk-note">Tap an exercise name. Mobile: bottom sheet. Desktop: right side panel (same markup). Catalog facts, first video inline (click to load — nothing from youtube.com loads until the play tap), catalog form note, the author's prescription and cues for this entry, then "References". Focus moves to Close on open (ring drawn).</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· video + references</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+<div class="scrim"></div>
+<div class="sheet as-panel" role="dialog" aria-modal="true" aria-labelledby="dr-t">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <h2 id="dr-t" class="h-card" style="font-size:20px">Barbell bench press</h2>
+    <button class="btn btn-ghost btn-icon is-focus" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <dl class="kv mt12">
+    <dt>Primary</dt><dd>Chest</dd>
+    <dt>Secondary</dt><dd>Front delts, triceps</dd>
+    <dt>Equipment</dt><dd>Barbell</dd>
+  </dl>
+  <div class="video-ph mt16">
+    <button class="play" aria-label="Play video: Bench press setup"><svg class="i i-fill"><use href="#i-play"/></svg></button>
+    <span>Bench press setup — Example Channel</span>
+    <span class="cap">Plays from youtube.com</span>
+  </div>
+  <p class="body-sm t-sec mt16">Shoulder blades pinned, feet planted, bar touches the lower chest.</p>
+  <div class="card mt16" style="padding:12px 16px">
+    <p class="h-sec">From Tara</p>
+    <p class="body-sm mt4"><span class="num">4 × 8 · 70% 1RM · RPE 7 · Rest 2:30</span></p>
+    <p class="body-sm t-sec mt4">Pause 1 s on the chest.</p>
+  </div>
+  <h3 class="h-sec mt24">References</h3>
+  <ul class="ref-list mt4">
+    <li><a href="#"><svg class="i"><use href="#i-doc"/></svg><span class="grow">How to bench press with good form<br><span class="kind">Article · example.org</span></span><svg class="i i-sm"><use href="#i-ext"/></svg></a></li>
+    <li><a href="#"><svg class="i"><use href="#i-image"/></svg><span class="grow">Grip width diagram<br><span class="kind">Image · example.org</span></span><svg class="i i-sm"><use href="#i-ext"/></svg></a></li>
+    <li><a href="#"><svg class="i"><use href="#i-video"/></svg><span class="grow">Common bench mistakes<br><span class="kind">Video · youtube.com</span></span><svg class="i i-sm"><use href="#i-ext"/></svg></a></li>
+  </ul>
+</div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· minimal: no assets, author link only</span></figcaption>
+      <div class="scr short" style="min-height:620px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="scrim"></div>
+        <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dr-2">
+          <div class="grabber"></div>
+          <div class="sheet-head"><h2 id="dr-2" class="h-card" style="font-size:20px">Landmine press</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <dl class="kv mt12"><dt>Primary</dt><dd>Front delts</dd><dt>Equipment</dt><dd>Barbell</dd></dl>
+          <p class="cap mt8">Custom exercise by Leo</p>
+          <div class="notice mt16"><svg class="i"><use href="#i-video"/></svg><span>No video or references for this exercise yet.</span></div>
+          <div class="card mt16" style="padding:12px 16px">
+            <p class="h-sec">From Leo</p>
+            <p class="body-sm mt4 num">3 × 10 · 20 kg</p>
+            <a class="link" href="#">Leo's reference link <svg class="i i-sm"><use href="#i-ext"/></svg></a>
+          </div>
+        </div>
+      </div>
+      <p class="sk-note-inline">Custom exercise: same layout; label "Custom exercise by {author}" replaces nothing else. No assets → one plain notice, no dead end; the entry refUrl still shows when set.</p>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop <span>· side panel over the page</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="pv-grid"><main>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+</main>
+<aside class="pv-aside" aria-label="Program actions">
+  <div class="card pad stack g8" style="padding:20px">
+    <button class="btn btn-block">Copy to my programs</button>
+    <p class="cap">Reading needs no account. Copying needs one.</p>
+  </div>
+  <div class="card stack g8" style="padding:20px">
+    <h2 class="h-sec">Author</h2>
+    <div class="row g12"><span class="avatar">T</span><div class="grow"><p style="font-weight:600">Tara</p><p class="cap">Strength coach. Programs for busy lifters.</p></div></div>
+    <a class="link" href="#">View Tara's profile <svg class="i i-sm"><use href="#i-chev-r"/></svg></a>
+  </div>
+</aside>
+</div>
+<div class="scrim"></div>
+<div class="sheet as-panel" role="dialog" aria-modal="true" aria-labelledby="dr-t">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <h2 id="dr-t" class="h-card" style="font-size:20px">Barbell bench press</h2>
+    <button class="btn btn-ghost btn-icon is-focus" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <dl class="kv mt12">
+    <dt>Primary</dt><dd>Chest</dd>
+    <dt>Secondary</dt><dd>Front delts, triceps</dd>
+    <dt>Equipment</dt><dd>Barbell</dd>
+  </dl>
+  <div class="video-ph mt16">
+    <button class="play" aria-label="Play video: Bench press setup"><svg class="i i-fill"><use href="#i-play"/></svg></button>
+    <span>Bench press setup — Example Channel</span>
+    <span class="cap">Plays from youtube.com</span>
+  </div>
+  <p class="body-sm t-sec mt16">Shoulder blades pinned, feet planted, bar touches the lower chest.</p>
+  <div class="card mt16" style="padding:12px 16px">
+    <p class="h-sec">From Tara</p>
+    <p class="body-sm mt4"><span class="num">4 × 8 · 70% 1RM · RPE 7 · Rest 2:30</span></p>
+    <p class="body-sm t-sec mt4">Pause 1 s on the chest.</p>
+  </div>
+  <h3 class="h-sec mt24">References</h3>
+  <ul class="ref-list mt4">
+    <li><a href="#"><svg class="i"><use href="#i-doc"/></svg><span class="grow">How to bench press with good form<br><span class="kind">Article · example.org</span></span><svg class="i i-sm"><use href="#i-ext"/></svg></a></li>
+    <li><a href="#"><svg class="i"><use href="#i-image"/></svg><span class="grow">Grip width diagram<br><span class="kind">Image · example.org</span></span><svg class="i i-sm"><use href="#i-ext"/></svg></a></li>
+    <li><a href="#"><svg class="i"><use href="#i-video"/></svg><span class="grow">Common bench mistakes<br><span class="kind">Video · youtube.com</span></span><svg class="i i-sm"><use href="#i-ext"/></svg></a></li>
+  </ul>
+</div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>3 · Copy as anonymous → sign-in door (A6) → return</h2>
+  <p class="sk-note">"Copy to my programs" never navigates away cold. A sheet states what happens and offers both account paths; the program stays underneath. After auth the viewer returns to the same URL with the copy prompt pinned — one tap completes it.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· anonymous taps Copy</span></figcaption>
+      <div class="scr short" style="min-height:640px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+        <div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true" aria-labelledby="door-t">
+          <div class="grabber"></div>
+          <h2 id="door-t" class="display display-md">Copy Hypertrophy Base</h2>
+          <p class="body-sm t-sec mt8">Copies go into your programs on a physlane account. Only you can see your copy until you share it, and you can change anything in it.</p>
+          <div class="stack g8 mt16">
+            <button class="btn btn-block is-focus">Create account</button>
+            <button class="btn btn-secondary btn-block">Sign in</button>
+          </div>
+          <p class="cap mt12">You come back to this program after signing in.</p>
+          <button class="link link-quiet mt4">Keep reading</button>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· back after sign-in</span></figcaption>
+      <div class="scr short" style="min-height:640px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">M</span>
+</header>
+        <div class="banner brand" role="status"><svg class="i"><use href="#i-check"/></svg><div class="grow"><p>Signed in. Copy this program to your programs?</p><button class="btn mt8">Copy to my programs</button></div></div>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+      </div>
+      <p class="sk-note-inline">Intent is carried through auth (return URL); the copy itself still needs the explicit tap — no surprise writes. See open question on onboarding wizard interception.</p>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>4 · Signed-in viewer (lb preference) — copy states</h2>
+  <p class="sk-note">Signed-in viewers copy in one tap. Loads render in the viewer's unit (lb here); never both units. %1RM is unit-free.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· idle, lb units</span></figcaption>
+      <div class="scr short" style="min-height:560px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">M</span>
+</header>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+<div class="cta-block only-m">
+  <button class="btn btn-block">Copy to my programs</button>
+  <p class="cap">Only you can see your copy until you share it. It does not change when Tara edits hers.</p>
+</div>
+        <div class="px"><div class="entry"><button class="entry-name">Chest-supported row</button><div class="rx"><span><b>4 × 10</b></span><span>65 lb</span><span>RIR 2</span><span>Rest 2:00</span></div></div></div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· copying (loading) + hover/active reference</span></figcaption>
+      <div class="scr short" style="min-height:420px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">M</span>
+</header>
+        <div class="pad stack g12">
+          <button class="btn btn-block is-loading" aria-busy="true">Copying…</button>
+          <p class="cap">Button states (DESIGN §9.1):</p>
+          <div class="row wrap g8">
+            <button class="btn">Default</button><button class="btn is-hover">Hover</button><button class="btn is-active">Active</button><button class="btn is-focus">Focus</button><button class="btn" disabled>Disabled</button>
+          </div>
+          <div class="row wrap g8">
+            <button class="btn btn-secondary">Secondary</button><button class="btn btn-secondary is-hover">Hover</button><button class="btn btn-secondary is-focus">Focus</button><button class="btn btn-secondary" disabled>Disabled</button>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· copy failed</span></figcaption>
+      <div class="scr short" style="min-height:420px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">M</span>
+</header>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+        <div class="toast" role="alert"><svg class="i"><use href="#i-alert"/></svg><span class="grow">Couldn't copy this program. Try again.</span><button class="btn btn-ghost" style="color:inherit">Retry</button></div>
+      </div>
+      <p class="sk-note-inline">Success leaves this page → fork-confirmation (P1 sketch).</p>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>5 · Owner viewing own public program (C5)</h2>
+  <p class="sk-note">Subtle owner bar replaces nothing in the content; it adds Edit and Share. Hidden for the owner: copy CTA and "Report this program". Owner sees exactly what visitors see below the bar.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· owner</span></figcaption>
+      <div class="scr short" style="min-height:640px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="owner-bar"><svg class="i"><use href="#i-globe"/></svg><span class="grow">Your public program</span><a class="btn btn-secondary" href="#"><svg class="i"><use href="#i-pencil"/></svg>Edit</a><a class="btn btn-secondary" href="#">Share</a></div>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+        <footer class="pv-foot"><span>Shared on physlane</span></footer>
+      </div>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop <span>· owner — aside drops the copy card</span></figcaption>
+      <div class="scr short" style="min-height:560px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="owner-bar"><svg class="i"><use href="#i-globe"/></svg><span class="grow">Your public program</span><a class="btn btn-secondary" href="#"><svg class="i"><use href="#i-pencil"/></svg>Edit</a><a class="btn btn-secondary" href="#">Share</a></div>
+        <div class="pv-grid"><main>
+<section class="pv-hero" aria-labelledby="pv-title">
+  <p class="h-sec">Program</p>
+  <h1 id="pv-title" class="display display-lg mt8">Hypertrophy Base</h1>
+  <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+  <div class="facts mt8">
+    <span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 sessions / week</span><span class="chip num">12 weeks</span>
+  </div>
+  <p class="cap mt12">Equipment: barbell, dumbbell, cable, machine</p>
+  <p class="pv-desc mt12">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</p>
+</section>
+</main>
+          <aside class="pv-aside"><div class="card stack g8" style="padding:20px"><h2 class="h-sec">Author</h2><div class="row g12"><span class="avatar">T</span><p style="font-weight:600">Tara</p></div><a class="link" href="#">View your profile</a></div></aside>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>6 · Minimal content — Leo's bare program</h2>
+  <p class="sk-note">Empty description → no paragraph, no placeholder. One week → no week tabs. No rest / intensity / cues / assets → those slots simply do not render; entries stay one line of prescription. Hero still answers A2 from tags alone.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· minimal</span></figcaption>
+      <div class="scr short" style="min-height:700px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <section class="pv-hero">
+          <p class="h-sec">Program</p>
+          <h1 class="display display-lg mt8">Push Pull Legs</h1>
+          <div class="author-line mt4"><span class="avatar">L</span><span>by <a href="#">Leo</a></span></div>
+          <div class="facts mt8"><span class="chip">Hypertrophy</span><span class="chip">Beginner</span><span class="chip num">3 sessions / week</span><span class="chip num">1 week</span></div>
+        </section>
+<div class="cta-block only-m">
+  <button class="btn btn-block">Copy to my programs</button>
+  <p class="cap">Reading needs no account. Copying needs one.</p>
+</div>
+        <div class="week-meta"><span class="num">3 sessions</span><span class="num">27 sets</span></div>
+        <div class="session">
+          <button class="session-head" data-acc aria-expanded="true" aria-controls="lp"><span class="grow"><span class="session-title">Push</span><br><span class="session-sum num">3 exercises · 9 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button>
+          <div class="session-body" id="lp">
+            <dl class="regions"><dt>Chest</dt><dd><div class="bar"><i style="width:100%"></i></div></dd><dd class="n">3</dd><dt>Shoulders</dt><dd><div class="bar"><i style="width:100%"></i></div></dd><dd class="n">3</dd><dt>Arms</dt><dd><div class="bar"><i style="width:100%"></i></div></dd><dd class="n">3</dd></dl>
+            <ol class="entries">
+              <li class="entry"><button class="entry-name">Bench press</button><div class="rx"><span><b>3 × 8</b></span><span>60 kg</span></div></li>
+              <li class="entry"><button class="entry-name">Landmine press</button><div class="rx"><span><b>3 × 10</b></span></div></li>
+              <li class="entry"><button class="entry-name">Dips</button><div class="rx"><span><b>3 × max</b></span></div></li>
+            </ol>
+          </div>
+        </div>
+        <div class="session"><button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Pull</span><br><span class="session-sum num">3 exercises · 9 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button></div>
+        <div class="session"><button class="session-head" data-acc aria-expanded="false"><span class="grow"><span class="session-title">Legs</span><br><span class="session-sum num">3 exercises · 9 sets</span></span><svg class="i"><use href="#i-chev-d"/></svg></button></div>
+<footer class="pv-foot">
+  <span>Shared on physlane</span>
+  <button class="link link-quiet"><svg class="i i-sm"><use href="#i-flag"/></svg>Report this program</button>
+</footer>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Hero variants <span>· public fork / not copyable</span></figcaption>
+      <div class="scr short" style="min-height:0">
+        <section class="pv-hero">
+          <h1 class="display display-lg">PPL — my version</h1>
+          <div class="author-line mt4"><span class="avatar">M</span><span>by <a href="#">Mara</a></span></div>
+          <p class="attrib">Based on Leo · Push Pull Legs</p>
+          <div class="facts mt8"><span class="chip">Hypertrophy</span><span class="chip">Beginner</span><span class="chip num">3 sessions / week</span></div>
+        </section>
+        <hr class="divider">
+        <section class="pv-hero">
+          <h1 class="display display-lg">Hypertrophy Base</h1>
+          <div class="author-line mt4"><span class="avatar">T</span><span>by <a href="#">Tara</a></span></div>
+          <div class="facts mt8"><span class="chip">Hypertrophy</span><span class="chip">Intermediate</span></div>
+          <p class="sk-note-inline">No copy button: this program is not copyable (<code>forkable: false</code>). No explanatory copy is shown — nothing in Phase-1 UI sets it.</p>
+        </section>
+      </div>
+      <p class="sk-note-inline">Attribution is plain text, never a link (plan: a public fork must not expose an unlisted original).</p>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>7 · Empty week · loading · error · report</h2>
+  <p class="sk-note">"Empty" for a viewer = a week with no sessions (weeks count exceeds authored weeks). Skeleton covers client-side navigation only — first load is server-rendered. Error = client navigation fetch failed. Report is anonymous-capable, free text, footer-only.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Empty week</figcaption>
+      <div class="scr short" style="min-height:360px">
+        <div class="week-nav"><div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Week 2</button><button class="tab" role="tab" aria-selected="true">Week 3</button><button class="tab" role="tab" aria-selected="false">Week 4</button></div></div>
+        <div class="pad stack g8" style="padding-top:32px;text-align:center;align-items:center">
+          <p class="h-card">No sessions in week 3</p>
+          <p class="cap">The author hasn't added sessions to this week.</p>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Loading skeleton</figcaption>
+      <div class="scr short" style="min-height:560px" aria-busy="true">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="pad stack g12">
+          <div class="skel skel-line" style="width:70px"></div>
+          <div class="skel skel-title" style="width:80%"></div>
+          <div class="skel skel-line" style="width:40%"></div>
+          <div class="row g8"><div class="skel" style="width:96px;height:28px"></div><div class="skel" style="width:96px;height:28px"></div><div class="skel" style="width:120px;height:28px"></div></div>
+          <div class="skel skel-line" style="width:100%"></div><div class="skel skel-line" style="width:90%"></div>
+          <div class="skel" style="height:44px;border-radius:8px"></div>
+          <div class="skel" style="height:44px;margin-top:12px"></div>
+          <div class="skel" style="height:72px"></div><div class="skel" style="height:72px"></div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Error</figcaption>
+      <div class="scr short" style="min-height:420px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="pad stack g12" style="padding-top:48px">
+          <h1 class="display display-md">This program didn't load</h1>
+          <p class="t-sec body-sm">Check your connection and try again.</p>
+          <button class="btn">Try again</button>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Report sheet <span>· form → sent</span></figcaption>
+      <div class="scr short" style="min-height:560px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="scrim"></div>
+        <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rp-t">
+          <div class="grabber"></div>
+          <div class="sheet-head"><h2 id="rp-t" class="h-card">Report this program</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="field mt16"><label class="label" for="rp">What's wrong?</label><textarea id="rp" class="textarea is-focus" placeholder="For example: copied from someone else, unsafe advice, spam"></textarea></div>
+          <p class="hint">physlane reviews every report. You don't need an account.</p>
+          <button class="btn btn-block mt16">Send report</button>
+          <hr class="divider mt16">
+          <div class="row g8 mt16" role="status"><svg class="i" style="color:var(--data-positive)"><use href="#i-check"/></svg><span class="body-sm">Report sent.</span></div>
+        </div>
+      </div>
+      <p class="sk-note-inline">Sent state replaces the form in place (shown stacked here). Rate-limit hit: "Too many reports from this network today. Try again tomorrow."</p>
+    </figure>
+  </div>
+</section>
+<script>
+(function () {
+  var k = "physlane-sketch-theme", r = document.documentElement;
+  r.dataset.theme = localStorage.getItem(k) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  function label() { document.querySelectorAll("[data-toggle-theme]").forEach(function (b) { b.textContent = r.dataset.theme === "dark" ? "Switch to light" : "Switch to dark"; }); }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-toggle-theme]");
+    if (t) { r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark"; localStorage.setItem(k, r.dataset.theme); label(); return; }
+    var tab = e.target.closest('[role="tab"]');
+    if (tab) {
+      var list = tab.closest('[role="tablist"]'), scope = tab.closest("[data-tabs]") || document;
+      list.querySelectorAll('[role="tab"]').forEach(function (x) {
+        var on = x === tab; x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1;
+        var p = x.getAttribute("aria-controls") && scope.querySelector("#" + x.getAttribute("aria-controls"));
+        if (p) p.hidden = !on;
+      });
+    }
+    var acc = e.target.closest("[data-acc]");
+    if (acc) { var open = acc.getAttribute("aria-expanded") === "true"; acc.setAttribute("aria-expanded", !open); var id = acc.getAttribute("aria-controls"), body = id && acc.parentElement.querySelector("#" + id); if (body) body.hidden = open; }
+  });
+  label();
+})();
+</script>
+</body>
+</html>
