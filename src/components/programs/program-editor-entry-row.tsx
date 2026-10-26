@@ -12,6 +12,7 @@ import { Input } from "#/components/ui/input";
 import { Switch } from "#/components/ui/switch";
 import { Textarea } from "#/components/ui/textarea";
 import { cn } from "#/lib/cn";
+import { countLabel } from "#/lib/programs/count-label";
 import { formatEntrySummary } from "#/lib/programs/entry-display";
 import type { EntryErrors } from "#/lib/programs/entry-validation";
 import { defaultKgLoad, loadUnitLabel } from "#/lib/programs/load-units";
@@ -115,8 +116,8 @@ export function ProgramEditorEntryRow({
       </div>
       {hasErrors && !expanded ? (
         <p className="mt-2 text-xs text-destructive">
-          Open this exercise to fix {Object.keys(errors).length}{" "}
-          {Object.keys(errors).length === 1 ? "field" : "fields"}.
+          Open this exercise to fix{" "}
+          {countLabel(Object.keys(errors).length, "field")}.
         </p>
       ) : null}
       {expanded ? (

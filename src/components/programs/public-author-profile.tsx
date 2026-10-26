@@ -10,6 +10,7 @@ import {
   levelDisplayLabel,
   programMetaLine,
 } from "#/lib/programs/display-labels";
+import { countLabel } from "#/lib/programs/count-label";
 import { publicProgramCanonicalPath } from "#/lib/programs/program-urls";
 import {
   reportProfile,
@@ -129,7 +130,7 @@ export function PublicAuthorProfile({
                       {program.daysPerWeek} / week
                     </span>
                     <span className="rounded-md border border-border bg-background px-2.5 py-0.5 text-xs font-medium text-text-secondary">
-                      {program.weeks} weeks
+                      {countLabel(program.weeks, "week")}
                     </span>
                   </span>
                   <span className="sr-only">{programMetaLine(program)}</span>

@@ -48,6 +48,7 @@ import {
   libraryAddress,
   type LibraryAddress,
 } from "#/lib/programs/library-rows";
+import { countLabel } from "#/lib/programs/count-label";
 import { programActionErrorMessage } from "#/lib/programs/program-error-message";
 import { formatEditedAt } from "#/lib/programs/relative-time";
 import {
@@ -329,8 +330,8 @@ function ProgramTable({
                 <ProgramTitleLink program={program} />
                 <p className="m-0 mt-0.5 text-sm text-text-secondary">
                   {goalDisplayLabel(program.goal)} ·{" "}
-                  {levelDisplayLabel(program.level)} · {program.weeks}{" "}
-                  {program.weeks === 1 ? "week" : "weeks"}
+                  {levelDisplayLabel(program.level)} ·{" "}
+                  {countLabel(program.weeks, "week")}
                 </p>
                 <ForkLabel program={program} />
               </TableCell>
@@ -530,8 +531,7 @@ export function ProgramLibrary({
     }
   };
 
-  const countLabel =
-    programs.length === 1 ? "1 program" : `${programs.length} programs`;
+  const programsLabel = countLabel(programs.length, "program");
 
   return (
     <section className="pt-8 lg:pt-12">
@@ -542,7 +542,7 @@ export function ProgramLibrary({
           </h1>
           {programs.length > 0 ? (
             <p className="m-0 mt-1 text-sm tabular-nums text-muted-foreground">
-              {countLabel}
+              {programsLabel}
             </p>
           ) : null}
         </div>

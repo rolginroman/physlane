@@ -613,7 +613,7 @@ export function ProgramEditor({
   const desktop = useMediaQuery("(min-width: 64rem)");
   const saveLabel =
     blockedLabel ??
-    (offline
+    (offline || staleRevision
       ? "Not saved"
       : saveIndicator === "saving"
         ? "Saving…"

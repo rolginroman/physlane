@@ -18,6 +18,7 @@ import {
   goalDisplayLabel,
   levelDisplayLabel,
 } from "#/lib/programs/display-labels";
+import { countLabel } from "#/lib/programs/count-label";
 import { totalSets } from "#/lib/programs/sets-by-region";
 import type { UnitSystem } from "#/lib/units";
 import type { PublicProgramDTO } from "#/server/programs.fns";
@@ -194,9 +195,9 @@ export function ProgramView({
                 <FactChip>{goalDisplayLabel(program.goal)}</FactChip>
                 <FactChip>{levelDisplayLabel(program.level)}</FactChip>
                 <FactChip numeric>
-                  {program.daysPerWeek} sessions / week
+                  {countLabel(program.daysPerWeek, "session")} / week
                 </FactChip>
-                <FactChip numeric>{program.weeks} weeks</FactChip>
+                <FactChip numeric>{countLabel(program.weeks, "week")}</FactChip>
               </div>
               {equipment ? (
                 <p className="mt-3 text-sm text-muted-foreground">
@@ -244,11 +245,11 @@ export function ProgramView({
                     ? `Week ${selectedWeek} of ${program.weeks}`
                     : null}
                   {weekSessions.length > 0
-                    ? `${program.weeks > 1 ? " · " : ""}${weekSessions.length} session${weekSessions.length === 1 ? "" : "s"}`
+                    ? `${program.weeks > 1 ? " · " : ""}${countLabel(weekSessions.length, "session")}`
                     : null}
                 </span>
                 {weekSessions.length > 0 ? (
-                  <span>{totalSets(weekSessions)} sets</span>
+                  <span>{countLabel(totalSets(weekSessions), "set")}</span>
                 ) : null}
               </div>
 

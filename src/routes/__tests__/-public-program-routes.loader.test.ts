@@ -32,7 +32,7 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
 });
 
 import { Route as permalinkRoute } from "#/routes/u.$authorSlug.p.$programId";
-import { Route as slugRoute } from "#/routes/u.$authorSlug.$programRef";
+import { Route as slugRoute } from "#/routes/u.$authorSlug.$programRef.index";
 import { Route as tokenRoute } from "#/routes/u.$authorSlug.$programRef.$shareToken";
 
 const publicProgram = {
@@ -98,20 +98,6 @@ describe("public program route loaders", () => {
       location: { pathname: "/u/tara/hypertrophy", searchStr: "" },
     });
     expect(data.route).toMatchObject({ kind: "program", variant: "public" });
-  });
-
-  it("slug route loader skips resolution when a share-token segment is present", async () => {
-    const data = await runRouteLoader(slugRoute.options.loader, {
-      params: {
-        authorSlug: "tara",
-        programRef: "hypertrophy",
-        shareToken: "tok",
-      },
-      deps: { copy: undefined },
-      location: { pathname: "/u/tara/hypertrophy/tok", searchStr: "" },
-    });
-    expect(data.route).toBeNull();
-    expect(serverMocks.getPublicProgramBySlug).not.toHaveBeenCalled();
   });
 
   it("token route loader 301 when public", async () => {

@@ -3,6 +3,7 @@ import {
   type ProgramEntry,
   type ProgramSession,
 } from "#/lib/programs/program-shape";
+import { countLabel } from "#/lib/programs/count-label";
 import { loadToInput, loadUnitLabel } from "#/lib/programs/load-units";
 import type { UnitSystem } from "#/lib/units";
 import type { ProgramEntryDTO, ProgramSessionDTO } from "#/server/programs.fns";
@@ -216,8 +217,8 @@ export function saveBlockedLabel(blockers: SaveBlockers): string | null {
   const { entryCount, otherCount } = blockers;
   if (entryCount + otherCount === 0) return null;
   if (otherCount === 0) {
-    return `Fix ${entryCount} ${entryCount === 1 ? "entry" : "entries"} to save`;
+    return `Fix ${countLabel(entryCount, "entry", "entries")} to save`;
   }
   const total = entryCount + otherCount;
-  return `Fix ${total} ${total === 1 ? "issue" : "issues"} to save`;
+  return `Fix ${countLabel(total, "issue")} to save`;
 }

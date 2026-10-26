@@ -2,6 +2,7 @@ import { ChevronDown, Link2, Video } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 import type { ExerciseDrawerTarget } from "#/components/programs/exercise-drawer";
 import { cn } from "#/lib/cn";
+import { countLabel } from "#/lib/programs/count-label";
 import { regionDisplayLabel } from "#/lib/programs/display-labels";
 import {
   formatEntryIntensity,
@@ -146,8 +147,8 @@ export function SessionAccordion({
             {session.title}
           </span>
           <span className="mt-0.5 block text-sm tabular-nums text-muted-foreground">
-            {session.entries.length} exercise
-            {session.entries.length === 1 ? "" : "s"} · {sets} sets
+            {countLabel(session.entries.length, "exercise")} ·{" "}
+            {countLabel(sets, "set")}
           </span>
         </span>
         <ChevronDown
@@ -181,7 +182,7 @@ export function SessionAccordion({
                 <li
                   key={`group-${idx}`}
                   className="flex flex-col gap-2 border-l-2 border-chart-neutral pl-3"
-                  aria-label={`Superset, ${block.items.length} exercises`}
+                  aria-label={`Superset, ${countLabel(block.items.length, "exercise")}`}
                 >
                   <p className="m-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Superset

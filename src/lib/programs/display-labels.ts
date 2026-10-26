@@ -1,3 +1,4 @@
+import { countLabel } from "#/lib/programs/count-label";
 import type {
   Equipment,
   ProgramGoal,
@@ -89,7 +90,7 @@ export function programMetaLine(meta: {
   daysPerWeek: number;
   weeks: number;
 }): string {
-  return `${goalDisplayLabel(meta.goal)} · ${levelDisplayLabel(meta.level)} · ${meta.daysPerWeek} sessions / week · ${meta.weeks} weeks`;
+  return `${goalDisplayLabel(meta.goal)} · ${levelDisplayLabel(meta.level)} · ${countLabel(meta.daysPerWeek, "session")} / week · ${countLabel(meta.weeks, "week")}`;
 }
 
 export { muscleDisplayLabel, regionDisplayLabel };

@@ -16,6 +16,7 @@ import {
   ResponsiveSheetHeader,
 } from "#/components/ui/responsive-sheet";
 import { Sheet, SheetTitle } from "#/components/ui/sheet";
+import { countLabel } from "#/lib/programs/count-label";
 
 export function ProgramEditorCopyWeekSheet({
   open,
@@ -91,9 +92,8 @@ export function ProgramEditorCopyWeekSheet({
           <DialogHeader>
             <DialogTitle>Replace week {targetWeek}?</DialogTitle>
             <DialogDescription>
-              This replaces {targetSessionCount} session
-              {targetSessionCount === 1 ? "" : "s"} in week {targetWeek} with
-              the contents of week {sourceWeek}.
+              This replaces {countLabel(targetSessionCount, "session")} in week{" "}
+              {targetWeek} with the contents of week {sourceWeek}.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-row gap-2">
