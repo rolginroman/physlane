@@ -731,6 +731,13 @@ export function buildForkSourceLabel(
   return `${authorDisplayName} · ${programTitle}`;
 }
 
+export function isProfileReportable(author: {
+  profilePublishedAt: Date | null;
+  profileHiddenAt: Date | null;
+}): boolean {
+  return author.profilePublishedAt != null && author.profileHiddenAt == null;
+}
+
 export function assertForkAllowed(
   program: {
     visibility: ProgramVisibility;

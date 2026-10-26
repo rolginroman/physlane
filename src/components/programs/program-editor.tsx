@@ -627,6 +627,7 @@ export function ProgramEditor({
     <section className="pt-4 pb-8">
       <ProgramEditorBanners
         forkBannerOpen={forkBannerOpen}
+        forkSourceLabel={meta.forkSourceLabel}
         onDismissFork={() => setForkBannerOpen(false)}
         staleRevision={staleRevision}
         loadError={loadError}

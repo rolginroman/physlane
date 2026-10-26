@@ -7,6 +7,10 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { AuthorProfileSetup } from "#/components/programs/author-profile-setup";
+import {
+  AuthorProfilePending,
+  profileRouteError,
+} from "#/components/programs/program-route-states";
 import { PublicAuthorProfile } from "#/components/programs/public-author-profile";
 import { isAuthorProfileLeafPath } from "#/lib/programs/author-profile-route";
 import { throwAuthorProfileHistoryRedirect } from "#/lib/programs/history-redirect";
@@ -38,6 +42,8 @@ export const Route = createFileRoute("/u/$authorSlug")({
     );
     return { profile };
   },
+  pendingComponent: AuthorProfilePending,
+  errorComponent: profileRouteError,
   head: ({ loaderData }) => {
     if (!loaderData?.profile || loaderData.profile.unavailable) {
       return {};

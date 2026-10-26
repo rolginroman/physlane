@@ -1,9 +1,14 @@
 import { createFileRoute, Outlet, useMatches } from "@tanstack/react-router";
 import { z } from "zod";
+import {
+  programRouteError,
+  PublicProgramViewPending,
+} from "#/components/programs/program-route-states";
 import { ProgramNotFound } from "#/components/programs/program-not-found";
 import { ProgramRemovedPage } from "#/components/programs/program-removed";
 import { PublicProgramPage } from "#/components/programs/public-program-page";
 import { loadPublicSlugProgramRoute } from "#/lib/programs/load-public-program-route";
+import { loadViewerUnitSystem } from "#/lib/programs/viewer-unit-system";
 import { isProgramPathLeaf } from "#/lib/programs/public-program-path";
 import { publicProgramSeoHead } from "#/lib/programs/public-program-seo";
 import { publicProgramCanonicalPath } from "#/lib/programs/program-urls";
@@ -32,16 +37,22 @@ export const Route = createFileRoute("/u/$authorSlug/$programRef")({
         pendingCopyIntent: Boolean(deps.copy),
       };
     }
-    const route = await loadPublicSlugProgramRoute({
-      authorSlug: params.authorSlug,
-      programSlug: params.programRef,
-    });
+    const [route, unitSystem] = await Promise.all([
+      loadPublicSlugProgramRoute({
+        authorSlug: params.authorSlug,
+        programSlug: params.programRef,
+      }),
+      loadViewerUnitSystem(),
+    ]);
     return {
       route,
+      unitSystem,
       returnPath: location.pathname + (location.searchStr ?? ""),
       pendingCopyIntent: Boolean(deps.copy),
     };
   },
+  pendingComponent: PublicProgramViewPending,
+  errorComponent: programRouteError,
   head: ({ loaderData, params }) => {
     if (!loaderData?.route || loaderData.route.kind === "removed") {
       return { meta: [{ name: "robots", content: "noindex" }] };
@@ -63,7 +74,8 @@ function PublicSlugProgramPage() {
   if (!isLeaf) {
     return <Outlet />;
   }
-  const { route, returnPath, pendingCopyIntent } = Route.useLoaderData();
+  const { route, unitSystem, returnPath, pendingCopyIntent } =
+    Route.useLoaderData();
   if (!route) {
     return null;
   }
@@ -74,6 +86,7 @@ function PublicSlugProgramPage() {
     <PublicProgramPage
       program={route.program}
       variant="public"
+      unitSystem={unitSystem}
       returnPath={returnPath}
       pendingCopyIntent={pendingCopyIntent}
     />

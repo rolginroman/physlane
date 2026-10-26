@@ -1,8 +1,10 @@
 import { X } from "lucide-react";
 import { Button } from "#/components/ui/button";
+import { forkAttributionAuthorName } from "#/lib/programs/fork-attribution";
 
 export function ProgramEditorBanners({
   forkBannerOpen,
+  forkSourceLabel,
   onDismissFork,
   staleRevision,
   loadError,
@@ -11,6 +13,7 @@ export function ProgramEditorBanners({
   onReload,
 }: {
   forkBannerOpen: boolean;
+  forkSourceLabel: string | null;
   onDismissFork: () => void;
   staleRevision: boolean;
   loadError: boolean;
@@ -31,7 +34,9 @@ export function ProgramEditorBanners({
             </p>
             <p className="m-0 mt-1 text-text-secondary">
               This is your copy: a draft only you can see. Edit anything.
-              Changes the author makes to theirs don't reach it.
+              {forkSourceLabel
+                ? ` Changes ${forkAttributionAuthorName(forkSourceLabel)} makes to theirs don't reach it.`
+                : " Changes the original author makes to theirs don't reach it."}
             </p>
           </div>
           <Button

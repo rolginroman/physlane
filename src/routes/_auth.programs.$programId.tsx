@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { ProgramEditor } from "#/components/programs/program-editor";
+import {
+  ProgramEditorPending,
+  programRouteError,
+} from "#/components/programs/program-route-states";
 import { getViewer } from "#/lib/auth-guard.fns";
 import { getMyProgram } from "#/server/programs.fns";
 
@@ -28,6 +32,8 @@ export const Route = createFileRoute("/_auth/programs/$programId")({
       unitSystem: viewer?.unitSystem ?? "metric",
     };
   },
+  pendingComponent: ProgramEditorPending,
+  errorComponent: programRouteError,
   component: ProgramEditorPage,
 });
 

@@ -1,9 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import {
+  programRouteError,
+  PublicProgramViewPending,
+} from "#/components/programs/program-route-states";
 import { ProgramNotFound } from "#/components/programs/program-not-found";
 import { ProgramRemovedPage } from "#/components/programs/program-removed";
 import { PublicProgramPage } from "#/components/programs/public-program-page";
 import { loadShareTokenProgramRoute } from "#/lib/programs/load-public-program-route";
+import { loadViewerUnitSystem } from "#/lib/programs/viewer-unit-system";
 import { publicProgramSeoHead } from "#/lib/programs/public-program-seo";
 import { shareLinkPath } from "#/lib/programs/program-urls";
 
@@ -18,17 +23,23 @@ export const Route = createFileRoute("/u/$authorSlug/$programRef/$shareToken")({
     copy: search.copy,
   }),
   loader: async ({ params, deps, location }) => {
-    const route = await loadShareTokenProgramRoute({
-      authorSlug: params.authorSlug,
-      programSlug: params.programRef,
-      shareToken: params.shareToken,
-    });
+    const [route, unitSystem] = await Promise.all([
+      loadShareTokenProgramRoute({
+        authorSlug: params.authorSlug,
+        programSlug: params.programRef,
+        shareToken: params.shareToken,
+      }),
+      loadViewerUnitSystem(),
+    ]);
     return {
       route,
+      unitSystem,
       returnPath: location.pathname + (location.searchStr ?? ""),
       pendingCopyIntent: Boolean(deps.copy),
     };
   },
+  pendingComponent: PublicProgramViewPending,
+  errorComponent: programRouteError,
   head: ({ loaderData, params }) => {
     if (!loaderData || loaderData.route.kind === "removed") {
       return { meta: [{ name: "robots", content: "noindex" }] };
@@ -49,7 +60,8 @@ export const Route = createFileRoute("/u/$authorSlug/$programRef/$shareToken")({
 });
 
 function ShareTokenProgramPage() {
-  const { route, returnPath, pendingCopyIntent } = Route.useLoaderData();
+  const { route, unitSystem, returnPath, pendingCopyIntent } =
+    Route.useLoaderData();
   if (route.kind === "removed") {
     return <ProgramRemovedPage removal={route.removal} />;
   }
@@ -57,6 +69,7 @@ function ShareTokenProgramPage() {
     <PublicProgramPage
       program={route.program}
       variant="unlisted"
+      unitSystem={unitSystem}
       returnPath={returnPath}
       pendingCopyIntent={pendingCopyIntent}
     />

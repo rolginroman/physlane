@@ -12,6 +12,7 @@ import {
 import { groupEntryBlocks } from "#/lib/programs/entry-ops";
 import { assetHint } from "#/lib/programs/exercise-assets";
 import { setsByRegion, type RegionSets } from "#/lib/programs/sets-by-region";
+import type { UnitSystem } from "#/lib/units";
 import type {
   ProgramEntryDTO,
   ProgramSessionDTO,
@@ -51,13 +52,15 @@ function SetsByRegionBar({ regions }: { regions: RegionSets[] }) {
 function EntryBlock({
   entry,
   exercise,
+  unitSystem,
   onOpen,
 }: {
   entry: ProgramEntryDTO;
   exercise: PublicExerciseRefDTO | undefined;
+  unitSystem: UnitSystem;
   onOpen: OpenEntry;
 }) {
-  const load = formatEntryLoad(entry);
+  const load = formatEntryLoad(entry, unitSystem);
   const intensity = formatEntryIntensity(entry);
   const rest = formatRestSeconds(entry.restSeconds);
   const hint = assetHint(exercise?.assets ?? [], entry.refUrl);
@@ -108,11 +111,13 @@ function EntryBlock({
 export function SessionAccordion({
   session,
   exercises,
+  unitSystem,
   defaultOpen,
   onOpenEntry,
 }: {
   session: ProgramSessionDTO;
   exercises: PublicProgramDTO["exercises"];
+  unitSystem: UnitSystem;
   defaultOpen: boolean;
   onOpenEntry: OpenEntry;
 }) {
@@ -167,6 +172,7 @@ export function SessionAccordion({
                     key={block.entry.id}
                     entry={block.entry}
                     exercise={exercises[block.entry.exerciseId]}
+                    unitSystem={unitSystem}
                     onOpen={onOpenEntry}
                   />
                 );
@@ -190,6 +196,7 @@ export function SessionAccordion({
                         key={entry.id}
                         entry={entry}
                         exercise={exercises[entry.exerciseId]}
+                        unitSystem={unitSystem}
                         onOpen={onOpenEntry}
                       />
                     ))}

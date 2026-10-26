@@ -19,11 +19,13 @@ import {
   levelDisplayLabel,
 } from "#/lib/programs/display-labels";
 import { totalSets } from "#/lib/programs/sets-by-region";
+import type { UnitSystem } from "#/lib/units";
 import type { PublicProgramDTO } from "#/server/programs.fns";
 
 export type ProgramViewProps = {
   program: PublicProgramDTO;
   variant: "public" | "unlisted";
+  unitSystem: UnitSystem;
   viewerUserId?: string | null;
   returnPath: string;
   pendingCopyIntent?: boolean;
@@ -114,6 +116,7 @@ function AuthorCard({
 export function ProgramView({
   program,
   variant,
+  unitSystem,
   viewerUserId,
   returnPath,
   pendingCopyIntent = false,
@@ -266,6 +269,7 @@ export function ProgramView({
                         key={session.id}
                         session={session}
                         exercises={program.exercises}
+                        unitSystem={unitSystem}
                         defaultOpen={index === 0}
                         onOpenEntry={setDrawer}
                       />

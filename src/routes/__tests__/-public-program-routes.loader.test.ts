@@ -12,6 +12,10 @@ const serverMocks = vi.hoisted(() => ({
 
 vi.mock("#/server/programs.fns", () => serverMocks);
 
+vi.mock("#/lib/auth-guard.fns", () => ({
+  getViewer: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("@tanstack/react-router", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("@tanstack/react-router")>();

@@ -11,6 +11,7 @@ import {
   planVisibilityTransition,
   assertForkAllowed,
   buildForkSourceLabel,
+  isProfileReportable,
   inheritedForeignCustomIdsFromExerciseOwners,
   planForkSessionCopies,
   resolvePublicProgramView,
@@ -933,6 +934,32 @@ describe("buildForkSourceLabel", () => {
     expect(buildForkSourceLabel("Tara", "Hypertrophy Base")).toBe(
       "Tara · Hypertrophy Base",
     );
+  });
+});
+
+describe("isProfileReportable", () => {
+  it("allows published, visible profiles only", () => {
+    expect(
+      isProfileReportable({
+        profilePublishedAt: new Date(),
+        profileHiddenAt: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects unlisted-only and hidden authors the same way for reporting", () => {
+    expect(
+      isProfileReportable({
+        profilePublishedAt: null,
+        profileHiddenAt: null,
+      }),
+    ).toBe(false);
+    expect(
+      isProfileReportable({
+        profilePublishedAt: new Date(),
+        profileHiddenAt: new Date(),
+      }),
+    ).toBe(false);
   });
 });
 

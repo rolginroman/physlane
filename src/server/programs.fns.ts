@@ -77,6 +77,7 @@ import {
   assertNoDuplicateCustomExerciseName,
   authorSlugMintBase,
   inheritedForeignCustomIdsFromExerciseOwners,
+  isProfileReportable,
   mintProgramSlugForShare,
   planProgramSlugRename,
   programSlugHistoryRowsToKeep,
@@ -2308,20 +2309,18 @@ const ReportProfileInputSchema = z.object({
 export const reportProfile = createServerFn({ method: "POST" })
   .validator((d) => ReportProfileInputSchema.parse(d))
   .handler(async ({ data }) => {
-    const slug = data.authorSlug.trim().toLowerCase();
-    const [author] = await useDb()
-      .select({ id: schema.user.id })
-      .from(schema.user)
-      .where(eq(schema.user.slug, slug))
-      .limit(1);
-    if (!author) {
-      throw appError("PROGRAM_NOT_FOUND");
+    const now = new Date();
+    const { lookup } = await resolveAuthorSlugContext(data.authorSlug, now);
+    if (lookup) {
+      const author = await loadAuthorRow(lookup.userId);
+      if (isProfileReportable(author)) {
+        await insertProgramReport({
+          programId: null,
+          reportedUserId: author.id,
+          reason: data.reason,
+        });
+      }
     }
-    await insertProgramReport({
-      programId: null,
-      reportedUserId: author.id,
-      reason: data.reason,
-    });
     return { ok: true as const };
   });
 

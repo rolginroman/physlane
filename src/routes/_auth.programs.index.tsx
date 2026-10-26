@@ -4,6 +4,7 @@ import {
   ProgramLibraryPending,
   loadProgramLibrary,
 } from "#/components/programs/program-library";
+import { programListRouteError } from "#/components/programs/program-route-states";
 
 export const Route = createFileRoute("/_auth/programs/")({
   head: () => ({ meta: [{ title: "Programs · physlane" }] }),
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_auth/programs/")({
     }
   },
   pendingComponent: ProgramLibraryPending,
+  errorComponent: programListRouteError,
   component: ProgramsIndexPage,
 });
 
