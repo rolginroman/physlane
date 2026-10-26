@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/intake", label: "Intake" },
   { to: "/cycles", label: "Cycles" },
+  { to: "/programs", label: "Programs" },
 ] as const;
 
 const navLinkBase =

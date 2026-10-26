@@ -31,6 +31,11 @@ Register: **brand** for the landing page (`/`) only.
   risk"). Same screens, different cycle-phase copy.
 - **J3 "GLP-1 user" (later, /glp-1 funnel):** rapid loss + muscle fear; lean-mass-risk banner and
   Pro mode toggle are the convert moment. Not day-1 positioning.
+- **J4 "Program visitor" (Phase 1, programs funnel):** follows a shared program link, taps
+  "Copy to my programs", signs up. Copy-initiated sign-ups **defer the onboarding wizard**:
+  they land directly in the forked program (a draft in their library); the wizard runs on
+  their first dashboard visit. Journey gates unchanged; activation is measured from first
+  dashboard visit for this cohort.
 
 Journey gates: activation = first log <24h · habit = 7-day streak · insight = 14 complete
 (weight, kcal) pairs · convert = TDEE reveal / verdict / day-90 · retain = cycle rollover.
@@ -66,5 +71,7 @@ guilt, fear, or guaranteed outcomes. Numbers use stable tabular figures.
 
 ## Surfaces
 
-Web app (mobile-first, Light Editorial + Dark Performance themes per DESIGN.md §3) + SEO landing. Telegram Mini App is post-launch
-(M9). Deploy: physlane.workers.dev.
+Web app (mobile-first, Light Editorial + Dark Performance themes per DESIGN.md §3) + SEO landing.
+**Programs** (`/programs`, public `/u/…` program pages, share links): author structured training
+programs, share by profile or unlisted link, visitors copy with "Copy to my programs" (J4). Telegram
+Mini App is post-launch (M9). Deploy: physlane.workers.dev.

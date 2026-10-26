@@ -1,0 +1,1044 @@
+import { describe, expect, it } from "vitest";
+import {
+  assertAuthor,
+  assertExerciseReferenceAllowed,
+  assertProgramUsable,
+  assertSlugAvailable,
+  customExerciseInputSchema,
+  isSlugHistoryReserved,
+  normalizeExerciseName,
+  nextRevision,
+  planVisibilityTransition,
+  assertForkAllowed,
+  buildForkSourceLabel,
+  isProfileReportable,
+  inheritedForeignCustomIdsFromExerciseOwners,
+  planForkSessionCopies,
+  resolvePublicProgramView,
+  publicProgramRemovalVariant,
+  assertProgramWeeksCoversSessions,
+  assertAnonymousReportRateAllowed,
+  ANONYMOUS_REPORTS_PER_IP_PER_DAY,
+  revisionGuard,
+  resolveEntryIds,
+  authorSlugRenameAllowedAt,
+  planAuthorProfileSave,
+  planProgramSlugRename,
+  programSlugHistoryRowsToKeep,
+  resolveAuthorProfileRedirect,
+  resolveAuthorSlugLookup,
+  suggestPublicPrograms,
+  resolveProgramRedirect,
+  suggestAuthorSlug,
+  suggestProgramSlug,
+  authorSlugMintBase,
+  mintAuthorSlugForShare,
+  forkEntryPayloadFromPlan,
+  throwIfSlugUniqueViolation,
+  validateSessionEntries,
+} from "../programs.core";
+import { entrySchema } from "#/lib/programs/program-shape";
+
+describe("assertAuthor", () => {
+  it("allows the program author", () => {
+    expect(() => assertAuthor({ userId: "u1" }, "u1")).not.toThrow();
+  });
+
+  it("throws NOT_AUTHOR for a different user", () => {
+    expect(() => assertAuthor({ userId: "u1" }, "u2")).toThrow("NOT_AUTHOR");
+  });
+});
+
+describe("revisionGuard", () => {
+  it("passes when expected matches current", () => {
+    expect(() => revisionGuard(3, 3)).not.toThrow();
+  });
+
+  it("throws STALE_REVISION on mismatch", () => {
+    expect(() => revisionGuard(2, 3)).toThrow("STALE_REVISION");
+  });
+});
+
+describe("nextRevision", () => {
+  it("increments monotonically", () => {
+    expect(nextRevision(0)).toBe(1);
+    expect(nextRevision(4)).toBe(5);
+  });
+});
+
+describe("assertProgramUsable", () => {
+  it("throws PROGRAM_NOT_FOUND when deleted", () => {
+    expect(() =>
+      assertProgramUsable(
+        { hiddenAt: null, deletedAt: new Date() },
+        { isOwner: true },
+      ),
+    ).toThrow("PROGRAM_NOT_FOUND");
+  });
+
+  it("throws PROGRAM_NOT_FOUND for hidden programs when not owner", () => {
+    expect(() =>
+      assertProgramUsable(
+        { hiddenAt: new Date(), deletedAt: null },
+        { isOwner: false },
+      ),
+    ).toThrow("PROGRAM_NOT_FOUND");
+  });
+
+  it("allows hidden programs for the owner", () => {
+    expect(() =>
+      assertProgramUsable(
+        { hiddenAt: new Date(), deletedAt: null },
+        { isOwner: true },
+      ),
+    ).not.toThrow();
+  });
+});
+
+describe("normalizeExerciseName", () => {
+  it("trims, lowercases, and collapses whitespace", () => {
+    expect(normalizeExerciseName("  Bench   Press  ")).toBe("bench press");
+  });
+});
+
+describe("assertExerciseReferenceAllowed", () => {
+  const catalog = new Set(["cat-1"]);
+  const mine = new Set(["custom-1"]);
+  const inherited = new Set(["fork-custom"]);
+
+  it("allows catalog exercises", () => {
+    expect(() =>
+      assertExerciseReferenceAllowed(
+        { exerciseId: "cat-1" },
+        {
+          catalogIds: catalog,
+          myCustomIds: mine,
+          inheritedForeignCustomIds: inherited,
+        },
+      ),
+    ).not.toThrow();
+  });
+
+  it("allows the author's customs", () => {
+    expect(() =>
+      assertExerciseReferenceAllowed(
+        { exerciseId: "custom-1" },
+        {
+          catalogIds: catalog,
+          myCustomIds: mine,
+          inheritedForeignCustomIds: inherited,
+        },
+      ),
+    ).not.toThrow();
+  });
+
+  it("allows fork-inherited foreign customs", () => {
+    expect(() =>
+      assertExerciseReferenceAllowed(
+        { exerciseId: "fork-custom" },
+        {
+          catalogIds: catalog,
+          myCustomIds: mine,
+          inheritedForeignCustomIds: inherited,
+        },
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects foreign customs not inherited", () => {
+    expect(() =>
+      assertExerciseReferenceAllowed(
+        { exerciseId: "other-custom" },
+        {
+          catalogIds: catalog,
+          myCustomIds: mine,
+          inheritedForeignCustomIds: inherited,
+        },
+      ),
+    ).toThrow("INVALID_ENTRY");
+  });
+});
+
+describe("validateSessionEntries", () => {
+  it("rejects when any entry is invalid", () => {
+    expect(() =>
+      validateSessionEntries([{ exerciseId: "cat" }, { exerciseId: "bad" }], {
+        catalogIds: new Set(["cat"]),
+        myCustomIds: new Set(),
+        inheritedForeignCustomIds: new Set(),
+      }),
+    ).toThrow("INVALID_ENTRY");
+  });
+});
+
+const noHidden = { hiddenAt: null as Date | null };
+const withSlug = (slug: string | null) => ({ ...noHidden, slug });
+const authorNoSlug = { slug: null as string | null };
+const authorWithSlug = { slug: "jane" };
+
+describe("planVisibilityTransition", () => {
+  it("refuses hidden programs", () => {
+    const result = planVisibilityTransition(
+      "draft",
+      "unlisted",
+      { hiddenAt: new Date(), slug: null },
+      authorNoSlug,
+    );
+    expect(result).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+  });
+
+  const invalidPairs: Array<
+    ["draft" | "unlisted" | "public", "draft" | "unlisted" | "public"]
+  > = [
+    ["draft", "draft"],
+    ["unlisted", "unlisted"],
+    ["public", "public"],
+  ];
+  for (const [current, target] of invalidPairs) {
+    it(`rejects self-transition ${current} → ${target}`, () => {
+      expect(
+        planVisibilityTransition(
+          current,
+          target,
+          withSlug("ppl"),
+          authorWithSlug,
+        ),
+      ).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+    });
+  }
+
+  it("draft → unlisted mints token and slugs when absent", () => {
+    expect(
+      planVisibilityTransition(
+        "draft",
+        "unlisted",
+        withSlug(null),
+        authorNoSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: true,
+        clearShareToken: false,
+        mintProgramSlug: true,
+        mintAuthorSlug: true,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("draft → public mints slugs but not token", () => {
+    expect(
+      planVisibilityTransition("draft", "public", withSlug(null), authorNoSlug),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: false,
+        mintProgramSlug: true,
+        mintAuthorSlug: true,
+        profileBecomesPublic: true,
+      },
+    });
+  });
+
+  it("unlisted → public keeps token and slugs", () => {
+    expect(
+      planVisibilityTransition(
+        "unlisted",
+        "public",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: false,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: true,
+      },
+    });
+  });
+
+  it("public → unlisted mints fresh token, retains slugs", () => {
+    expect(
+      planVisibilityTransition(
+        "public",
+        "unlisted",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: true,
+        clearShareToken: false,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("public → draft clears token, retains slugs", () => {
+    expect(
+      planVisibilityTransition(
+        "public",
+        "draft",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: true,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("unlisted → draft clears token", () => {
+    expect(
+      planVisibilityTransition(
+        "unlisted",
+        "draft",
+        withSlug("ppl"),
+        authorWithSlug,
+      ),
+    ).toEqual({
+      ok: true,
+      effects: {
+        mintShareToken: false,
+        clearShareToken: true,
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+        profileBecomesPublic: false,
+      },
+    });
+  });
+
+  it("skips slug mint effects when slugs already set", () => {
+    expect(
+      planVisibilityTransition(
+        "draft",
+        "unlisted",
+        withSlug("prog"),
+        authorWithSlug,
+      ),
+    ).toMatchObject({
+      ok: true,
+      effects: {
+        mintProgramSlug: false,
+        mintAuthorSlug: false,
+      },
+    });
+  });
+});
+
+describe("suggestProgramSlug", () => {
+  it("returns base slug when free", () => {
+    expect(suggestProgramSlug("Upper Lower Split", [])).toBe(
+      "upper-lower-split",
+    );
+  });
+
+  it("suffixes on collision within 40 chars", () => {
+    expect(suggestProgramSlug("PPL", ["ppl"])).toBe("ppl-2");
+    expect(suggestProgramSlug("PPL", ["ppl", "ppl-2"])).toBe("ppl-3");
+  });
+
+  it("clamps long titles before suffixing", () => {
+    const longTitle = "a".repeat(50);
+    const slug = suggestProgramSlug(longTitle, []);
+    expect(slug.length).toBeLessThanOrEqual(40);
+    expect(slug).toBe("a".repeat(40));
+  });
+
+  it("returns empty when title cannot produce a slug", () => {
+    expect(suggestProgramSlug("!!!", [])).toBe("");
+  });
+});
+
+describe("suggestAuthorSlug", () => {
+  it("returns base slug when free", () => {
+    expect(suggestAuthorSlug("alex", [])).toBe("alex");
+  });
+
+  it("suffixes on collision within 40 chars", () => {
+    expect(suggestAuthorSlug("alex", ["alex"])).toBe("alex-2");
+    expect(suggestAuthorSlug("alex", ["alex", "alex-2"])).toBe("alex-3");
+  });
+
+  it("clamps long base before suffixing", () => {
+    const longBase = "a".repeat(40);
+    const slug = suggestAuthorSlug(longBase, ["a".repeat(40)]);
+    expect(slug).toBe(`${"a".repeat(38)}-2`);
+    expect(slug?.length).toBeLessThanOrEqual(40);
+  });
+
+  it("returns null for empty base", () => {
+    expect(suggestAuthorSlug("", [])).toBeNull();
+  });
+
+  it("suffixes two-letter bases", () => {
+    expect(suggestAuthorSlug("jo", [])).toBe("jo-2");
+  });
+
+  it("returns null when all suffix candidates are taken", () => {
+    const taken = ["alex"];
+    for (let n = 2; n <= 99; n++) {
+      taken.push(`alex-${n}`);
+    }
+    expect(suggestAuthorSlug("alex", taken)).toBeNull();
+  });
+});
+
+describe("authorSlugMintBase", () => {
+  it("falls back when slugify yields empty", () => {
+    expect(authorSlugMintBase("Роман")).toBe("author");
+  });
+
+  it("keeps short slugify bases for suffix minting", () => {
+    expect(authorSlugMintBase("Jo").length).toBe(2);
+    expect(suggestAuthorSlug(authorSlugMintBase("Jo"), [])).toMatch(/jo-/);
+  });
+
+  it("strips Latin diacritics before slugify", () => {
+    expect(authorSlugMintBase("José")).toBe("jose");
+  });
+});
+
+describe("mintAuthorSlugForShare", () => {
+  it("mints for short display names via suffix", () => {
+    expect(mintAuthorSlugForShare("Jo", [])).toMatch(/^jo-\d+$/);
+  });
+
+  it("mints for non-Latin names via author fallback", () => {
+    expect(mintAuthorSlugForShare("Роман", [])).toBe("author");
+  });
+});
+
+describe("throwIfSlugUniqueViolation", () => {
+  it("maps slug unique races to SLUG_TAKEN", () => {
+    expect(() =>
+      throwIfSlugUniqueViolation(
+        new Error("UNIQUE constraint failed: user.slug"),
+      ),
+    ).toThrow("SLUG_TAKEN");
+  });
+
+  it("rethrows unrelated errors", () => {
+    expect(() => throwIfSlugUniqueViolation(new Error("other"))).toThrow(
+      "other",
+    );
+  });
+});
+
+describe("resolveAuthorSlugLookup", () => {
+  it("resolves current and quarantined history slugs", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    expect(
+      resolveAuthorSlugLookup(
+        "tara",
+        { userId: "u1", slug: "tara" },
+        null,
+        "tara",
+        now,
+      ),
+    ).toEqual({
+      userId: "u1",
+      currentAuthorSlug: "tara",
+      viaHistory: false,
+    });
+    expect(
+      resolveAuthorSlugLookup(
+        "old-tara",
+        null,
+        { userId: "u1", createdAt: new Date("2026-01-01T00:00:00Z") },
+        "tara",
+        now,
+      ),
+    ).toEqual({
+      userId: "u1",
+      currentAuthorSlug: "tara",
+      viaHistory: true,
+    });
+  });
+});
+
+describe("planAuthorProfileSave", () => {
+  it("blocks rename during cooldown", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    const lastRename = new Date("2026-05-01T00:00:00Z");
+    const result = planAuthorProfileSave(
+      {
+        userId: "u1",
+        displayName: "Tara",
+        authorSlug: "tara",
+        bio: null,
+      },
+      { displayName: "Tara", authorSlug: "tara-lifts", bio: null },
+      ["tara"],
+      [],
+      lastRename,
+      now,
+    );
+    expect(result).toEqual({ ok: false, code: "INVALID_TRANSITION" });
+    expect(authorSlugRenameAllowedAt(lastRename)?.toISOString()).toBe(
+      "2026-07-30T00:00:00.000Z",
+    );
+  });
+
+  it("writes rename plan when slug changes and cooldown elapsed", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    const result = planAuthorProfileSave(
+      {
+        userId: "u1",
+        displayName: "Tara",
+        authorSlug: "tara",
+        bio: null,
+      },
+      { displayName: "Tara", authorSlug: "tara-lifts", bio: "Coach" },
+      ["tara"],
+      [],
+      new Date("2026-01-01T00:00:00Z"),
+      now,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      rename: { fromSlug: "tara", toSlug: "tara-lifts" },
+    });
+  });
+});
+
+describe("planProgramSlugRename", () => {
+  const now = new Date("2026-06-01T00:00:00Z");
+
+  it("rejects rename before first share", () => {
+    expect(planProgramSlugRename(null, "new-slug", [], [], false, now)).toEqual(
+      { ok: false, code: "INVALID_TRANSITION" },
+    );
+  });
+
+  it("allows no-op when slug unchanged", () => {
+    expect(planProgramSlugRename("ppl", "ppl", [], [], false, now)).toEqual({
+      ok: true,
+      rename: null,
+    });
+  });
+
+  it("plans rename when slug is free", () => {
+    expect(
+      planProgramSlugRename("ppl", "push-pull-legs", ["upper"], [], false, now),
+    ).toEqual({
+      ok: true,
+      rename: {
+        fromSlug: "ppl",
+        toSlug: "push-pull-legs",
+        reclaimingOwnHistorySlug: false,
+      },
+    });
+  });
+});
+
+describe("programSlugHistoryRowsToKeep", () => {
+  it("keeps the three newest rows", () => {
+    const keep = programSlugHistoryRowsToKeep([
+      { fromSlug: "a", createdAt: new Date("2026-01-01") },
+      { fromSlug: "b", createdAt: new Date("2026-02-01") },
+      { fromSlug: "c", createdAt: new Date("2026-03-01") },
+      { fromSlug: "d", createdAt: new Date("2026-04-01") },
+    ]);
+    expect(keep).toEqual(new Set(["b", "c", "d"]));
+  });
+});
+
+describe("resolveProgramRedirect", () => {
+  const author = {
+    userId: "u1",
+    currentAuthorSlug: "tara",
+    viaHistory: true,
+  };
+  const publicProgram = {
+    id: "p1",
+    userId: "u1",
+    slug: "hypertrophy",
+    visibility: "public" as const,
+    hiddenAt: null,
+    deletedAt: null,
+  };
+
+  it("flattens stale author and program slugs with token preserved", () => {
+    const result = resolveProgramRedirect(
+      "old-tara",
+      "old-program",
+      author,
+      null,
+      publicProgram,
+      "share-token-abc",
+      false,
+    );
+    expect(result).toEqual({
+      kind: "redirect",
+      path: "/u/tara/hypertrophy/share-token-abc",
+      search: {},
+    });
+  });
+
+  it("does not redirect hidden programs", () => {
+    const result = resolveProgramRedirect(
+      "old-tara",
+      "old-program",
+      author,
+      null,
+      {
+        ...publicProgram,
+        visibility: "draft",
+      },
+      null,
+      false,
+    );
+    expect(result).toEqual({ kind: "not_found" });
+  });
+
+  it("skips redirect for id permalinks", () => {
+    expect(
+      resolveProgramRedirect(
+        "old-tara",
+        "p1",
+        author,
+        publicProgram,
+        null,
+        null,
+        true,
+      ).kind,
+    ).toBe("none");
+  });
+});
+
+describe("resolveAuthorProfileRedirect", () => {
+  it("returns current profile path for history hits", () => {
+    expect(
+      resolveAuthorProfileRedirect("old", {
+        userId: "u1",
+        currentAuthorSlug: "new",
+        viaHistory: true,
+      }),
+    ).toBe("/u/new");
+  });
+});
+
+describe("assertSlugAvailable", () => {
+  it("throws SLUG_TAKEN for current slugs", () => {
+    expect(() => assertSlugAvailable("taken", ["taken"], [])).toThrow(
+      "SLUG_TAKEN",
+    );
+  });
+
+  it("throws SLUG_TAKEN for quarantined history", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    const createdAt = new Date("2026-01-01T00:00:00Z");
+    expect(() =>
+      assertSlugAvailable("old", [], [{ slug: "old", createdAt }], now),
+    ).toThrow("SLUG_TAKEN");
+  });
+
+  it("allows expired history slugs", () => {
+    const now = new Date("2028-01-02T00:00:00Z");
+    const createdAt = new Date("2026-01-01T00:00:00Z");
+    expect(() =>
+      assertSlugAvailable("old", [], [{ slug: "old", createdAt }], now),
+    ).not.toThrow();
+    expect(isSlugHistoryReserved(createdAt, now)).toBe(false);
+  });
+});
+
+describe("customExerciseInputSchema", () => {
+  it("parses a valid custom exercise", () => {
+    const parsed = customExerciseInputSchema.parse({
+      name: "Paused squat",
+      aliases: ["tempo squat"],
+      musclePrimary: "quads",
+      muscleSecondary: ["glutes"],
+      equipment: "barbell",
+      formNote: "Pause at the bottom",
+    });
+    expect(parsed.name).toBe("Paused squat");
+    expect(parsed.aliases).toHaveLength(1);
+  });
+
+  it("rejects too many aliases", () => {
+    const result = customExerciseInputSchema.safeParse({
+      name: "x",
+      aliases: Array.from({ length: 9 }, (_, i) => `a${i}`),
+      musclePrimary: "quads",
+      muscleSecondary: [],
+      equipment: "barbell",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("resolvePublicProgramView", () => {
+  const live = {
+    deletedAt: null as Date | null,
+    hiddenAt: null as Date | null,
+    visibility: "public" as const,
+  };
+
+  it("returns removed_by_author when deleted", () => {
+    expect(
+      resolvePublicProgramView(
+        { ...live, deletedAt: new Date() },
+        "public-only",
+      ).kind,
+    ).toBe("removed_by_author");
+  });
+
+  it("returns unavailable when hidden", () => {
+    expect(
+      resolvePublicProgramView({ ...live, hiddenAt: new Date() }, "token").kind,
+    ).toBe("unavailable");
+  });
+
+  it("allows unlisted via token mode", () => {
+    expect(
+      resolvePublicProgramView({ ...live, visibility: "unlisted" }, "token")
+        .kind,
+    ).toBe("ok");
+  });
+
+  it("rejects draft on public-only paths", () => {
+    expect(
+      resolvePublicProgramView({ ...live, visibility: "draft" }, "public-only")
+        .kind,
+    ).toBe("not_found");
+  });
+
+  it("returns not_found for deleted unlisted on public-only paths", () => {
+    expect(
+      resolvePublicProgramView(
+        {
+          ...live,
+          visibility: "unlisted",
+          deletedAt: new Date(),
+        },
+        "public-only",
+      ).kind,
+    ).toBe("not_found");
+  });
+
+  it("still shows removed for deleted public programs on public-only paths", () => {
+    expect(
+      resolvePublicProgramView(
+        { ...live, deletedAt: new Date() },
+        "public-only",
+      ).kind,
+    ).toBe("removed_by_author");
+  });
+});
+
+describe("publicProgramRemovalVariant", () => {
+  const gone = {
+    visibility: "unlisted" as const,
+    deletedAt: new Date(),
+    hiddenAt: null,
+  };
+
+  it("returns null for non-public programs without a matching token", () => {
+    expect(publicProgramRemovalVariant(gone)).toBeNull();
+    expect(
+      publicProgramRemovalVariant(gone, { tokenMatches: false }),
+    ).toBeNull();
+  });
+
+  it("serves a deleted or hidden unlisted program to its token holder", () => {
+    expect(publicProgramRemovalVariant(gone, { tokenMatches: true })).toBe(
+      "author",
+    );
+    expect(
+      publicProgramRemovalVariant(
+        { ...gone, deletedAt: null, hiddenAt: new Date() },
+        { tokenMatches: true },
+      ),
+    ).toBe("moderation");
+  });
+
+  it("never serves a draft, even with a token", () => {
+    expect(
+      publicProgramRemovalVariant(
+        { ...gone, visibility: "draft" },
+        { tokenMatches: true },
+      ),
+    ).toBeNull();
+  });
+
+  it("serves public programs without a token and ignores live ones", () => {
+    expect(publicProgramRemovalVariant({ ...gone, visibility: "public" })).toBe(
+      "author",
+    );
+    expect(
+      publicProgramRemovalVariant(
+        { ...gone, deletedAt: null },
+        { tokenMatches: true },
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("assertProgramWeeksCoversSessions", () => {
+  it("rejects weeks below existing session weeks", () => {
+    expect(() => assertProgramWeeksCoversSessions(4, 12)).toThrow(
+      "INVALID_ENTRY",
+    );
+  });
+});
+
+describe("assertAnonymousReportRateAllowed", () => {
+  it("rejects at the daily cap", () => {
+    expect(() =>
+      assertAnonymousReportRateAllowed(ANONYMOUS_REPORTS_PER_IP_PER_DAY),
+    ).toThrow("REPORT_RATE_LIMITED");
+  });
+});
+
+describe("planForkSessionCopies", () => {
+  it("keeps foreign custom exercise ids on entries", () => {
+    const plans = planForkSessionCopies(
+      [
+        {
+          id: "s1",
+          weekNumber: 1,
+          orderIndex: 0,
+          title: "Day A",
+          notes: null,
+          entries: [
+            {
+              orderIndex: 0,
+              exerciseId: "foreign-custom",
+              groupTag: null,
+              sets: 3,
+              repsType: "count",
+              repsValue: 10,
+              loadType: "kg",
+              loadValue: 60,
+              intensityType: "none",
+              intensityValue: null,
+              restSeconds: 90,
+              cues: null,
+              refUrl: null,
+            },
+          ],
+        },
+      ],
+      () => "new-id",
+    );
+    expect(plans[0]?.entries[0]?.exerciseId).toBe("foreign-custom");
+    expect(plans[0]?.newSessionId).toBe("new-id");
+  });
+
+  it("fork entry payloads round-trip through entrySchema", () => {
+    const plans = planForkSessionCopies(
+      [
+        {
+          id: "s1",
+          weekNumber: 1,
+          orderIndex: 0,
+          title: "Day A",
+          notes: null,
+          entries: [
+            {
+              orderIndex: 0,
+              exerciseId: "ex-1",
+              groupTag: null,
+              sets: 3,
+              repsType: "count",
+              repsValue: 8,
+              loadType: "kg",
+              loadValue: 80,
+              intensityType: "rpe",
+              intensityValue: 8,
+              restSeconds: 120,
+              cues: "3-1-1",
+              refUrl: null,
+            },
+          ],
+        },
+      ],
+      () => "new-id",
+    );
+    const entry = plans[0]?.entries[0];
+    expect(entry).toBeDefined();
+    const parsed = forkEntryPayloadFromPlan(entry!);
+    expect(entrySchema.parse(parsed)).toEqual(parsed);
+    expect(parsed.intensityValue).toBe(8);
+  });
+});
+
+describe("inheritedForeignCustomIdsFromExerciseOwners", () => {
+  it("marks exercises owned by someone other than the program author", () => {
+    const owners = new Map<string, string | null>([
+      ["cat", null],
+      ["mine", "author-1"],
+      ["theirs", "author-2"],
+    ]);
+    const inherited = inheritedForeignCustomIdsFromExerciseOwners(
+      [{ exerciseId: "cat" }, { exerciseId: "mine" }, { exerciseId: "theirs" }],
+      owners,
+      "author-1",
+    );
+    expect([...inherited]).toEqual(["theirs"]);
+  });
+});
+
+describe("assertForkAllowed", () => {
+  const base = {
+    visibility: "public" as const,
+    deletedAt: null as Date | null,
+    hiddenAt: null as Date | null,
+    forkable: true,
+  };
+
+  it("allows public programs without a token", () => {
+    expect(() =>
+      assertForkAllowed(base, { grantedByToken: false }),
+    ).not.toThrow();
+  });
+
+  it("allows unlisted when token grant matches", () => {
+    expect(() =>
+      assertForkAllowed(
+        { ...base, visibility: "unlisted" },
+        { grantedByToken: true },
+      ),
+    ).not.toThrow();
+  });
+
+  it("rejects non-forkable programs", () => {
+    expect(() =>
+      assertForkAllowed(
+        { ...base, forkable: false },
+        { grantedByToken: false },
+      ),
+    ).toThrow("INVALID_TRANSITION");
+  });
+});
+
+describe("buildForkSourceLabel", () => {
+  it("joins author and title with a middle dot", () => {
+    expect(buildForkSourceLabel("Tara", "Hypertrophy Base")).toBe(
+      "Tara · Hypertrophy Base",
+    );
+  });
+});
+
+describe("isProfileReportable", () => {
+  it("allows published, visible profiles only", () => {
+    expect(
+      isProfileReportable({
+        profilePublishedAt: new Date(),
+        profileHiddenAt: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects unlisted-only and hidden authors the same way for reporting", () => {
+    expect(
+      isProfileReportable({
+        profilePublishedAt: null,
+        profileHiddenAt: null,
+      }),
+    ).toBe(false);
+    expect(
+      isProfileReportable({
+        profilePublishedAt: new Date(),
+        profileHiddenAt: new Date(),
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("resolveEntryIds", () => {
+  const mint = () => {
+    let n = 0;
+    return () => `new-${++n}`;
+  };
+
+  it("keeps free client ids and mints ids for missing ones", () => {
+    expect(resolveEntryIds(["a", undefined, "b"], new Set(), mint())).toEqual([
+      "a",
+      "new-1",
+      "b",
+    ]);
+  });
+
+  it("does not reuse an id held by another session's entry", () => {
+    expect(resolveEntryIds(["a", "b"], new Set(["a"]), mint())).toEqual([
+      "new-1",
+      "b",
+    ]);
+  });
+
+  it("mints a fresh id for a duplicate within one payload", () => {
+    expect(resolveEntryIds(["a", "a"], new Set(), mint())).toEqual([
+      "a",
+      "new-1",
+    ]);
+  });
+});
+
+describe("suggestPublicPrograms", () => {
+  const row = (
+    id: string,
+    over: Partial<{
+      visibility: "draft" | "unlisted" | "public";
+      deletedAt: Date | null;
+      hiddenAt: Date | null;
+      slug: string | null;
+    }> = {},
+    day = 1,
+  ) => ({
+    id,
+    title: id,
+    description: null,
+    goal: "general" as const,
+    level: "beginner" as const,
+    daysPerWeek: 3,
+    weeks: 4,
+    visibility: "public" as const,
+    deletedAt: null,
+    hiddenAt: null,
+    slug: id,
+    updatedAt: new Date(2026, 0, day),
+    ...over,
+  });
+
+  it("returns only public, live programs, newest first, capped", () => {
+    const rows = [
+      row("old", {}, 1),
+      row("draft", { visibility: "draft" }, 9),
+      row("gone", { deletedAt: new Date() }, 9),
+      row("hidden", { hiddenAt: new Date() }, 9),
+      row("unlisted", { visibility: "unlisted" }, 9),
+      row("b", {}, 3),
+      row("c", {}, 4),
+      row("d", {}, 5),
+    ];
+    expect(suggestPublicPrograms(rows, 3).map((r) => r.id)).toEqual([
+      "d",
+      "c",
+      "b",
+    ]);
+  });
+
+  it("is empty when nothing is public", () => {
+    expect(suggestPublicPrograms([row("x", { visibility: "draft" })])).toEqual(
+      [],
+    );
+  });
+});

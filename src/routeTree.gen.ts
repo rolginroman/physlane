@@ -19,6 +19,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TrackingRouteImport } from './routes/tracking'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
@@ -31,11 +32,19 @@ import { Route as AuthOnboardingRouteImport } from './routes/_auth.onboarding'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as UAuthorSlugRouteImport } from './routes/u.$authorSlug'
 import { Route as DotwellKnownOauthProtectedResourceSplatRouteImport } from './routes/[.]well-known.oauth-protected-resource.$'
+import { Route as AuthProgramsIndexRouteImport } from './routes/_auth.programs.index'
+import { Route as AuthProgramsProgramIdRouteImport } from './routes/_auth.programs.$programId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api.stripe.webhook'
 import { Route as ApiTelegramRemindRouteImport } from './routes/api.telegram.remind'
 import { Route as ApiTelegramWebhookRouteImport } from './routes/api.telegram.webhook'
+import { Route as UAuthorSlugIndexRouteImport } from './routes/u.$authorSlug.index'
+import { Route as UAuthorSlugProgramRefRouteImport } from './routes/u.$authorSlug.$programRef'
+import { Route as UAuthorSlugProgramRefIndexRouteImport } from './routes/u.$authorSlug.$programRef.index'
+import { Route as UAuthorSlugProgramRefShareTokenRouteImport } from './routes/u.$authorSlug.$programRef.$shareToken'
+import { Route as UAuthorSlugPProgramIdRouteImport } from './routes/u.$authorSlug.p.$programId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -84,6 +93,11 @@ const SignInRoute = SignInRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -148,12 +162,27 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UAuthorSlugRoute = UAuthorSlugRouteImport.update({
+  id: '/u/$authorSlug',
+  path: '/u/$authorSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DotwellKnownOauthProtectedResourceSplatRoute =
   DotwellKnownOauthProtectedResourceSplatRouteImport.update({
     id: '/$',
     path: '/$',
     getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
   } as any)
+const AuthProgramsIndexRoute = AuthProgramsIndexRouteImport.update({
+  id: '/programs/',
+  path: '/programs/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthProgramsProgramIdRoute = AuthProgramsProgramIdRouteImport.update({
+  id: '/programs/$programId',
+  path: '/programs/$programId',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -174,6 +203,33 @@ const ApiTelegramWebhookRoute = ApiTelegramWebhookRouteImport.update({
   path: '/api/telegram/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UAuthorSlugIndexRoute = UAuthorSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UAuthorSlugRoute,
+} as any)
+const UAuthorSlugProgramRefRoute = UAuthorSlugProgramRefRouteImport.update({
+  id: '/$programRef',
+  path: '/$programRef',
+  getParentRoute: () => UAuthorSlugRoute,
+} as any)
+const UAuthorSlugProgramRefIndexRoute =
+  UAuthorSlugProgramRefIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => UAuthorSlugProgramRefRoute,
+  } as any)
+const UAuthorSlugProgramRefShareTokenRoute =
+  UAuthorSlugProgramRefShareTokenRouteImport.update({
+    id: '/$shareToken',
+    path: '/$shareToken',
+    getParentRoute: () => UAuthorSlugProgramRefRoute,
+  } as any)
+const UAuthorSlugPProgramIdRoute = UAuthorSlugPProgramIdRouteImport.update({
+  id: '/p/$programId',
+  path: '/p/$programId',
+  getParentRoute: () => UAuthorSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -185,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/tracking': typeof TrackingRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
@@ -196,12 +253,20 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/share/$token': typeof ShareTokenRoute
+  '/u/$authorSlug': typeof UAuthorSlugRouteWithChildren
   '/blog/': typeof BlogIndexRoute
   '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
+  '/programs/$programId': typeof AuthProgramsProgramIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
+  '/u/$authorSlug/$programRef': typeof UAuthorSlugProgramRefRouteWithChildren
+  '/programs/': typeof AuthProgramsIndexRoute
+  '/u/$authorSlug/': typeof UAuthorSlugIndexRoute
+  '/u/$authorSlug/$programRef/$shareToken': typeof UAuthorSlugProgramRefShareTokenRoute
+  '/u/$authorSlug/p/$programId': typeof UAuthorSlugPProgramIdRoute
+  '/u/$authorSlug/$programRef/': typeof UAuthorSlugProgramRefIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -213,6 +278,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/tracking': typeof TrackingRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
@@ -226,10 +292,16 @@ export interface FileRoutesByTo {
   '/share/$token': typeof ShareTokenRoute
   '/blog': typeof BlogIndexRoute
   '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
+  '/programs/$programId': typeof AuthProgramsProgramIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
+  '/programs': typeof AuthProgramsIndexRoute
+  '/u/$authorSlug': typeof UAuthorSlugIndexRoute
+  '/u/$authorSlug/$programRef/$shareToken': typeof UAuthorSlugProgramRefShareTokenRoute
+  '/u/$authorSlug/p/$programId': typeof UAuthorSlugPProgramIdRoute
+  '/u/$authorSlug/$programRef': typeof UAuthorSlugProgramRefIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -243,6 +315,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/tracking': typeof TrackingRoute
   '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
@@ -254,12 +327,20 @@ export interface FileRoutesById {
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/share/$token': typeof ShareTokenRoute
+  '/u/$authorSlug': typeof UAuthorSlugRouteWithChildren
   '/blog/': typeof BlogIndexRoute
   '/.well-known/oauth-protected-resource/$': typeof DotwellKnownOauthProtectedResourceSplatRoute
+  '/_auth/programs/$programId': typeof AuthProgramsProgramIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/telegram/remind': typeof ApiTelegramRemindRoute
   '/api/telegram/webhook': typeof ApiTelegramWebhookRoute
+  '/u/$authorSlug/$programRef': typeof UAuthorSlugProgramRefRouteWithChildren
+  '/_auth/programs/': typeof AuthProgramsIndexRoute
+  '/u/$authorSlug/': typeof UAuthorSlugIndexRoute
+  '/u/$authorSlug/$programRef/$shareToken': typeof UAuthorSlugProgramRefShareTokenRoute
+  '/u/$authorSlug/p/$programId': typeof UAuthorSlugPProgramIdRoute
+  '/u/$authorSlug/$programRef/': typeof UAuthorSlugProgramRefIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -273,6 +354,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/terms'
     | '/tracking'
     | '/.well-known/oauth-authorization-server'
@@ -284,12 +366,20 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/blog/$slug'
     | '/share/$token'
+    | '/u/$authorSlug'
     | '/blog/'
     | '/.well-known/oauth-protected-resource/$'
+    | '/programs/$programId'
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/api/telegram/remind'
     | '/api/telegram/webhook'
+    | '/u/$authorSlug/$programRef'
+    | '/programs/'
+    | '/u/$authorSlug/'
+    | '/u/$authorSlug/$programRef/$shareToken'
+    | '/u/$authorSlug/p/$programId'
+    | '/u/$authorSlug/$programRef/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -301,6 +391,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/terms'
     | '/tracking'
     | '/.well-known/oauth-authorization-server'
@@ -314,10 +405,16 @@ export interface FileRouteTypes {
     | '/share/$token'
     | '/blog'
     | '/.well-known/oauth-protected-resource/$'
+    | '/programs/$programId'
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/api/telegram/remind'
     | '/api/telegram/webhook'
+    | '/programs'
+    | '/u/$authorSlug'
+    | '/u/$authorSlug/$programRef/$shareToken'
+    | '/u/$authorSlug/p/$programId'
+    | '/u/$authorSlug/$programRef'
   id:
     | '__root__'
     | '/'
@@ -330,6 +427,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/sign-in'
     | '/sign-up'
+    | '/sitemap.xml'
     | '/terms'
     | '/tracking'
     | '/.well-known/oauth-authorization-server'
@@ -341,12 +439,20 @@ export interface FileRouteTypes {
     | '/_auth/onboarding'
     | '/blog/$slug'
     | '/share/$token'
+    | '/u/$authorSlug'
     | '/blog/'
     | '/.well-known/oauth-protected-resource/$'
+    | '/_auth/programs/$programId'
     | '/api/auth/$'
     | '/api/stripe/webhook'
     | '/api/telegram/remind'
     | '/api/telegram/webhook'
+    | '/u/$authorSlug/$programRef'
+    | '/_auth/programs/'
+    | '/u/$authorSlug/'
+    | '/u/$authorSlug/$programRef/$shareToken'
+    | '/u/$authorSlug/p/$programId'
+    | '/u/$authorSlug/$programRef/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -360,12 +466,14 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   TrackingRoute: typeof TrackingRoute
   DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
   DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   BlogSlugRoute: typeof BlogSlugRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  UAuthorSlugRoute: typeof UAuthorSlugRouteWithChildren
   BlogIndexRoute: typeof BlogIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
@@ -443,6 +551,13 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -529,12 +644,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$authorSlug': {
+      id: '/u/$authorSlug'
+      path: '/u/$authorSlug'
+      fullPath: '/u/$authorSlug'
+      preLoaderRoute: typeof UAuthorSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/.well-known/oauth-protected-resource/$': {
       id: '/.well-known/oauth-protected-resource/$'
       path: '/$'
       fullPath: '/.well-known/oauth-protected-resource/$'
       preLoaderRoute: typeof DotwellKnownOauthProtectedResourceSplatRouteImport
       parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
+    }
+    '/_auth/programs/': {
+      id: '/_auth/programs/'
+      path: '/programs'
+      fullPath: '/programs/'
+      preLoaderRoute: typeof AuthProgramsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/programs/$programId': {
+      id: '/_auth/programs/$programId'
+      path: '/programs/$programId'
+      fullPath: '/programs/$programId'
+      preLoaderRoute: typeof AuthProgramsProgramIdRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -564,6 +700,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTelegramWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$authorSlug/': {
+      id: '/u/$authorSlug/'
+      path: '/'
+      fullPath: '/u/$authorSlug/'
+      preLoaderRoute: typeof UAuthorSlugIndexRouteImport
+      parentRoute: typeof UAuthorSlugRoute
+    }
+    '/u/$authorSlug/$programRef': {
+      id: '/u/$authorSlug/$programRef'
+      path: '/$programRef'
+      fullPath: '/u/$authorSlug/$programRef'
+      preLoaderRoute: typeof UAuthorSlugProgramRefRouteImport
+      parentRoute: typeof UAuthorSlugRoute
+    }
+    '/u/$authorSlug/$programRef/': {
+      id: '/u/$authorSlug/$programRef/'
+      path: '/'
+      fullPath: '/u/$authorSlug/$programRef/'
+      preLoaderRoute: typeof UAuthorSlugProgramRefIndexRouteImport
+      parentRoute: typeof UAuthorSlugProgramRefRoute
+    }
+    '/u/$authorSlug/$programRef/$shareToken': {
+      id: '/u/$authorSlug/$programRef/$shareToken'
+      path: '/$shareToken'
+      fullPath: '/u/$authorSlug/$programRef/$shareToken'
+      preLoaderRoute: typeof UAuthorSlugProgramRefShareTokenRouteImport
+      parentRoute: typeof UAuthorSlugProgramRefRoute
+    }
+    '/u/$authorSlug/p/$programId': {
+      id: '/u/$authorSlug/p/$programId'
+      path: '/p/$programId'
+      fullPath: '/u/$authorSlug/p/$programId'
+      preLoaderRoute: typeof UAuthorSlugPProgramIdRouteImport
+      parentRoute: typeof UAuthorSlugRoute
+    }
   }
 }
 
@@ -573,6 +744,8 @@ interface AuthRouteChildren {
   AuthDashboardRoute: typeof AuthDashboardRoute
   AuthIntakeRoute: typeof AuthIntakeRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
+  AuthProgramsProgramIdRoute: typeof AuthProgramsProgramIdRoute
+  AuthProgramsIndexRoute: typeof AuthProgramsIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -581,6 +754,8 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthDashboardRoute: AuthDashboardRoute,
   AuthIntakeRoute: AuthIntakeRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
+  AuthProgramsProgramIdRoute: AuthProgramsProgramIdRoute,
+  AuthProgramsIndexRoute: AuthProgramsIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -600,6 +775,37 @@ const DotwellKnownOauthProtectedResourceRouteWithChildren =
     DotwellKnownOauthProtectedResourceRouteChildren,
   )
 
+interface UAuthorSlugProgramRefRouteChildren {
+  UAuthorSlugProgramRefShareTokenRoute: typeof UAuthorSlugProgramRefShareTokenRoute
+  UAuthorSlugProgramRefIndexRoute: typeof UAuthorSlugProgramRefIndexRoute
+}
+
+const UAuthorSlugProgramRefRouteChildren: UAuthorSlugProgramRefRouteChildren = {
+  UAuthorSlugProgramRefShareTokenRoute: UAuthorSlugProgramRefShareTokenRoute,
+  UAuthorSlugProgramRefIndexRoute: UAuthorSlugProgramRefIndexRoute,
+}
+
+const UAuthorSlugProgramRefRouteWithChildren =
+  UAuthorSlugProgramRefRoute._addFileChildren(
+    UAuthorSlugProgramRefRouteChildren,
+  )
+
+interface UAuthorSlugRouteChildren {
+  UAuthorSlugProgramRefRoute: typeof UAuthorSlugProgramRefRouteWithChildren
+  UAuthorSlugIndexRoute: typeof UAuthorSlugIndexRoute
+  UAuthorSlugPProgramIdRoute: typeof UAuthorSlugPProgramIdRoute
+}
+
+const UAuthorSlugRouteChildren: UAuthorSlugRouteChildren = {
+  UAuthorSlugProgramRefRoute: UAuthorSlugProgramRefRouteWithChildren,
+  UAuthorSlugIndexRoute: UAuthorSlugIndexRoute,
+  UAuthorSlugPProgramIdRoute: UAuthorSlugPProgramIdRoute,
+}
+
+const UAuthorSlugRouteWithChildren = UAuthorSlugRoute._addFileChildren(
+  UAuthorSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
@@ -611,6 +817,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   TrackingRoute: TrackingRoute,
   DotwellKnownOauthAuthorizationServerRoute:
@@ -619,6 +826,7 @@ const rootRouteChildren: RootRouteChildren = {
     DotwellKnownOauthProtectedResourceRouteWithChildren,
   BlogSlugRoute: BlogSlugRoute,
   ShareTokenRoute: ShareTokenRoute,
+  UAuthorSlugRoute: UAuthorSlugRouteWithChildren,
   BlogIndexRoute: BlogIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,

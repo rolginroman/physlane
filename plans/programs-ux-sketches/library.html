@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>library — physlane programs sketch</title>
+<style>
+/* ---- Fonts: self-hosted repo copies (no CDN). Serve repo root over HTTP. ---- */
+@font-face {
+  font-family: "Instrument Serif";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../public/fonts/instrument-serif-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../../public/fonts/inter-latin-var.woff2") format("woff2");
+}
+
+/* ---- Tokens: DESIGN.md v2 values under shadcn-canonical names (mirrors src/styles.css) ---- */
+:root {
+  --background: #f7f4ee;
+  --card: #fffefc;
+  --muted: #eeeae2;
+  --popover: #ffffff;
+  --foreground: #171717;
+  --text-secondary: #62615e;
+  --muted-foreground: #6b6964; /* Appendix A adjustment */
+  --border: #e3ded5;
+  --primary: #d92f28;
+  --primary-foreground: #fffefc;
+  --brand-hover: #b92520;
+  --brand-soft: #f5dcd7;
+  --brand-text: #b92520; /* small red text, Appendix A */
+  --destructive: #b92520;
+  --chart-grid: #e7e2d9;
+  --chart-neutral: #777773;
+  --data-positive: #426c56;
+  --ring: #345b9a;
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --radius: 12px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #101112;
+  --card: #171819;
+  --muted: #1e2021;
+  --popover: #242526;
+  --foreground: #f4f1ea;
+  --text-secondary: #b6b3ad;
+  --muted-foreground: #8d8a84;
+  --border: #343332;
+  --primary: #e63a33;
+  --primary-foreground: #101112; /* Appendix A: dark primary label = background */
+  --brand-hover: #f04a42;
+  --brand-soft: #482321;
+  --brand-text: #e63a33;
+  --destructive: #f04a42;
+  --chart-grid: #343332;
+  --chart-neutral: #aaa79f;
+  --data-positive: #8db69a;
+  --ring: #a8c7ff;
+}
+
+/* ---- Sketch canvas (presentation chrome, not product UI) ---- */
+* { box-sizing: border-box; }
+html { background: var(--muted); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--muted);
+  -webkit-font-smoothing: antialiased;
+}
+.sk-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding: 12px 24px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+.sk-bar h1 { margin: 0; font: 400 26px/1.1 var(--font-display); }
+.sk-bar .sk-meta { font-size: 13px; color: var(--muted-foreground); }
+.sk-bar .sk-spacer { flex: 1; }
+.sk-intro { max-width: 880px; padding: 24px 24px 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.sk-intro p { margin: 0 0 8px; }
+.sk-group { padding: 24px 24px 8px; }
+.sk-group > h2 { margin: 0 0 4px; font: 600 15px/1.3 var(--font-sans); }
+.sk-group > p.sk-note { margin: 0 0 16px; max-width: 880px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.sk-row { display: flex; gap: 24px; align-items: flex-start; overflow-x: auto; padding-bottom: 16px; }
+.sk-frame { margin: 0; flex: none; }
+.sk-frame > figcaption {
+  margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted-foreground);
+}
+.sk-frame > figcaption span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.sk-note-inline {
+  margin: 8px 0 0; max-width: 390px; font-size: 12px; line-height: 1.45;
+  color: var(--muted-foreground); border-left: 2px dashed var(--border); padding-left: 8px;
+}
+.sk-frame.d .sk-note-inline { max-width: 720px; }
+
+/* ---- Screen container: container queries make one markup serve 390 and 1280 ---- */
+.scr {
+  position: relative;
+  container-type: inline-size;
+  width: 390px;
+  min-height: 720px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sk-frame.d .scr { width: 1280px; min-height: 760px; border-radius: 10px; }
+.scr.short { min-height: 0; }
+.scr.tall { min-height: 1100px; }
+
+/* ---- Type ---- */
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.015em; line-height: 1.08; text-wrap: balance; margin: 0; }
+.display-lg { font-size: 36px; }
+.display-md { font-size: 28px; }
+@container (min-width: 1024px) { .display-lg { font-size: 52px; } .display-md { font-size: 34px; } }
+.h-card { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.h-sec { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.body-sm { font-size: 14px; }
+.t-sec { color: var(--text-secondary); }
+.t-muted { color: var(--muted-foreground); }
+.cap { font-size: 13px; color: var(--muted-foreground); }
+.num { font-variant-numeric: tabular-nums; }
+.m0 { margin: 0; }
+p { margin: 0; }
+
+/* ---- Layout helpers ---- */
+.pad { padding: 16px; }
+.px { padding-left: 16px; padding-right: 16px; }
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.wrap { flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.g4 { gap: 4px; } .g8 { gap: 8px; } .g12 { gap: 12px; } .g16 { gap: 16px; } .g24 { gap: 24px; }
+.mt4 { margin-top: 4px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt24 { margin-top: 24px; } .mt32 { margin-top: 32px; }
+.grow { flex: 1; min-width: 0; }
+.only-d { display: none !important; }
+@container (min-width: 1024px) {
+  .only-m { display: none !important; }
+  .only-d { display: revert !important; }
+  .pad, .px { padding-left: 32px; padding-right: 32px; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Icons (sprite in body) ---- */
+.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.i-sm { width: 14px; height: 14px; }
+.i-fill { fill: currentColor; stroke: none; }
+
+/* ---- App header ---- */
+.app-head {
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+.wordmark { font: 400 24px/1 var(--font-display); color: var(--foreground); text-decoration: none; letter-spacing: -0.01em; }
+.app-nav { display: flex; gap: 4px; margin-left: 16px; }
+.app-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; border-radius: var(--radius-sm); }
+.app-nav a[aria-current="page"] { color: var(--foreground); box-shadow: inset 0 -2px 0 var(--primary); border-radius: 0; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--muted); border: 1px solid var(--border); display: inline-grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); flex: none; }
+.avatar-lg { width: 72px; height: 72px; font-size: 26px; }
+@container (min-width: 1024px) { .app-head { padding: 0 32px; height: 64px; } }
+
+/* ---- Buttons (DESIGN §9.1 + src/styles.css .btn-primary) ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--primary); color: var(--primary-foreground);
+  font: 600 14px/1 var(--font-sans); text-decoration: none; cursor: pointer;
+  transition: background 150ms ease-out;
+  white-space: nowrap;
+}
+.btn:hover, .btn.is-hover { background: var(--brand-hover); }
+.btn.is-active { background: var(--brand-hover); transform: translateY(1px); }
+.btn:disabled, .btn.is-disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: transparent; color: var(--foreground); border-color: var(--border); }
+.btn-secondary:hover, .btn-secondary.is-hover { background: var(--muted); }
+.btn-secondary.is-active { background: var(--muted); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover, .btn-ghost.is-hover { background: var(--muted); color: var(--foreground); }
+.btn-danger { background: var(--destructive); color: var(--primary-foreground); }
+.btn-danger:hover { background: var(--destructive); filter: none; }
+.btn-block { width: 100%; }
+.btn-icon { width: 44px; padding: 0; }
+.btn.is-loading { pointer-events: none; }
+.btn.is-loading::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+}
+:focus-visible, .is-focus { outline: 2px solid var(--ring) !important; outline-offset: 2px; }
+.link {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
+  color: var(--brand-text); font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
+  background: none; border: 0; padding: 0; font-size: inherit; font-family: inherit; cursor: pointer;
+}
+.link-quiet { color: var(--text-secondary); text-decoration-color: var(--border); }
+
+/* ---- Chips, badges ---- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); color: var(--text-secondary);
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--text-secondary);
+  font: 500 14px/1 var(--font-sans); white-space: nowrap; cursor: pointer;
+}
+.chip-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--brand-soft); color: var(--foreground); }
+.chip-btn[aria-pressed="true"]::before { content: "\2713"; font-weight: 700; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border: 1px solid; border-radius: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.4; white-space: nowrap;
+}
+.badge-draft { color: var(--muted-foreground); border-color: var(--border); background: var(--muted); }
+.badge-unlisted { color: var(--foreground); border-color: var(--chart-neutral); }
+.badge-public { color: var(--brand-text); border-color: var(--brand-text); }
+.scroll-x { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+
+/* ---- Surfaces ---- */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.divider { border: 0; border-top: 1px solid var(--border); margin: 0; }
+.banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px; font-size: 14px; line-height: 1.45;
+  background: var(--muted); border-bottom: 1px solid var(--border); color: var(--foreground);
+}
+.banner.brand { background: var(--brand-soft); }
+.banner .i { margin-top: 1px; }
+.notice {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); font-size: 14px; line-height: 1.45;
+}
+.notice.danger { border-color: var(--destructive); }
+.notice.danger .i { color: var(--destructive); }
+
+/* ---- Tabs ---- */
+.tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tab {
+  flex: none; min-height: 44px; padding: 0 14px;
+  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  color: var(--text-secondary); font: 500 14px/1 var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--foreground); font-weight: 600; border-bottom-color: var(--primary); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.seg button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--text-secondary); font: 500 14px var(--font-sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+
+/* ---- Forms (mirrors src/styles.css .input/.label/.hint/.field-error) ---- */
+.field { display: flex; flex-direction: column; }
+.label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+.label .opt { font-weight: 400; }
+.input, .select, .textarea {
+  display: block; width: 100%; min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); color: var(--foreground);
+  font: 400 15px/1.4 var(--font-sans);
+}
+.textarea { padding: 10px 12px; min-height: 76px; resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--muted-foreground); }
+.input.is-focus, .select.is-focus { border-color: var(--ring); }
+.input[aria-invalid="true"], .select[aria-invalid="true"] { border-color: var(--destructive); }
+.hint { margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
+.field-error { margin-top: 6px; font-size: 13px; color: var(--destructive); display: flex; gap: 6px; align-items: center; }
+.field-ok { margin-top: 6px; font-size: 13px; color: var(--data-positive); display: flex; gap: 6px; align-items: center; }
+.prefix-input { display: flex; align-items: stretch; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted); overflow: hidden; }
+.prefix-input span { display: inline-flex; align-items: center; padding: 0 0 0 12px; color: var(--muted-foreground); font-size: 15px; white-space: nowrap; }
+.prefix-input input { border: 0; background: none; min-height: 44px; flex: 1; min-width: 0; padding: 0 12px 0 0; font: 400 15px var(--font-sans); color: var(--foreground); }
+.prefix-input.is-invalid { border-color: var(--destructive); }
+.prefix-input.is-ok { border-color: var(--data-positive); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.switch { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; flex: none; border: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+.switch[aria-checked="true"] { background: var(--primary); }
+.switch[aria-checked="true"]::after { left: 21px; }
+
+/* ---- Overlays ---- */
+.scrim { position: absolute; inset: 0; background: color-mix(in srgb, var(--foreground) 50%, transparent); z-index: 10; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 11;
+  max-height: 88%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
+  padding: 8px 16px 24px;
+}
+.sheet .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.dialog {
+  position: absolute; z-index: 11; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(480px, calc(100% - 32px)); max-height: 90%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+}
+.side-panel {
+  position: absolute; z-index: 11; top: 0; right: 0; bottom: 0; width: 440px; overflow: auto;
+  background: var(--popover); border-left: 1px solid var(--border); padding: 24px;
+}
+/* One overlay markup: bottom sheet on mobile, dialog/side panel on desktop */
+@container (min-width: 1024px) {
+  .sheet.as-dialog { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%, -50%); width: 520px; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .sheet.as-panel { left: auto; top: 0; width: 440px; max-height: none; border-radius: 0; border-top: 0; border-left: 1px solid var(--border); padding: 24px; }
+  .sheet.as-dialog .grabber, .sheet.as-panel .grabber { display: none; }
+}
+.toast {
+  position: absolute; z-index: 12; left: 16px; right: 16px; bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  background: var(--foreground); color: var(--background); font-size: 14px;
+}
+@container (min-width: 1024px) { .toast { left: auto; right: 32px; width: 380px; } }
+
+/* ---- Skeleton (static; pulse noted in design-notes §4) ---- */
+.skel { background: var(--muted); border-radius: 6px; }
+.skel-line { height: 12px; }
+.skel-title { height: 30px; border-radius: 8px; }
+
+/* ---- Owner bar ---- */
+.owner-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 16px; min-height: 52px;
+  background: var(--muted); border-bottom: 1px solid var(--border); font-size: 14px;
+}
+@container (min-width: 1024px) { .owner-bar { padding: 8px 32px; } }
+
+/* ---- QR placeholder ---- */
+.qr {
+  width: 120px; height: 120px; flex: none; padding: 8px; border-radius: 6px;
+  background: var(--popover); border: 1px solid var(--border);
+}
+.qr svg { width: 100%; height: 100%; fill: var(--foreground); }
+html[data-theme="dark"] .qr { background: var(--foreground); }
+html[data-theme="dark"] .qr svg { fill: var(--background); }
+.url-box {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted);
+  font-size: 14px; overflow: hidden;
+}
+.url-box code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-sans); color: var(--foreground); }
+.lib-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 24px 16px 16px; }
+@container (min-width: 1024px) { .lib-head { padding: 48px 32px 24px; max-width: 1216px; margin: 0 auto; } }
+.lib { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.lib > li { border-bottom: 1px solid var(--border); padding: 12px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; }
+.lib .title { font-size: 16px; font-weight: 600; color: var(--foreground); text-decoration: none; display: inline-flex; align-items: center; min-height: 32px; }
+.lib .meta { font-size: 13px; color: var(--muted-foreground); grid-column: 1 / -1; }
+.lib .linkrow { grid-column: 1 / -1; margin-top: 4px; }
+.lib .more { grid-row: 1; grid-column: 2; }
+.lib-wrap { max-width: 1216px; margin: 0 auto; }
+@container (min-width: 1024px) {
+  .lib-wrap { padding: 0 32px; }
+  .lib > li { grid-template-columns: minmax(0, 2fr) 120px minmax(0, 2fr) 120px 44px; align-items: center; padding: 12px 0; }
+  .lib .meta, .lib .linkrow { grid-column: auto; margin: 0; }
+  .lib .more { grid-row: auto; grid-column: auto; }
+  .lib .cell-title { display: flex; flex-direction: column; }
+}
+.lib-th { display: none; }
+@container (min-width: 1024px) { .lib-th { display: grid; grid-template-columns: minmax(0, 2fr) 120px minmax(0, 2fr) 120px 44px; padding: 8px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-foreground); } }
+.menu { position: absolute; z-index: 11; right: 16px; width: 220px; background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; }
+.menu button { display: flex; width: 100%; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; background: none; border-radius: 6px; color: var(--foreground); font: 400 14px var(--font-sans); text-align: left; cursor: pointer; }
+.menu button:hover, .menu button.is-hover { background: var(--muted); }
+.menu .danger { color: var(--destructive); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted); }
+.stepper button { width: 44px; height: 44px; border: 0; background: none; color: var(--foreground); font-size: 18px; cursor: pointer; }
+.stepper output { min-width: 40px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.seg.full { display: flex; flex-wrap: wrap; }
+.seg.full button { flex: 1; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-chain" viewBox="0 0 24 24"><path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></symbol>
+</svg>
+<header class="sk-bar">
+  <a class="link link-quiet" href="index.html"><svg class="i i-sm"><use href="#i-chev-l"/></svg>Index</a>
+  <h1>library</h1>
+  <span class="badge badge-public">P0</span>
+  <span class="sk-meta">My programs · <code>/programs</code> (auth) · journeys A7, B1, C3, C5</span>
+  <span class="sk-spacer"></span>
+  <button class="btn btn-secondary" data-toggle-theme>Switch to dark</button>
+</header>
+<div class="sk-intro">
+  <p>One list, sorted by last edited. Every row shows its visibility badge (icon + word, never colour alone). Unlisted rows carry their share link with Copy and Replace; public rows carry the public address; forks carry the plain-text attribution label. Mobile: stacked rows. Desktop: the same list becomes a five-column table.</p>
+</div>
+<section class="sk-group">
+  <h2>1 · Populated + long content (Tara)</h2>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile</figcaption>
+      <div class="scr tall">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="lib-head">
+  <div><h1 class="display display-lg">Programs</h1><p class="cap mt4 num">5 programs</p></div>
+  <button class="btn"><svg class="i"><use href="#i-plus"/></svg>New program</button>
+</div>
+<div class="lib-th"><span>Program</span><span>Visibility</span><span>Address</span><span>Edited</span><span></span></div>
+<ul class="lib">
+  <li>
+    <div class="cell-title"><a class="title" href="#">Hypertrophy Base</a><span class="meta only-d">Hypertrophy · Intermediate · 12 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/hypertrophy-base</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 2 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Hypertrophy Base"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Strength Foundations</a><span class="meta only-d">Strength · Beginner · 8 weeks</span></div>
+    <span><span class="badge badge-unlisted"><svg class="i i-sm"><use href="#i-link"/></svg>Unlisted</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/strength-foundations/x9Lp…</code><button class="btn btn-ghost btn-icon" aria-label="Copy share link"><svg class="i"><use href="#i-copy"/></svg></button><button class="btn btn-ghost btn-icon" aria-label="Replace share link"><svg class="i"><use href="#i-rotate"/></svg></button></div></div>
+    <span class="meta num">Edited 5 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Strength Foundations"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">PPL — client version</a><span class="attrib" style="font-size:13px;color:var(--muted-foreground)">Based on Leo · Push Pull Legs</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited today</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for PPL — client version"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Glute Block 2</a><span class="meta only-d">Hypertrophy · Advanced · 6 weeks</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited 3 weeks ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Glute Block 2"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Fat-loss Circuit</a><span class="meta only-d">Fat loss · Beginner · 4 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/fat-loss-circuit</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 1 month ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Fat-loss Circuit"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+</ul>
+      </div>
+      <p class="sk-note-inline">Rows link to the editor. Drafts show no address row. Truncated token keeps the end hidden — the full link is always what Copy writes.</p>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop <span>· structural divergence: table columns</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="lib-head">
+  <div><h1 class="display display-lg">Programs</h1><p class="cap mt4 num">5 programs</p></div>
+  <button class="btn"><svg class="i"><use href="#i-plus"/></svg>New program</button>
+</div>
+        <div class="lib-wrap">
+<div class="lib-th"><span>Program</span><span>Visibility</span><span>Address</span><span>Edited</span><span></span></div>
+<ul class="lib">
+  <li>
+    <div class="cell-title"><a class="title" href="#">Hypertrophy Base</a><span class="meta only-d">Hypertrophy · Intermediate · 12 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/hypertrophy-base</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 2 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Hypertrophy Base"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Strength Foundations</a><span class="meta only-d">Strength · Beginner · 8 weeks</span></div>
+    <span><span class="badge badge-unlisted"><svg class="i i-sm"><use href="#i-link"/></svg>Unlisted</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/strength-foundations/x9Lp…</code><button class="btn btn-ghost btn-icon" aria-label="Copy share link"><svg class="i"><use href="#i-copy"/></svg></button><button class="btn btn-ghost btn-icon" aria-label="Replace share link"><svg class="i"><use href="#i-rotate"/></svg></button></div></div>
+    <span class="meta num">Edited 5 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Strength Foundations"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">PPL — client version</a><span class="attrib" style="font-size:13px;color:var(--muted-foreground)">Based on Leo · Push Pull Legs</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited today</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for PPL — client version"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Glute Block 2</a><span class="meta only-d">Hypertrophy · Advanced · 6 weeks</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited 3 weeks ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Glute Block 2"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Fat-loss Circuit</a><span class="meta only-d">Fat loss · Beginner · 4 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/fat-loss-circuit</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 1 month ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Fat-loss Circuit"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+</ul>
+</div>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>2 · Row menu · link copied · delete confirm</h2>
+  <p class="sk-note">Row menu holds Share… (opens <a class="link" href="share-dialog.html">share-dialog</a>), Edit, Delete…. Delete is soft (plan) but irreversible from the UI, so it is confirm-gated with the visitor-facing consequence.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Row menu open</figcaption>
+      <div class="scr short" style="min-height:520px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="lib-head">
+  <div><h1 class="display display-lg">Programs</h1><p class="cap mt4 num">5 programs</p></div>
+  <button class="btn"><svg class="i"><use href="#i-plus"/></svg>New program</button>
+</div>
+<div class="lib-th"><span>Program</span><span>Visibility</span><span>Address</span><span>Edited</span><span></span></div>
+<ul class="lib">
+  <li>
+    <div class="cell-title"><a class="title" href="#">Hypertrophy Base</a><span class="meta only-d">Hypertrophy · Intermediate · 12 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/hypertrophy-base</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 2 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Hypertrophy Base"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Strength Foundations</a><span class="meta only-d">Strength · Beginner · 8 weeks</span></div>
+    <span><span class="badge badge-unlisted"><svg class="i i-sm"><use href="#i-link"/></svg>Unlisted</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/strength-foundations/x9Lp…</code><button class="btn btn-ghost btn-icon" aria-label="Copy share link"><svg class="i"><use href="#i-copy"/></svg></button><button class="btn btn-ghost btn-icon" aria-label="Replace share link"><svg class="i"><use href="#i-rotate"/></svg></button></div></div>
+    <span class="meta num">Edited 5 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Strength Foundations"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">PPL — client version</a><span class="attrib" style="font-size:13px;color:var(--muted-foreground)">Based on Leo · Push Pull Legs</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited today</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for PPL — client version"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Glute Block 2</a><span class="meta only-d">Hypertrophy · Advanced · 6 weeks</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited 3 weeks ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Glute Block 2"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Fat-loss Circuit</a><span class="meta only-d">Fat loss · Beginner · 4 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/fat-loss-circuit</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 1 month ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Fat-loss Circuit"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+</ul>
+        <div class="menu" style="top:236px" role="menu">
+          <button role="menuitem" class="is-focus"><svg class="i"><use href="#i-link"/></svg>Share…</button>
+          <button role="menuitem"><svg class="i"><use href="#i-pencil"/></svg>Edit</button>
+          <button role="menuitem" class="danger"><svg class="i"><use href="#i-trash"/></svg>Delete…</button>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Link copied</figcaption>
+      <div class="scr short" style="min-height:520px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="lib-head">
+  <div><h1 class="display display-lg">Programs</h1><p class="cap mt4 num">5 programs</p></div>
+  <button class="btn"><svg class="i"><use href="#i-plus"/></svg>New program</button>
+</div>
+<div class="lib-th"><span>Program</span><span>Visibility</span><span>Address</span><span>Edited</span><span></span></div>
+<ul class="lib">
+  <li>
+    <div class="cell-title"><a class="title" href="#">Hypertrophy Base</a><span class="meta only-d">Hypertrophy · Intermediate · 12 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/hypertrophy-base</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 2 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Hypertrophy Base"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Strength Foundations</a><span class="meta only-d">Strength · Beginner · 8 weeks</span></div>
+    <span><span class="badge badge-unlisted"><svg class="i i-sm"><use href="#i-link"/></svg>Unlisted</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/strength-foundations/x9Lp…</code><button class="btn btn-ghost btn-icon" aria-label="Copy share link"><svg class="i"><use href="#i-copy"/></svg></button><button class="btn btn-ghost btn-icon" aria-label="Replace share link"><svg class="i"><use href="#i-rotate"/></svg></button></div></div>
+    <span class="meta num">Edited 5 days ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Strength Foundations"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">PPL — client version</a><span class="attrib" style="font-size:13px;color:var(--muted-foreground)">Based on Leo · Push Pull Legs</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited today</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for PPL — client version"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Glute Block 2</a><span class="meta only-d">Hypertrophy · Advanced · 6 weeks</span></div>
+    <span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span>
+    <div class="linkrow only-d"><span class="cap">—</span></div>
+    <span class="meta num">Edited 3 weeks ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Glute Block 2"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+  <li>
+    <div class="cell-title"><a class="title" href="#">Fat-loss Circuit</a><span class="meta only-d">Fat loss · Beginner · 4 weeks</span></div>
+    <span><span class="badge badge-public"><svg class="i i-sm"><use href="#i-globe"/></svg>Public</span></span>
+    <div class="linkrow"><div class="url-box"><code>/u/tara/fat-loss-circuit</code><button class="btn btn-ghost btn-icon" aria-label="Copy public address"><svg class="i"><use href="#i-copy"/></svg></button></div></div>
+    <span class="meta num">Edited 1 month ago</span>
+    <button class="btn btn-ghost btn-icon more" aria-label="More for Fat-loss Circuit"><svg class="i"><use href="#i-more"/></svg></button>
+  </li>
+</ul>
+        <div class="toast" role="status"><svg class="i"><use href="#i-check"/></svg><span class="grow">Share link copied</span></div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Delete confirm <span>· public program</span></figcaption>
+      <div class="scr short" style="min-height:520px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+<div class="lib-head">
+  <div><h1 class="display display-lg">Programs</h1><p class="cap mt4 num">5 programs</p></div>
+  <button class="btn"><svg class="i"><use href="#i-plus"/></svg>New program</button>
+</div>
+        <div class="scrim"></div>
+        <div class="sheet as-dialog" role="alertdialog" aria-modal="true">
+          <div class="grabber"></div>
+          <h2 class="h-card" style="font-size:20px">Delete “Hypertrophy Base”?</h2>
+          <p class="body-sm t-sec mt8">It leaves your profile and your programs. People who open its links see a page saying the author removed it. Copies other people made stay theirs. You can't undo this.</p>
+          <div class="stack g8 mt16"><button class="btn btn-danger btn-block">Delete program</button><button class="btn btn-secondary btn-block">Cancel</button></div>
+        </div>
+      </div>
+      <p class="sk-note-inline">Draft variant drops the links sentence: "It leaves your programs. You can't undo this."</p>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>3 · Empty · new program sheet (B1) · minimal (Leo)</h2>
+  <p class="sk-note">New program asks only title, goal, level, sessions per week. Weeks start at 1 and grow in the editor; description, equipment and everything else live in program settings. Target: created in under 30 s.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Empty</figcaption>
+      <div class="scr short" style="min-height:560px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="lib-head"><h1 class="display display-lg">Programs</h1></div>
+        <div class="pad stack g12" style="padding-top:24px">
+          <h2 class="h-card">No programs yet</h2>
+          <p class="body-sm t-sec">Build a program from the exercise catalog: weeks, sessions, and exercises with sets and reps. Share it by link or on a profile when it's ready.</p>
+          <button class="btn btn-block"><svg class="i"><use href="#i-plus"/></svg>New program</button>
+          <p class="cap">Programs you copy from other authors also appear here.</p>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>New program sheet</figcaption>
+      <div class="scr short" style="min-height:700px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="scrim"></div>
+        <div class="sheet as-dialog" role="dialog" aria-modal="true" aria-labelledby="np-t">
+          <div class="grabber"></div>
+          <div class="sheet-head"><h2 id="np-t" class="h-card" style="font-size:20px">New program</h2><button class="btn btn-ghost btn-icon" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="field mt16"><label class="label" for="np1">Title</label><input id="np1" class="input is-focus" value="Push Pull Legs"></div>
+          <div class="field mt12"><span class="label">Goal</span><div class="seg full" role="group" aria-label="Goal"><button>Strength</button><button aria-pressed="true">Hypertrophy</button><button>Fat loss</button><button>General</button></div></div>
+          <div class="field mt12"><span class="label">Level</span><div class="seg full" role="group" aria-label="Level"><button aria-pressed="true">Beginner</button><button>Intermediate</button><button>Advanced</button></div></div>
+          <div class="field mt12"><span class="label" id="spw">Sessions per week</span><div class="stepper" role="group" aria-labelledby="spw"><button aria-label="Fewer">−</button><output>3</output><button aria-label="More">+</button></div></div>
+          <button class="btn btn-block mt24">Create program</button>
+          <p class="cap mt8">Everything else is optional and can wait.</p>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>New program <span>· title missing</span></figcaption>
+      <div class="scr short" style="min-height:420px">
+        <div class="pad">
+          <div class="field"><label class="label" for="np2">Title</label><input id="np2" class="input" aria-invalid="true" aria-describedby="np2e" value=""><p id="np2e" class="field-error"><svg class="i i-sm"><use href="#i-alert"/></svg>Add a title.</p></div>
+          <button class="btn btn-block mt16 is-loading">Creating…</button>
+          <p class="cap mt8">(loading state shown below the error for reference)</p>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Minimal <span>· Leo, one draft</span></figcaption>
+      <div class="scr short" style="min-height:420px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="lib-head"><div><h1 class="display display-lg">Programs</h1><p class="cap mt4">1 program</p></div><button class="btn"><svg class="i"><use href="#i-plus"/></svg>New program</button></div>
+        <ul class="lib"><li><div class="cell-title"><a class="title" href="#">Push Pull Legs</a></div><span><span class="badge badge-draft"><svg class="i i-sm"><use href="#i-lock"/></svg>Draft</span></span><span class="meta">Edited just now</span></li></ul>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>4 · Loading · error</h2>
+  <p class="sk-note">Anonymous visitors never see this screen (auth route → sign-in). Owner is the only viewer, so no owner/visitor split.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Loading skeleton</figcaption>
+      <div class="scr short" style="min-height:460px" aria-busy="true">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="pad stack g16">
+          <div class="row between"><div class="skel skel-title" style="width:160px"></div><div class="skel" style="width:132px;height:44px;border-radius:8px"></div></div>
+          <div class="skel" style="height:84px"></div><div class="skel" style="height:84px"></div><div class="skel" style="height:56px"></div>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Error</figcaption>
+      <div class="scr short" style="min-height:460px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="lib-head"><h1 class="display display-lg">Programs</h1></div>
+        <div class="pad"><div class="notice danger" role="alert"><svg class="i"><use href="#i-alert"/></svg><div class="grow"><p>Your programs didn't load.</p><button class="btn btn-secondary mt8">Try again</button></div></div></div>
+      </div>
+    </figure>
+  </div>
+</section>
+<script>
+(function () {
+  var k = "physlane-sketch-theme", r = document.documentElement;
+  r.dataset.theme = localStorage.getItem(k) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  function label() { document.querySelectorAll("[data-toggle-theme]").forEach(function (b) { b.textContent = r.dataset.theme === "dark" ? "Switch to light" : "Switch to dark"; }); }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-toggle-theme]");
+    if (t) { r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark"; localStorage.setItem(k, r.dataset.theme); label(); return; }
+    var tab = e.target.closest('[role="tab"]');
+    if (tab) {
+      var list = tab.closest('[role="tablist"]'), scope = tab.closest("[data-tabs]") || document;
+      list.querySelectorAll('[role="tab"]').forEach(function (x) {
+        var on = x === tab; x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1;
+        var p = x.getAttribute("aria-controls") && scope.querySelector("#" + x.getAttribute("aria-controls"));
+        if (p) p.hidden = !on;
+      });
+    }
+    var acc = e.target.closest("[data-acc]");
+    if (acc) { var open = acc.getAttribute("aria-expanded") === "true"; acc.setAttribute("aria-expanded", !open); var id = acc.getAttribute("aria-controls"), body = id && acc.parentElement.querySelector("#" + id); if (body) body.hidden = open; }
+  });
+  label();
+})();
+</script>
+</body>
+</html>

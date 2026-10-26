@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>profile — physlane programs sketch</title>
+<style>
+/* ---- Fonts: self-hosted repo copies (no CDN). Serve repo root over HTTP. ---- */
+@font-face {
+  font-family: "Instrument Serif";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../public/fonts/instrument-serif-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../../public/fonts/inter-latin-var.woff2") format("woff2");
+}
+
+/* ---- Tokens: DESIGN.md v2 values under shadcn-canonical names (mirrors src/styles.css) ---- */
+:root {
+  --background: #f7f4ee;
+  --card: #fffefc;
+  --muted: #eeeae2;
+  --popover: #ffffff;
+  --foreground: #171717;
+  --text-secondary: #62615e;
+  --muted-foreground: #6b6964; /* Appendix A adjustment */
+  --border: #e3ded5;
+  --primary: #d92f28;
+  --primary-foreground: #fffefc;
+  --brand-hover: #b92520;
+  --brand-soft: #f5dcd7;
+  --brand-text: #b92520; /* small red text, Appendix A */
+  --destructive: #b92520;
+  --chart-grid: #e7e2d9;
+  --chart-neutral: #777773;
+  --data-positive: #426c56;
+  --ring: #345b9a;
+  /* GAP (design-notes §3): no scrim token; mirrors shipped sheet.tsx bg-black/50 */
+  --sketch-scrim: rgb(0 0 0 / 0.5);
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --radius: 12px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #101112;
+  --card: #171819;
+  --muted: #1e2021;
+  --popover: #242526;
+  --foreground: #f4f1ea;
+  --text-secondary: #b6b3ad;
+  --muted-foreground: #8d8a84;
+  --border: #343332;
+  --primary: #e63a33;
+  --primary-foreground: #101112; /* Appendix A: dark primary label = background */
+  --brand-hover: #f04a42;
+  --brand-soft: #482321;
+  --brand-text: #e63a33;
+  --destructive: #f04a42;
+  --chart-grid: #343332;
+  --chart-neutral: #aaa79f;
+  --data-positive: #8db69a;
+  --ring: #a8c7ff;
+}
+
+/* ---- Sketch canvas (presentation chrome, not product UI) ---- */
+* { box-sizing: border-box; }
+html { background: var(--muted); }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--muted);
+  -webkit-font-smoothing: antialiased;
+}
+.sk-bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding: 12px 24px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+.sk-bar h1 { margin: 0; font: 400 26px/1.1 var(--font-display); }
+.sk-bar .sk-meta { font-size: 13px; color: var(--muted-foreground); }
+.sk-bar .sk-spacer { flex: 1; }
+.sk-intro { max-width: 880px; padding: 24px 24px 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.sk-intro p { margin: 0 0 8px; }
+.sk-group { padding: 24px 24px 8px; }
+.sk-group > h2 { margin: 0 0 4px; font: 600 15px/1.3 var(--font-sans); }
+.sk-group > p.sk-note { margin: 0 0 16px; max-width: 880px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.sk-row { display: flex; gap: 24px; align-items: flex-start; overflow-x: auto; padding-bottom: 16px; }
+.sk-frame { margin: 0; flex: none; }
+.sk-frame > figcaption {
+  margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--muted-foreground);
+}
+.sk-frame > figcaption span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.sk-note-inline {
+  margin: 8px 0 0; max-width: 390px; font-size: 12px; line-height: 1.45;
+  color: var(--muted-foreground); border-left: 2px dashed var(--border); padding-left: 8px;
+}
+.sk-frame.d .sk-note-inline { max-width: 720px; }
+
+/* ---- Screen container: container queries make one markup serve 390 and 1280 ---- */
+.scr {
+  position: relative;
+  container-type: inline-size;
+  width: 390px;
+  min-height: 720px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.sk-frame.d .scr { width: 1280px; min-height: 760px; border-radius: 10px; }
+.scr.short { min-height: 0; }
+.scr.tall { min-height: 1100px; }
+
+/* ---- Type ---- */
+.display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.015em; line-height: 1.08; text-wrap: balance; margin: 0; }
+.display-lg { font-size: 36px; }
+.display-md { font-size: 28px; }
+@container (min-width: 1024px) { .display-lg { font-size: 52px; } .display-md { font-size: 34px; } }
+.h-card { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.h-sec { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.body-sm { font-size: 14px; }
+.t-sec { color: var(--text-secondary); }
+.t-muted { color: var(--muted-foreground); }
+.cap { font-size: 13px; color: var(--muted-foreground); }
+.num { font-variant-numeric: tabular-nums; }
+.m0 { margin: 0; }
+p { margin: 0; }
+
+/* ---- Layout helpers ---- */
+.pad { padding: 16px; }
+.px { padding-left: 16px; padding-right: 16px; }
+.stack { display: flex; flex-direction: column; }
+.row { display: flex; align-items: center; }
+.wrap { flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.g4 { gap: 4px; } .g8 { gap: 8px; } .g12 { gap: 12px; } .g16 { gap: 16px; } .g24 { gap: 24px; }
+.mt4 { margin-top: 4px; } .mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt24 { margin-top: 24px; } .mt32 { margin-top: 32px; }
+.grow { flex: 1; min-width: 0; }
+.only-d { display: none !important; }
+@container (min-width: 1024px) {
+  .only-m { display: none !important; }
+  .only-d { display: revert !important; }
+  .pad, .px { padding-left: 32px; padding-right: 32px; }
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- Icons (sprite in body) ---- */
+.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.i-sm { width: 14px; height: 14px; }
+.i-fill { fill: currentColor; stroke: none; }
+
+/* ---- App header ---- */
+.app-head {
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+.wordmark { font: 400 24px/1 var(--font-display); color: var(--foreground); text-decoration: none; letter-spacing: -0.01em; }
+.app-nav { display: flex; gap: 4px; margin-left: 16px; }
+.app-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--text-secondary); text-decoration: none; border-radius: var(--radius-sm); }
+.app-nav a[aria-current="page"] { color: var(--foreground); box-shadow: inset 0 -2px 0 var(--primary); border-radius: 0; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--muted); border: 1px solid var(--border); display: inline-grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--text-secondary); flex: none; }
+.avatar-lg { width: 72px; height: 72px; font-size: 26px; }
+@container (min-width: 1024px) { .app-head { padding: 0 32px; height: 64px; } }
+
+/* ---- Buttons (DESIGN §9.1 + src/styles.css .btn-primary) ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 16px;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  background: var(--primary); color: var(--primary-foreground);
+  font: 600 14px/1 var(--font-sans); text-decoration: none; cursor: pointer;
+  transition: background 150ms ease-out;
+  white-space: nowrap;
+}
+.btn:hover, .btn.is-hover { background: var(--brand-hover); }
+.btn.is-active { background: var(--brand-hover); transform: translateY(1px); }
+.btn:disabled, .btn.is-disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-secondary { background: transparent; color: var(--foreground); border-color: var(--border); }
+.btn-secondary:hover, .btn-secondary.is-hover { background: var(--muted); }
+.btn-secondary.is-active { background: var(--muted); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover, .btn-ghost.is-hover { background: var(--muted); color: var(--foreground); }
+.btn-danger { background: var(--destructive); color: var(--primary-foreground); }
+.btn-danger:hover { background: var(--destructive); filter: none; }
+.btn-block { width: 100%; }
+.btn-icon { width: 44px; padding: 0; }
+.btn.is-loading { pointer-events: none; }
+.btn.is-loading::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+}
+:focus-visible, .is-focus { outline: 2px solid var(--ring) !important; outline-offset: 2px; }
+.link {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
+  color: var(--brand-text); font-weight: 500; text-decoration: underline; text-underline-offset: 3px;
+  background: none; border: 0; padding: 0; font-size: inherit; font-family: inherit; cursor: pointer;
+}
+.link-quiet { color: var(--text-secondary); text-decoration-color: var(--border); }
+
+/* ---- Chips, badges ---- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); color: var(--text-secondary);
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.chip-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--text-secondary);
+  font: 500 14px/1 var(--font-sans); white-space: nowrap; cursor: pointer;
+}
+.chip-btn[aria-pressed="true"] { border-color: var(--primary); background: var(--brand-soft); color: var(--foreground); }
+.chip-btn[aria-pressed="true"]::before { content: "\2713"; font-weight: 700; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border: 1px solid; border-radius: 4px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.4; white-space: nowrap;
+}
+.badge-draft { color: var(--muted-foreground); border-color: var(--border); background: var(--muted); }
+.badge-unlisted { color: var(--foreground); border-color: var(--chart-neutral); }
+.badge-public { color: var(--brand-text); border-color: var(--brand-text); }
+.scroll-x { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+
+/* ---- Surfaces ---- */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+.divider { border: 0; border-top: 1px solid var(--border); margin: 0; }
+.banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px; font-size: 14px; line-height: 1.45;
+  background: var(--muted); border-bottom: 1px solid var(--border); color: var(--foreground);
+}
+.banner.brand { background: var(--brand-soft); }
+.banner .i { margin-top: 1px; }
+.notice {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); font-size: 14px; line-height: 1.45;
+}
+.notice.danger { border-color: var(--destructive); }
+.notice.danger .i { color: var(--destructive); }
+
+/* ---- Tabs ---- */
+.tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tab {
+  flex: none; min-height: 44px; padding: 0 14px;
+  background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  color: var(--text-secondary); font: 500 14px/1 var(--font-sans); cursor: pointer; white-space: nowrap;
+}
+.tab[aria-selected="true"] { color: var(--foreground); font-weight: 600; border-bottom-color: var(--primary); }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.seg button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 6px; background: none; color: var(--text-secondary); font: 500 14px var(--font-sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--card); color: var(--foreground); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+
+/* ---- Forms (mirrors src/styles.css .input/.label/.hint/.field-error) ---- */
+.field { display: flex; flex-direction: column; }
+.label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--muted-foreground); }
+.label .opt { font-weight: 400; }
+.input, .select, .textarea {
+  display: block; width: 100%; min-height: 44px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--muted); color: var(--foreground);
+  font: 400 15px/1.4 var(--font-sans);
+}
+.textarea { padding: 10px 12px; min-height: 76px; resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--muted-foreground); }
+.input.is-focus, .select.is-focus { border-color: var(--ring); }
+.input[aria-invalid="true"], .select[aria-invalid="true"] { border-color: var(--destructive); }
+.hint { margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
+.field-error { margin-top: 6px; font-size: 13px; color: var(--destructive); display: flex; gap: 6px; align-items: center; }
+.field-ok { margin-top: 6px; font-size: 13px; color: var(--data-positive); display: flex; gap: 6px; align-items: center; }
+.prefix-input { display: flex; align-items: stretch; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted); overflow: hidden; }
+.prefix-input span { display: inline-flex; align-items: center; padding: 0 0 0 12px; color: var(--muted-foreground); font-size: 15px; white-space: nowrap; }
+.prefix-input input { border: 0; background: none; min-height: 44px; flex: 1; min-width: 0; padding: 0 12px 0 0; font: 400 15px var(--font-sans); color: var(--foreground); }
+.prefix-input.is-invalid { border-color: var(--destructive); }
+.prefix-input.is-ok { border-color: var(--data-positive); }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.switch { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; flex: none; border: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--card); }
+.switch[aria-checked="true"] { background: var(--primary); }
+.switch[aria-checked="true"]::after { left: 21px; }
+
+/* ---- Overlays ---- */
+.scrim { position: absolute; inset: 0; background: var(--sketch-scrim); z-index: 10; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 11;
+  max-height: 88%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border-top: 1px solid var(--border); border-radius: 16px 16px 0 0;
+  padding: 8px 16px 24px;
+}
+.sheet .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 12px; }
+.sheet-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.dialog {
+  position: absolute; z-index: 11; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(480px, calc(100% - 32px)); max-height: 90%; overflow: auto;
+  background: var(--popover); color: var(--foreground);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 24px;
+}
+.side-panel {
+  position: absolute; z-index: 11; top: 0; right: 0; bottom: 0; width: 440px; overflow: auto;
+  background: var(--popover); border-left: 1px solid var(--border); padding: 24px;
+}
+/* One overlay markup: bottom sheet on mobile, dialog/side panel on desktop */
+@container (min-width: 1024px) {
+  .sheet.as-dialog { left: 50%; right: auto; bottom: auto; top: 50%; transform: translate(-50%, -50%); width: 520px; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .sheet.as-panel { left: auto; top: 0; width: 440px; max-height: none; border-radius: 0; border-top: 0; border-left: 1px solid var(--border); padding: 24px; }
+  .sheet.as-dialog .grabber, .sheet.as-panel .grabber { display: none; }
+}
+.toast {
+  position: absolute; z-index: 12; left: 16px; right: 16px; bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: var(--radius-sm);
+  background: var(--foreground); color: var(--background); font-size: 14px;
+}
+@container (min-width: 1024px) { .toast { left: auto; right: 32px; width: 380px; } }
+
+/* ---- Skeleton (static; pulse noted in design-notes §4) ---- */
+.skel { background: var(--muted); border-radius: 6px; }
+.skel-line { height: 12px; }
+.skel-title { height: 30px; border-radius: 8px; }
+
+/* ---- Owner bar ---- */
+.owner-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 16px; min-height: 52px;
+  background: var(--muted); border-bottom: 1px solid var(--border); font-size: 14px;
+}
+@container (min-width: 1024px) { .owner-bar { padding: 8px 32px; } }
+
+/* ---- QR placeholder ---- */
+.qr {
+  width: 120px; height: 120px; flex: none; padding: 8px; border-radius: 6px;
+  background: var(--popover); border: 1px solid var(--border);
+}
+.qr svg { width: 100%; height: 100%; fill: var(--foreground); }
+html[data-theme="dark"] .qr { background: var(--foreground); }
+html[data-theme="dark"] .qr svg { fill: var(--background); }
+.url-box {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px 0 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--muted);
+  font-size: 14px; overflow: hidden;
+}
+.url-box code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-sans); color: var(--foreground); }
+
+/* ---- Program view (shared renderer) ---- */
+.pv-hero { padding: 24px 16px 20px; }
+@container (min-width: 1024px) { .pv-hero { padding: 48px 0 24px; } }
+.author-line { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; color: var(--text-secondary); }
+.author-line a { color: var(--foreground); font-weight: 600; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; display: inline-flex; align-items: center; min-height: 44px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.pv-desc { font-size: 15px; line-height: 1.55; color: var(--text-secondary); max-width: 62ch; }
+.attrib { font-size: 13px; color: var(--muted-foreground); }
+.pv-grid { display: block; }
+.pv-aside { display: none; }
+@container (min-width: 1024px) {
+  .pv-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 56px; max-width: 1216px; margin: 0 auto; padding: 0 32px; }
+  .pv-aside { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 24px; align-self: start; padding-top: 48px; }
+}
+.cta-block { padding: 0 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+@container (min-width: 1024px) { .cta-block.only-m { display: none; } }
+.week-nav { position: relative; }
+.week-nav .tabs { padding: 0 8px; }
+@container (min-width: 1024px) { .week-nav .tabs { padding: 0; } }
+.week-meta { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 13px; color: var(--muted-foreground); }
+@container (min-width: 1024px) { .week-meta { padding: 16px 0; } }
+.session { border-top: 1px solid var(--border); }
+.session:last-child { border-bottom: 1px solid var(--border); }
+.session-head {
+  display: flex; width: 100%; align-items: center; gap: 12px;
+  min-height: 64px; padding: 12px 16px;
+  background: none; border: 0; text-align: left; color: inherit; font: inherit; cursor: pointer;
+}
+@container (min-width: 1024px) { .session-head { padding: 16px 0; } }
+.session-head .i { transition: transform 200ms ease-out; }
+.session-head[aria-expanded="true"] .i { transform: rotate(180deg); }
+.session-title { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.session-sum { font-size: 13px; color: var(--muted-foreground); }
+.session-body { padding: 0 16px 20px; }
+@container (min-width: 1024px) { .session-body { padding: 0 0 24px; } }
+.session-notes { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+.entries { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.entry { padding: 4px 12px 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.entry-name {
+  display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 44px; padding: 0; background: none; border: 0; cursor: pointer;
+  font: 600 15px/1.3 var(--font-sans); color: var(--foreground); text-align: left;
+}
+.entry-name .hint-asset { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--muted-foreground); white-space: nowrap; }
+.rx { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 14px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.rx b { color: var(--foreground); font-weight: 600; }
+.cue { margin-top: 6px; font-size: 13px; color: var(--text-secondary); }
+.cue::before { content: "Cue: "; color: var(--muted-foreground); }
+.group { display: flex; flex-direction: column; gap: 8px; padding-left: 12px; border-left: 2px solid var(--chart-neutral); }
+.group-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.group-label span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.regions { display: grid; grid-template-columns: 84px 1fr 32px; gap: 6px 10px; align-items: center; font-size: 13px; margin-bottom: 16px; }
+.regions dt { color: var(--text-secondary); }
+.regions dd { margin: 0; }
+.regions .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--foreground); font-weight: 600; }
+.bar { height: 8px; background: var(--chart-grid); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--chart-neutral); }
+.pv-section { padding: 24px 16px; border-top: 1px solid var(--border); }
+@container (min-width: 1024px) { .pv-section { padding: 32px 0; } }
+.pv-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted-foreground); }
+@container (min-width: 1024px) { .pv-foot { padding: 16px 32px; margin-top: 48px; } }
+.video-ph {
+  position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-sm);
+  background: var(--muted); border: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  color: var(--text-secondary); font-size: 13px; text-align: center; padding: 16px;
+}
+.video-ph .play { width: 56px; height: 56px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; border: 0; }
+.ref-list { list-style: none; margin: 0; padding: 0; }
+.ref-list a { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--border); color: var(--foreground); text-decoration: none; font-size: 14px; }
+.ref-list .kind { font-size: 12px; color: var(--muted-foreground); }
+.kv { display: grid; grid-template-columns: 96px 1fr; gap: 6px 12px; font-size: 14px; margin: 0; }
+.kv dt { color: var(--muted-foreground); }
+.kv dd { margin: 0; }
+
+/* ---- P1 shared ---- */
+.page-narrow { padding: 32px 16px; }
+@container (min-width: 1024px) { .page-narrow { max-width: 760px; margin: 0 auto; padding: 72px 32px; } }
+.prof-head { display: flex; flex-direction: column; gap: 12px; padding: 24px 16px 16px; }
+@container (min-width: 1024px) { .prof-head { flex-direction: row; align-items: center; gap: 24px; max-width: 1216px; margin: 0 auto; padding: 56px 32px 24px; } }
+.pgrid { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 0 16px 24px; }
+@container (min-width: 1024px) { .pgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; max-width: 1216px; margin: 0 auto; padding: 0 32px 48px; } }
+.pcard { display: flex; flex-direction: column; gap: 8px; padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); text-decoration: none; min-height: 44px; }
+.pcard:hover, .pcard.is-hover { border-color: var(--chart-neutral); }
+.pcard .t { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.pcard .d { font-size: 14px; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 16px 12px; }
+@container (min-width: 1024px) { .sec-head { max-width: 1216px; margin: 0 auto; padding: 16px 32px 12px; } }
+.suggest { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.suggest a { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 0; border-bottom: 1px solid var(--border); color: var(--foreground); text-decoration: none; }
+.suggest .t { font-weight: 600; }
+.suggest .s { font-size: 13px; color: var(--muted-foreground); }
+.rules { margin: 6px 0 0; padding-left: 18px; font-size: 12px; color: var(--muted-foreground); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M9 10h6M9 14h6M9 18h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-chain" viewBox="0 0 24 24"><path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h2M20 14v2"/></symbol>
+</svg>
+<header class="sk-bar">
+  <a class="link link-quiet" href="index.html"><svg class="i i-sm"><use href="#i-chev-l"/></svg>Index</a>
+  <h1>profile</h1>
+  <span class="badge badge-draft">P1</span>
+  <span class="sk-meta">Author profile · <code>/u/$authorSlug</code> (public) · journey A5, C5</span>
+  <span class="sk-spacer"></span>
+  <button class="btn btn-secondary" data-toggle-theme>Switch to dark</button>
+</header>
+<div class="sk-intro"><p>Display name (display serif), avatar (account image or initial), optional bio, public programs as cards. No follower counts, view counts, or ratings. Report link in the footer for visitors; owners get an edit shortcut instead.</p></div>
+<section class="sk-group">
+  <h2>1 · Visitor · owner</h2>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>Mobile <span>· visitor</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+<section class="prof-head">
+  <span class="avatar avatar-lg">T</span>
+  <div class="stack g8 grow">
+    <h1 class="display display-lg">Tara</h1>
+    <p class="pv-desc">Strength coach. Programs for busy lifters who train three or four times a week.</p>
+  </div>
+</section>
+        <div class="sec-head"><h2 class="h-sec">Public programs</h2><span class="cap num">3</span></div>
+<div class="pgrid">
+  <a class="pcard" href="#"><span class="t">Hypertrophy Base</span><span class="d">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</span><span class="facts"><span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 / week</span><span class="chip num">12 weeks</span></span></a>
+  <a class="pcard" href="#"><span class="t">Fat-loss Circuit</span><span class="d">Three full-body circuits a week with short rests. Bodyweight and dumbbells only.</span><span class="facts"><span class="chip">Fat loss</span><span class="chip">Beginner</span><span class="chip num">3 / week</span><span class="chip num">4 weeks</span></span></a>
+  <a class="pcard" href="#"><span class="t">Deadlift Primer</span><span class="facts"><span class="chip">Strength</span><span class="chip">Beginner</span><span class="chip num">2 / week</span><span class="chip num">6 weeks</span></span></a>
+</div>
+        <footer class="pv-foot"><span>Shared on physlane</span><button class="link link-quiet"><svg class="i i-sm"><use href="#i-flag"/></svg>Report this profile</button></footer>
+      </div>
+      <p class="sk-note-inline">Cards: title, two-line description (omitted when empty), tag chips. Sort: most recently updated (assumption, notes §5). Program links go to the public program view.</p>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Mobile <span>· owner viewing own profile</span></figcaption>
+      <div class="scr">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <nav class="app-nav only-d" aria-label="App"><a href="#">Dashboard</a><a href="#">Intake</a><a href="#">Cycles</a><a href="#" aria-current="page">Programs</a></nav>
+  <span class="grow"></span>
+  <span class="avatar" aria-label="Account">T</span>
+</header>
+        <div class="owner-bar"><svg class="i"><use href="#i-globe"/></svg><span class="grow">Your public profile</span><button class="btn btn-secondary"><svg class="i"><use href="#i-pencil"/></svg>Edit profile</button></div>
+<section class="prof-head">
+  <span class="avatar avatar-lg">T</span>
+  <div class="stack g8 grow">
+    <h1 class="display display-lg">Tara</h1>
+    <p class="pv-desc">Strength coach. Programs for busy lifters who train three or four times a week.</p>
+  </div>
+</section>
+        <div class="sec-head"><h2 class="h-sec">Public programs</h2><span class="cap num">3</span></div>
+<div class="pgrid">
+  <a class="pcard" href="#"><span class="t">Hypertrophy Base</span><span class="d">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</span><span class="facts"><span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 / week</span><span class="chip num">12 weeks</span></span></a>
+  <a class="pcard" href="#"><span class="t">Fat-loss Circuit</span><span class="d">Three full-body circuits a week with short rests. Bodyweight and dumbbells only.</span><span class="facts"><span class="chip">Fat loss</span><span class="chip">Beginner</span><span class="chip num">3 / week</span><span class="chip num">4 weeks</span></span></a>
+  <a class="pcard" href="#"><span class="t">Deadlift Primer</span><span class="facts"><span class="chip">Strength</span><span class="chip">Beginner</span><span class="chip num">2 / week</span><span class="chip num">6 weeks</span></span></a>
+</div>
+        <p class="cap px">Only public programs appear here. Drafts and unlisted programs stay in <a class="link" href="library.html">Programs</a>.</p>
+      </div>
+      <p class="sk-note-inline">"Edit profile" opens the profile-setup sheet in edit mode (address change rules apply). No report link for the owner.</p>
+    </figure>
+    <figure class="sk-frame d"><figcaption>Desktop <span>· visitor — 3-column grid</span></figcaption>
+      <div class="scr short" style="min-height:640px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+<section class="prof-head">
+  <span class="avatar avatar-lg">T</span>
+  <div class="stack g8 grow">
+    <h1 class="display display-lg">Tara</h1>
+    <p class="pv-desc">Strength coach. Programs for busy lifters who train three or four times a week.</p>
+  </div>
+</section>
+        <div class="sec-head"><h2 class="h-sec">Public programs</h2><span class="cap num">3</span></div>
+<div class="pgrid">
+  <a class="pcard" href="#"><span class="t">Hypertrophy Base</span><span class="d">Upper/lower split, four sessions a week. Volume rises over weeks 1–4, week 5 is a deload, then the block repeats with heavier loads.</span><span class="facts"><span class="chip">Hypertrophy</span><span class="chip">Intermediate</span><span class="chip num">4 / week</span><span class="chip num">12 weeks</span></span></a>
+  <a class="pcard" href="#"><span class="t">Fat-loss Circuit</span><span class="d">Three full-body circuits a week with short rests. Bodyweight and dumbbells only.</span><span class="facts"><span class="chip">Fat loss</span><span class="chip">Beginner</span><span class="chip num">3 / week</span><span class="chip num">4 weeks</span></span></a>
+  <a class="pcard" href="#"><span class="t">Deadlift Primer</span><span class="facts"><span class="chip">Strength</span><span class="chip">Beginner</span><span class="chip num">2 / week</span><span class="chip num">6 weeks</span></span></a>
+</div>
+        <footer class="pv-foot"><span>Shared on physlane</span><button class="link link-quiet"><svg class="i i-sm"><use href="#i-flag"/></svg>Report this profile</button></footer>
+      </div>
+    </figure>
+  </div>
+</section>
+<section class="sk-group">
+  <h2>2 · No public programs · minimal · hidden · loading</h2>
+  <p class="sk-note">"No public programs yet" only happens after an author de-lists every program — the plan says the profile is created at first go-public but is silent on what happens after the last de-list (notes §5). Hidden by moderation (<code>profileHiddenAt</code>): no name, no bio, no programs.</p>
+  <div class="sk-row">
+    <figure class="sk-frame m"><figcaption>No public programs</figcaption>
+      <div class="scr short" style="min-height:520px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+<section class="prof-head">
+  <span class="avatar avatar-lg">T</span>
+  <div class="stack g8 grow">
+    <h1 class="display display-lg">Tara</h1>
+    <p class="pv-desc">Strength coach. Programs for busy lifters who train three or four times a week.</p>
+  </div>
+</section>
+        <div class="sec-head"><h2 class="h-sec">Public programs</h2></div>
+        <div class="px"><div class="notice"><span>Tara has no public programs right now.</span></div></div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Minimal <span>· no bio, no image</span></figcaption>
+      <div class="scr short" style="min-height:520px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <section class="prof-head"><span class="avatar avatar-lg">L</span><h1 class="display display-lg">Leo</h1></section>
+        <div class="sec-head"><h2 class="h-sec">Public programs</h2><span class="cap num">1</span></div>
+        <div class="pgrid"><a class="pcard" href="#"><span class="t">Push Pull Legs</span><span class="facts"><span class="chip">Hypertrophy</span><span class="chip">Beginner</span><span class="chip num">3 / week</span><span class="chip num">1 week</span></span></a></div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Hidden profile</figcaption>
+      <div class="scr short" style="min-height:520px">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="page-narrow stack g12">
+          <h1 class="display display-md">This profile is unavailable</h1>
+          <p class="body-sm t-sec">It can't be viewed right now.</p>
+          <a class="link" href="#">Go to physlane</a>
+        </div>
+      </div>
+    </figure>
+    <figure class="sk-frame m"><figcaption>Loading</figcaption>
+      <div class="scr short" style="min-height:520px" aria-busy="true">
+<header class="app-head">
+  <a class="wordmark" href="#">physlane</a>
+  <span class="grow"></span>
+  <a class="link link-quiet" href="#">Sign in</a>
+</header>
+        <div class="pad stack g12"><div class="skel" style="width:72px;height:72px;border-radius:50%"></div><div class="skel skel-title" style="width:50%"></div><div class="skel skel-line" style="width:90%"></div><div class="skel" style="height:120px;margin-top:16px"></div><div class="skel" style="height:120px"></div></div>
+      </div>
+    </figure>
+  </div>
+</section>
+<script>
+(function () {
+  var k = "physlane-sketch-theme", r = document.documentElement;
+  r.dataset.theme = localStorage.getItem(k) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  function label() { document.querySelectorAll("[data-toggle-theme]").forEach(function (b) { b.textContent = r.dataset.theme === "dark" ? "Switch to light" : "Switch to dark"; }); }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-toggle-theme]");
+    if (t) { r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark"; localStorage.setItem(k, r.dataset.theme); label(); return; }
+    var tab = e.target.closest('[role="tab"]');
+    if (tab) {
+      var list = tab.closest('[role="tablist"]'), scope = tab.closest("[data-tabs]") || document;
+      list.querySelectorAll('[role="tab"]').forEach(function (x) {
+        var on = x === tab; x.setAttribute("aria-selected", on); x.tabIndex = on ? 0 : -1;
+        var p = x.getAttribute("aria-controls") && scope.querySelector("#" + x.getAttribute("aria-controls"));
+        if (p) p.hidden = !on;
+      });
+    }
+    var acc = e.target.closest("[data-acc]");
+    if (acc) { var open = acc.getAttribute("aria-expanded") === "true"; acc.setAttribute("aria-expanded", !open); var id = acc.getAttribute("aria-controls"), body = id && acc.parentElement.querySelector("#" + id); if (body) body.hidden = open; }
+  });
+  label();
+})();
+</script>
+</body>
+</html>

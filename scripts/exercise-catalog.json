@@ -1,0 +1,1844 @@
+{
+  "_meta": {
+    "idScheme": "ex-{kebab-case-name} from display name; duplicates get -2 suffix",
+    "assetIdScheme": "as-{exerciseId}-{kind}-{sortOrder}",
+    "version": 1
+  },
+  "exercises": [
+    {
+      "id": "ex-back-squat",
+      "name": "Back Squat",
+      "aliases": ["Barbell Back Squat", "High Bar Squat"],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "hamstrings"],
+      "equipment": "barbell",
+      "formNote": "Brace hard and keep the bar over mid-foot."
+    },
+    {
+      "id": "ex-front-squat",
+      "name": "Front Squat",
+      "aliases": ["Barbell Front Squat"],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "abs"],
+      "equipment": "barbell",
+      "formNote": "Elbows high and torso upright through the rep."
+    },
+    {
+      "id": "ex-goblet-squat",
+      "name": "Goblet Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "kettlebell",
+      "formNote": "Sit between your hips with the bell tight to your chest."
+    },
+    {
+      "id": "ex-zercher-squat",
+      "name": "Zercher Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "biceps"],
+      "equipment": "barbell",
+      "formNote": "Keep the bar cradled tight without letting it roll."
+    },
+    {
+      "id": "ex-box-squat",
+      "name": "Box Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "hamstrings"],
+      "equipment": "barbell",
+      "formNote": "Sit back to the box without relaxing your brace."
+    },
+    {
+      "id": "ex-hack-squat",
+      "name": "Hack Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "machine",
+      "formNote": "Track knees over toes and control the descent."
+    },
+    {
+      "id": "ex-leg-press",
+      "name": "Leg Press",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "machine",
+      "formNote": "Lower until depth is comfortable without butt wink."
+    },
+    {
+      "id": "ex-leg-extension",
+      "name": "Leg Extension",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": [],
+      "equipment": "machine",
+      "formNote": "Extend without kicking hips off the pad."
+    },
+    {
+      "id": "ex-sissy-squat",
+      "name": "Sissy Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["hip-flexors"],
+      "equipment": "bodyweight",
+      "formNote": "Lean back as knees travel forward under control."
+    },
+    {
+      "id": "ex-bulgarian-split-squat",
+      "name": "Bulgarian Split Squat",
+      "aliases": ["Rear-Foot Elevated Split Squat"],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "dumbbell",
+      "formNote": "Keep front shin mostly vertical and torso tall."
+    },
+    {
+      "id": "ex-forward-lunge",
+      "name": "Forward Lunge",
+      "aliases": ["Static Lunge"],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "dumbbell",
+      "formNote": "Step long enough to keep front knee stable."
+    },
+    {
+      "id": "ex-walking-lunge",
+      "name": "Walking Lunge",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "dumbbell",
+      "formNote": "Take balanced steps and avoid wobble at the bottom."
+    },
+    {
+      "id": "ex-step-up",
+      "name": "Step-up",
+      "aliases": ["Dumbbell Step-up"],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "dumbbell",
+      "formNote": "Drive through the whole foot on the box."
+    },
+    {
+      "id": "ex-pistol-squat",
+      "name": "Pistol Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "hip-flexors"],
+      "equipment": "bodyweight",
+      "formNote": "Counterbalance and control the descent on one leg."
+    },
+    {
+      "id": "ex-wall-sit",
+      "name": "Wall Sit",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-conventional-deadlift",
+      "name": "Conventional Deadlift",
+      "aliases": ["Deadlift"],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["glutes", "lower-back", "traps"],
+      "equipment": "barbell",
+      "formNote": "Pull slack out and keep the bar close to your legs."
+    },
+    {
+      "id": "ex-romanian-deadlift",
+      "name": "Romanian Deadlift",
+      "aliases": ["RDL", "Stiff-Leg Deadlift"],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["glutes", "lower-back"],
+      "equipment": "barbell",
+      "formNote": "Push hips back until you feel a hamstring stretch."
+    },
+    {
+      "id": "ex-sumo-deadlift",
+      "name": "Sumo Deadlift",
+      "aliases": [],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["adductors", "hamstrings"],
+      "equipment": "barbell",
+      "formNote": "Spread the floor and keep shoulders over the bar."
+    },
+    {
+      "id": "ex-trap-bar-deadlift",
+      "name": "Trap Bar Deadlift",
+      "aliases": ["Hex Bar Deadlift"],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "hamstrings"],
+      "equipment": "barbell",
+      "formNote": "Drive through the floor with a tall chest."
+    },
+    {
+      "id": "ex-single-leg-romanian-deadlift",
+      "name": "Single-Leg Romanian Deadlift",
+      "aliases": ["SL RDL"],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["glutes"],
+      "equipment": "dumbbell",
+      "formNote": "Hinge on one leg with a straight line from head to heel."
+    },
+    {
+      "id": "ex-good-morning",
+      "name": "Good Morning",
+      "aliases": [],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["lower-back", "glutes"],
+      "equipment": "barbell",
+      "formNote": "Hinge with a soft knee and neutral spine."
+    },
+    {
+      "id": "ex-jefferson-curl",
+      "name": "Jefferson Curl",
+      "aliases": [],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["lower-back"],
+      "equipment": "barbell",
+      "formNote": "Round slowly segment by segment on light loads only."
+    },
+    {
+      "id": "ex-nordic-curl",
+      "name": "Nordic Curl",
+      "aliases": [],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["glutes"],
+      "equipment": "bodyweight",
+      "formNote": "Lower under control using hands only as needed."
+    },
+    {
+      "id": "ex-glute-ham-raise",
+      "name": "Glute-Ham Raise",
+      "aliases": ["GHR"],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["glutes", "lower-back"],
+      "equipment": "machine",
+      "formNote": "Keep hips extended and control the eccentric."
+    },
+    {
+      "id": "ex-leg-curl",
+      "name": "Leg Curl",
+      "aliases": ["Lying Leg Curl"],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["calves"],
+      "equipment": "machine",
+      "formNote": "Curl without lifting hips off the pad."
+    },
+    {
+      "id": "ex-seated-leg-curl",
+      "name": "Seated Leg Curl",
+      "aliases": [],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": [],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-bench-press",
+      "name": "Bench Press",
+      "aliases": ["Flat Bench Press"],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps", "front-delts"],
+      "equipment": "barbell",
+      "formNote": "Retract shoulder blades and press in a slight arc."
+    },
+    {
+      "id": "ex-incline-bench-press",
+      "name": "Incline Bench Press",
+      "aliases": ["Incline Barbell Bench"],
+      "musclePrimary": "upper-chest",
+      "muscleSecondary": ["triceps", "front-delts"],
+      "equipment": "barbell",
+      "formNote": "Set a moderate incline and touch upper chest."
+    },
+    {
+      "id": "ex-decline-bench-press",
+      "name": "Decline Bench Press",
+      "aliases": [],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-dumbbell-bench-press",
+      "name": "Dumbbell Bench Press",
+      "aliases": [],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps", "front-delts"],
+      "equipment": "dumbbell",
+      "formNote": "Press with wrists stacked over elbows."
+    },
+    {
+      "id": "ex-incline-dumbbell-press",
+      "name": "Incline Dumbbell Press",
+      "aliases": [],
+      "musclePrimary": "upper-chest",
+      "muscleSecondary": ["triceps", "front-delts"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-close-grip-bench-press",
+      "name": "Close-Grip Bench Press",
+      "aliases": [],
+      "musclePrimary": "triceps",
+      "muscleSecondary": ["chest", "front-delts"],
+      "equipment": "barbell",
+      "formNote": "Keep elbows tucked and wrists straight."
+    },
+    {
+      "id": "ex-push-up",
+      "name": "Push-up",
+      "aliases": ["Press-up"],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps", "front-delts"],
+      "equipment": "bodyweight",
+      "formNote": "Maintain a straight line from head to heels."
+    },
+    {
+      "id": "ex-diamond-push-up",
+      "name": "Diamond Push-up",
+      "aliases": [],
+      "musclePrimary": "triceps",
+      "muscleSecondary": ["chest"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-wide-push-up",
+      "name": "Wide Push-up",
+      "aliases": [],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-cable-fly",
+      "name": "Cable Fly",
+      "aliases": ["Cable Chest Fly"],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["front-delts"],
+      "equipment": "cable",
+      "formNote": "Slight bend in elbows and squeeze at the top."
+    },
+    {
+      "id": "ex-pec-deck",
+      "name": "Pec Deck",
+      "aliases": ["Machine Fly"],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["front-delts"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-dumbbell-fly",
+      "name": "Dumbbell Fly",
+      "aliases": [],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["front-delts"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-overhead-press",
+      "name": "Overhead Press",
+      "aliases": ["Military Press", "Strict Press"],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["triceps", "upper-chest"],
+      "equipment": "barbell",
+      "formNote": "Brace glutes and press the bar in a straight line."
+    },
+    {
+      "id": "ex-push-press",
+      "name": "Push Press",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["triceps", "quads"],
+      "equipment": "barbell",
+      "formNote": "Dip straight and drive the bar with legs then arms."
+    },
+    {
+      "id": "ex-dumbbell-shoulder-press",
+      "name": "Dumbbell Shoulder Press",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["triceps"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-arnold-press",
+      "name": "Arnold Press",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["side-delts"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-lateral-raise",
+      "name": "Lateral Raise",
+      "aliases": ["Side Lateral Raise"],
+      "musclePrimary": "side-delts",
+      "muscleSecondary": ["traps"],
+      "equipment": "dumbbell",
+      "formNote": "Lead with elbows and stop around shoulder height."
+    },
+    {
+      "id": "ex-cable-lateral-raise",
+      "name": "Cable Lateral Raise",
+      "aliases": [],
+      "musclePrimary": "side-delts",
+      "muscleSecondary": [],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-rear-delt-fly",
+      "name": "Rear Delt Fly",
+      "aliases": ["Reverse Fly"],
+      "musclePrimary": "rear-delts",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "dumbbell",
+      "formNote": "Hinge and pull apart with rear delts doing the work."
+    },
+    {
+      "id": "ex-face-pull",
+      "name": "Face Pull",
+      "aliases": [],
+      "musclePrimary": "rear-delts",
+      "muscleSecondary": ["rhomboids", "traps"],
+      "equipment": "cable",
+      "formNote": "Pull to the face with external rotation at the end."
+    },
+    {
+      "id": "ex-upright-row",
+      "name": "Upright Row",
+      "aliases": [],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["side-delts", "biceps"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-shrug",
+      "name": "Shrug",
+      "aliases": ["Barbell Shrug"],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "barbell",
+      "formNote": "Shrug straight up without rolling shoulders."
+    },
+    {
+      "id": "ex-barbell-row",
+      "name": "Barbell Row",
+      "aliases": ["Bent-Over Row"],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids", "biceps"],
+      "equipment": "barbell",
+      "formNote": "Hinge and pull to the lower ribs."
+    },
+    {
+      "id": "ex-pendlay-row",
+      "name": "Pendlay Row",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids", "lower-back"],
+      "equipment": "barbell",
+      "formNote": "Reset each rep on the floor with a flat back."
+    },
+    {
+      "id": "ex-dumbbell-row",
+      "name": "Dumbbell Row",
+      "aliases": ["Single-Arm Row"],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids", "biceps"],
+      "equipment": "dumbbell",
+      "formNote": "Pull elbow to hip without twisting excessively."
+    },
+    {
+      "id": "ex-t-bar-row",
+      "name": "T-Bar Row",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-seal-row",
+      "name": "Seal Row",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "barbell",
+      "formNote": "Pull without using momentum from hips."
+    },
+    {
+      "id": "ex-chest-supported-row",
+      "name": "Chest-Supported Row",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-lat-pulldown",
+      "name": "Lat Pulldown",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["biceps"],
+      "equipment": "cable",
+      "formNote": "Drive elbows down and avoid leaning back excessively."
+    },
+    {
+      "id": "ex-pull-up",
+      "name": "Pull-up",
+      "aliases": ["Pullup"],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["biceps", "rear-delts"],
+      "equipment": "bodyweight",
+      "formNote": "Start from a dead hang and pull chest toward the bar."
+    },
+    {
+      "id": "ex-chin-up",
+      "name": "Chin-up",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["biceps"],
+      "equipment": "bodyweight",
+      "formNote": "Keep chin over the bar without craning neck."
+    },
+    {
+      "id": "ex-inverted-row",
+      "name": "Inverted Row",
+      "aliases": ["Bodyweight Row"],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids", "biceps"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-straight-arm-pulldown",
+      "name": "Straight-Arm Pulldown",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["triceps"],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-meadows-row",
+      "name": "Meadows Row",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-dip",
+      "name": "Dip",
+      "aliases": ["Parallel Bar Dip"],
+      "musclePrimary": "triceps",
+      "muscleSecondary": ["chest", "front-delts"],
+      "equipment": "bodyweight",
+      "formNote": "Lean slightly forward for chest or upright for triceps."
+    },
+    {
+      "id": "ex-triceps-pushdown",
+      "name": "Triceps Pushdown",
+      "aliases": ["Cable Pushdown"],
+      "musclePrimary": "triceps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "cable",
+      "formNote": "Lock elbows at sides and fully extend."
+    },
+    {
+      "id": "ex-skull-crusher",
+      "name": "Skull Crusher",
+      "aliases": ["Lying Triceps Extension"],
+      "musclePrimary": "triceps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "barbell",
+      "formNote": "Lower to forehead or behind head with stable upper arms."
+    },
+    {
+      "id": "ex-overhead-triceps-extension",
+      "name": "Overhead Triceps Extension",
+      "aliases": [],
+      "musclePrimary": "triceps",
+      "muscleSecondary": [],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-barbell-curl",
+      "name": "Barbell Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "barbell",
+      "formNote": "Keep elbows fixed and curl without swinging."
+    },
+    {
+      "id": "ex-dumbbell-curl",
+      "name": "Dumbbell Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-hammer-curl",
+      "name": "Hammer Curl",
+      "aliases": [],
+      "musclePrimary": "brachialis",
+      "muscleSecondary": ["biceps", "forearms"],
+      "equipment": "dumbbell",
+      "formNote": "Neutral grip throughout the rep."
+    },
+    {
+      "id": "ex-incline-dumbbell-curl",
+      "name": "Incline Dumbbell Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-preacher-curl",
+      "name": "Preacher Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "machine",
+      "formNote": "Do not hyperextend at the bottom."
+    },
+    {
+      "id": "ex-concentration-curl",
+      "name": "Concentration Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": [],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-cable-curl",
+      "name": "Cable Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": [],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-wrist-curl",
+      "name": "Wrist Curl",
+      "aliases": [],
+      "musclePrimary": "forearms",
+      "muscleSecondary": [],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-reverse-wrist-curl",
+      "name": "Reverse Wrist Curl",
+      "aliases": [],
+      "musclePrimary": "forearms",
+      "muscleSecondary": [],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-farmers-carry",
+      "name": "Farmer's Carry",
+      "aliases": ["Farmers Walk"],
+      "musclePrimary": "forearms",
+      "muscleSecondary": ["traps", "abs"],
+      "equipment": "dumbbell",
+      "formNote": "Stand tall and take short quick steps."
+    },
+    {
+      "id": "ex-hip-thrust",
+      "name": "Hip Thrust",
+      "aliases": ["Barbell Hip Thrust"],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["hamstrings"],
+      "equipment": "barbell",
+      "formNote": "Tuck pelvis and drive through heels at the top."
+    },
+    {
+      "id": "ex-glute-bridge",
+      "name": "Glute Bridge",
+      "aliases": [],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["hamstrings"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-cable-kickback",
+      "name": "Cable Kickback",
+      "aliases": ["Glute Kickback"],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["hamstrings"],
+      "equipment": "cable",
+      "formNote": "Squeeze glute without arching lower back."
+    },
+    {
+      "id": "ex-hip-abduction-machine",
+      "name": "Hip Abduction Machine",
+      "aliases": [],
+      "musclePrimary": "abductors",
+      "muscleSecondary": ["glutes"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-cable-hip-abduction",
+      "name": "Cable Hip Abduction",
+      "aliases": [],
+      "musclePrimary": "abductors",
+      "muscleSecondary": ["glutes"],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-banded-hip-abduction",
+      "name": "Banded Hip Abduction",
+      "aliases": [],
+      "musclePrimary": "abductors",
+      "muscleSecondary": ["glutes"],
+      "equipment": "band"
+    },
+    {
+      "id": "ex-hip-adduction-machine",
+      "name": "Hip Adduction Machine",
+      "aliases": [],
+      "musclePrimary": "adductors",
+      "muscleSecondary": [],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-copenhagen-plank",
+      "name": "Copenhagen Plank",
+      "aliases": [],
+      "musclePrimary": "adductors",
+      "muscleSecondary": ["obliques"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-standing-calf-raise",
+      "name": "Standing Calf Raise",
+      "aliases": [],
+      "musclePrimary": "calves",
+      "muscleSecondary": [],
+      "equipment": "machine",
+      "formNote": "Pause at the top and control the descent."
+    },
+    {
+      "id": "ex-seated-calf-raise",
+      "name": "Seated Calf Raise",
+      "aliases": [],
+      "musclePrimary": "calves",
+      "muscleSecondary": [],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-donkey-calf-raise",
+      "name": "Donkey Calf Raise",
+      "aliases": [],
+      "musclePrimary": "calves",
+      "muscleSecondary": [],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-tibialis-raise",
+      "name": "Tibialis Raise",
+      "aliases": [],
+      "musclePrimary": "tibialis-anterior",
+      "muscleSecondary": [],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-plank",
+      "name": "Plank",
+      "aliases": ["Front Plank"],
+      "musclePrimary": "abs",
+      "muscleSecondary": ["obliques"],
+      "equipment": "bodyweight",
+      "formNote": "Ribs down and glutes engaged for a straight line."
+    },
+    {
+      "id": "ex-hanging-leg-raise",
+      "name": "Hanging Leg Raise",
+      "aliases": [],
+      "musclePrimary": "abs",
+      "muscleSecondary": ["hip-flexors"],
+      "equipment": "bodyweight",
+      "formNote": "Posterior pelvic tilt before lifting legs."
+    },
+    {
+      "id": "ex-cable-crunch",
+      "name": "Cable Crunch",
+      "aliases": [],
+      "musclePrimary": "abs",
+      "muscleSecondary": [],
+      "equipment": "cable",
+      "formNote": "Crunch ribs toward hips without pulling with arms."
+    },
+    {
+      "id": "ex-ab-wheel-rollout",
+      "name": "Ab Wheel Rollout",
+      "aliases": [],
+      "musclePrimary": "abs",
+      "muscleSecondary": ["lats", "serratus-anterior"],
+      "equipment": "other",
+      "formNote": "Brace and roll only as far as you can control."
+    },
+    {
+      "id": "ex-russian-twist",
+      "name": "Russian Twist",
+      "aliases": [],
+      "musclePrimary": "obliques",
+      "muscleSecondary": ["abs"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-pallof-press",
+      "name": "Pallof Press",
+      "aliases": [],
+      "musclePrimary": "obliques",
+      "muscleSecondary": ["abs"],
+      "equipment": "cable",
+      "formNote": "Resist rotation and hold the band in front of chest."
+    },
+    {
+      "id": "ex-side-plank",
+      "name": "Side Plank",
+      "aliases": [],
+      "musclePrimary": "obliques",
+      "muscleSecondary": ["abs"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-dead-bug",
+      "name": "Dead Bug",
+      "aliases": [],
+      "musclePrimary": "abs",
+      "muscleSecondary": ["hip-flexors"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-cable-woodchop",
+      "name": "Cable Woodchop",
+      "aliases": [],
+      "musclePrimary": "obliques",
+      "muscleSecondary": ["abs"],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-serratus-punch",
+      "name": "Serratus Punch",
+      "aliases": ["Scapular Push-up"],
+      "musclePrimary": "serratus-anterior",
+      "muscleSecondary": ["chest"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-push-up-plus",
+      "name": "Push-up Plus",
+      "aliases": [],
+      "musclePrimary": "serratus-anterior",
+      "muscleSecondary": ["chest", "triceps"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-kettlebell-swing",
+      "name": "Kettlebell Swing",
+      "aliases": [],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["hamstrings", "lower-back"],
+      "equipment": "kettlebell",
+      "formNote": "Hinge explosively and snap hips; arms are hooks."
+    },
+    {
+      "id": "ex-turkish-get-up",
+      "name": "Turkish Get-up",
+      "aliases": ["TGU"],
+      "musclePrimary": "abs",
+      "muscleSecondary": ["glutes", "front-delts"],
+      "equipment": "kettlebell",
+      "formNote": "Eyes on the bell and move through each position deliberately."
+    },
+    {
+      "id": "ex-power-clean",
+      "name": "Power Clean",
+      "aliases": [],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["quads", "glutes"],
+      "equipment": "barbell",
+      "formNote": "Extend hips and catch in a strong front rack."
+    },
+    {
+      "id": "ex-hang-clean",
+      "name": "Hang Clean",
+      "aliases": [],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["quads", "glutes"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-clean-and-jerk",
+      "name": "Clean & Jerk",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["traps", "front-delts"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-power-snatch",
+      "name": "Power Snatch",
+      "aliases": [],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["glutes", "hamstrings"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-snatch",
+      "name": "Snatch",
+      "aliases": ["Full Snatch"],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["glutes", "hamstrings"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-box-jump",
+      "name": "Box Jump",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "calves"],
+      "equipment": "bodyweight",
+      "formNote": "Land softly with hips back on the box."
+    },
+    {
+      "id": "ex-broad-jump",
+      "name": "Broad Jump",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-sled-push",
+      "name": "Sled Push",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "calves"],
+      "equipment": "other",
+      "formNote": "Drive through balls of feet with torso angled."
+    },
+    {
+      "id": "ex-sled-pull",
+      "name": "Sled Pull",
+      "aliases": [],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["glutes", "lower-back"],
+      "equipment": "other"
+    },
+    {
+      "id": "ex-band-pull-apart",
+      "name": "Band Pull-apart",
+      "aliases": ["Band Pull Apart"],
+      "musclePrimary": "rear-delts",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "band",
+      "formNote": "Pull band apart to rear delts with straight arms."
+    },
+    {
+      "id": "ex-back-extension",
+      "name": "Back Extension",
+      "aliases": ["Hyperextension"],
+      "musclePrimary": "lower-back",
+      "muscleSecondary": ["glutes", "hamstrings"],
+      "equipment": "machine",
+      "formNote": "Squeeze glutes at the top without hyperextending."
+    },
+    {
+      "id": "ex-reverse-hyperextension",
+      "name": "Reverse Hyperextension",
+      "aliases": [],
+      "musclePrimary": "lower-back",
+      "muscleSecondary": ["glutes"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-neck-extension",
+      "name": "Neck Extension",
+      "aliases": [],
+      "musclePrimary": "neck",
+      "muscleSecondary": [],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-neck-flexion",
+      "name": "Neck Flexion",
+      "aliases": [],
+      "musclePrimary": "neck",
+      "muscleSecondary": [],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-neck-harness-extension",
+      "name": "Neck Harness Extension",
+      "aliases": [],
+      "musclePrimary": "neck",
+      "muscleSecondary": [],
+      "equipment": "other"
+    },
+    {
+      "id": "ex-pike-push-up",
+      "name": "Pike Push-up",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["triceps"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-handstand-push-up",
+      "name": "Handstand Push-up",
+      "aliases": ["HSPU"],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["triceps", "traps"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-landmine-press",
+      "name": "Landmine Press",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["triceps", "chest"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-landmine-row",
+      "name": "Landmine Row",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-cable-row",
+      "name": "Cable Row",
+      "aliases": ["Seated Cable Row"],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["rhomboids", "biceps"],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-machine-shoulder-press",
+      "name": "Machine Shoulder Press",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["triceps"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-machine-chest-press",
+      "name": "Machine Chest Press",
+      "aliases": [],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-smith-machine-squat",
+      "name": "Smith Machine Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-smith-machine-bench-press",
+      "name": "Smith Machine Bench Press",
+      "aliases": [],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-cable-overhead-triceps-extension",
+      "name": "Cable Overhead Triceps Extension",
+      "aliases": [],
+      "musclePrimary": "triceps",
+      "muscleSecondary": [],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-rope-hammer-curl",
+      "name": "Rope Hammer Curl",
+      "aliases": [],
+      "musclePrimary": "brachialis",
+      "muscleSecondary": ["biceps"],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-ez-bar-curl",
+      "name": "EZ-Bar Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": ["forearms"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-spider-curl",
+      "name": "Spider Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": [],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-drag-curl",
+      "name": "Drag Curl",
+      "aliases": [],
+      "musclePrimary": "biceps",
+      "muscleSecondary": [],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-floor-press",
+      "name": "Floor Press",
+      "aliases": [],
+      "musclePrimary": "chest",
+      "muscleSecondary": ["triceps"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-pin-press",
+      "name": "Pin Press",
+      "aliases": [],
+      "musclePrimary": "triceps",
+      "muscleSecondary": ["chest"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-paused-squat",
+      "name": "Paused Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-tempo-squat",
+      "name": "Tempo Squat",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-banded-good-morning",
+      "name": "Banded Good Morning",
+      "aliases": [],
+      "musclePrimary": "hamstrings",
+      "muscleSecondary": ["glutes"],
+      "equipment": "band"
+    },
+    {
+      "id": "ex-banded-pull-through",
+      "name": "Banded Pull-through",
+      "aliases": [],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["hamstrings"],
+      "equipment": "band"
+    },
+    {
+      "id": "ex-clamshell",
+      "name": "Clamshell",
+      "aliases": [],
+      "musclePrimary": "abductors",
+      "muscleSecondary": ["glutes"],
+      "equipment": "band"
+    },
+    {
+      "id": "ex-monster-walk",
+      "name": "Monster Walk",
+      "aliases": [],
+      "musclePrimary": "abductors",
+      "muscleSecondary": ["glutes"],
+      "equipment": "band"
+    },
+    {
+      "id": "ex-cable-chop",
+      "name": "Cable Chop",
+      "aliases": [],
+      "musclePrimary": "obliques",
+      "muscleSecondary": [],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-medicine-ball-slam",
+      "name": "Medicine Ball Slam",
+      "aliases": [],
+      "musclePrimary": "abs",
+      "muscleSecondary": ["lats", "front-delts"],
+      "equipment": "other"
+    },
+    {
+      "id": "ex-battle-ropes",
+      "name": "Battle Ropes",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["forearms"],
+      "equipment": "other"
+    },
+    {
+      "id": "ex-rowing-ergometer",
+      "name": "Rowing Ergometer",
+      "aliases": ["Concept2 Row"],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["hamstrings", "biceps"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-assault-bike",
+      "name": "Assault Bike",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-stair-climber",
+      "name": "Stair Climber",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes", "calves"],
+      "equipment": "machine"
+    },
+    {
+      "id": "ex-reverse-lunge",
+      "name": "Reverse Lunge",
+      "aliases": [],
+      "musclePrimary": "quads",
+      "muscleSecondary": ["glutes"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-curtsy-lunge",
+      "name": "Curtsy Lunge",
+      "aliases": [],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["adductors"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-sumo-squat",
+      "name": "Sumo Squat",
+      "aliases": [],
+      "musclePrimary": "glutes",
+      "muscleSecondary": ["adductors", "quads"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-cable-pull-over",
+      "name": "Cable Pull-over",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["chest", "triceps"],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-dumbbell-pullover",
+      "name": "Dumbbell Pullover",
+      "aliases": [],
+      "musclePrimary": "lats",
+      "muscleSecondary": ["chest"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-rack-pull",
+      "name": "Rack Pull",
+      "aliases": [],
+      "musclePrimary": "lower-back",
+      "muscleSecondary": ["glutes", "traps"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-block-pull",
+      "name": "Block Pull",
+      "aliases": [],
+      "musclePrimary": "lower-back",
+      "muscleSecondary": ["glutes"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-snatch-grip-deadlift",
+      "name": "Snatch-Grip Deadlift",
+      "aliases": [],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["hamstrings", "glutes"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-high-pull",
+      "name": "High Pull",
+      "aliases": [],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["glutes", "hamstrings"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-muscle-snatch",
+      "name": "Muscle Snatch",
+      "aliases": [],
+      "musclePrimary": "traps",
+      "muscleSecondary": ["side-delts"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-z-press",
+      "name": "Z Press",
+      "aliases": [],
+      "musclePrimary": "front-delts",
+      "muscleSecondary": ["abs"],
+      "equipment": "barbell"
+    },
+    {
+      "id": "ex-cuban-press",
+      "name": "Cuban Press",
+      "aliases": [],
+      "musclePrimary": "rear-delts",
+      "muscleSecondary": ["side-delts"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-y-raise",
+      "name": "Y Raise",
+      "aliases": [],
+      "musclePrimary": "rear-delts",
+      "muscleSecondary": ["traps"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-i-y-t-raise",
+      "name": "I-Y-T Raise",
+      "aliases": [],
+      "musclePrimary": "rear-delts",
+      "muscleSecondary": ["rhomboids"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-scarecrow",
+      "name": "Scarecrow",
+      "aliases": [],
+      "musclePrimary": "rear-delts",
+      "muscleSecondary": ["side-delts"],
+      "equipment": "dumbbell"
+    },
+    {
+      "id": "ex-hanging-knee-raise",
+      "name": "Hanging Knee Raise",
+      "aliases": [],
+      "musclePrimary": "hip-flexors",
+      "muscleSecondary": ["abs"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-lying-leg-raise",
+      "name": "Lying Leg Raise",
+      "aliases": [],
+      "musclePrimary": "hip-flexors",
+      "muscleSecondary": ["abs"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-mountain-climber",
+      "name": "Mountain Climber",
+      "aliases": [],
+      "musclePrimary": "hip-flexors",
+      "muscleSecondary": ["abs"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-rhomboid-row",
+      "name": "Rhomboid Row",
+      "aliases": ["Prone Y Raise Row"],
+      "musclePrimary": "rhomboids",
+      "muscleSecondary": ["rear-delts", "lats"],
+      "equipment": "cable"
+    },
+    {
+      "id": "ex-band-face-pull",
+      "name": "Band Face Pull",
+      "aliases": [],
+      "musclePrimary": "rhomboids",
+      "muscleSecondary": ["rear-delts"],
+      "equipment": "band"
+    },
+    {
+      "id": "ex-tibialis-wall-raise",
+      "name": "Tibialis Wall Raise",
+      "aliases": [],
+      "musclePrimary": "tibialis-anterior",
+      "muscleSecondary": [],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-neck-isometric-hold",
+      "name": "Neck Isometric Hold",
+      "aliases": [],
+      "musclePrimary": "neck",
+      "muscleSecondary": [],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-lateral-neck-flexion",
+      "name": "Lateral Neck Flexion",
+      "aliases": [],
+      "musclePrimary": "neck",
+      "muscleSecondary": [],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-neck-bridge",
+      "name": "Neck Bridge",
+      "aliases": ["Wrestler Bridge"],
+      "musclePrimary": "neck",
+      "muscleSecondary": ["traps"],
+      "equipment": "bodyweight"
+    },
+    {
+      "id": "ex-plate-neck-resistance",
+      "name": "Plate Neck Resistance",
+      "aliases": [],
+      "musclePrimary": "neck",
+      "muscleSecondary": [],
+      "equipment": "other"
+    },
+    {
+      "id": "ex-band-neck-extension",
+      "name": "Band Neck Extension",
+      "aliases": [],
+      "musclePrimary": "neck",
+      "muscleSecondary": [],
+      "equipment": "band"
+    }
+  ],
+  "assets": [
+    {
+      "id": "as-ex-back-squat-video-0",
+      "exerciseId": "ex-back-squat",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=bEv6CCg2BC8",
+      "title": "Huge squat technique \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-front-squat-video-0",
+      "exerciseId": "ex-front-squat",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=gcNh17Ckjgg",
+      "title": "Squat for growth \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-goblet-squat-video-0",
+      "exerciseId": "ex-goblet-squat",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=UFs6E3Ti1jg",
+      "title": "How to squat \u2014 Alan Thrall",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-conventional-deadlift-video-0",
+      "exerciseId": "ex-conventional-deadlift",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=VL5Ab0T07e4",
+      "title": "Conventional deadlift \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-romanian-deadlift-video-0",
+      "exerciseId": "ex-romanian-deadlift",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=FUwsp0OVyVM",
+      "title": "Romanian deadlift \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-sumo-deadlift-video-0",
+      "exerciseId": "ex-sumo-deadlift",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=ZaTM37cfiDs",
+      "title": "Deadlift technique \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-bench-press-video-0",
+      "exerciseId": "ex-bench-press",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=gRVjAtPip0Y",
+      "title": "Bench press tutorial \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-incline-bench-press-video-0",
+      "exerciseId": "ex-incline-bench-press",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=vcBig73ojpE",
+      "title": "Huge bench press \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-overhead-press-video-0",
+      "exerciseId": "ex-overhead-press",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=B-aVuyhvLHU",
+      "title": "Shoulder press \u2014 Bowflex",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-pull-up-video-0",
+      "exerciseId": "ex-pull-up",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=eGo4IYlbE5g",
+      "title": "Perfect pull-up \u2014 Buff Dudes",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-chin-up-video-0",
+      "exerciseId": "ex-chin-up",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=eGo4IYlbE5g",
+      "title": "Pull-up form \u2014 Buff Dudes",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-barbell-row-video-0",
+      "exerciseId": "ex-barbell-row",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=vT2GjY_Umpw",
+      "title": "Bent-over barbell row \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-dumbbell-row-video-0",
+      "exerciseId": "ex-dumbbell-row",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=vT2GjY_Umpw",
+      "title": "Bent-over row \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-pendlay-row-video-0",
+      "exerciseId": "ex-pendlay-row",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=vT2GjY_Umpw",
+      "title": "Barbell row \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-lateral-raise-video-0",
+      "exerciseId": "ex-lateral-raise",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=3VcKaXpzqRo",
+      "title": "Lateral raise \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-barbell-curl-video-0",
+      "exerciseId": "ex-barbell-curl",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=ykJmrZ5v0Oo",
+      "title": "Biceps curl \u2014 Bowflex",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-dumbbell-curl-video-0",
+      "exerciseId": "ex-dumbbell-curl",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=ykJmrZ5v0Oo",
+      "title": "Dumbbell curl \u2014 Bowflex",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-hammer-curl-video-0",
+      "exerciseId": "ex-hammer-curl",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=ykJmrZ5v0Oo",
+      "title": "Hammer curl \u2014 Bowflex",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-triceps-pushdown-video-0",
+      "exerciseId": "ex-triceps-pushdown",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=2-LAMcpzODU",
+      "title": "Tricep pushdown \u2014 Life Fitness",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-close-grip-bench-press-video-0",
+      "exerciseId": "ex-close-grip-bench-press",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=rT7DgCr-3pg",
+      "title": "Barbell bench \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-cable-fly-video-0",
+      "exerciseId": "ex-cable-fly",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=taI4XduLpTk",
+      "title": "Cable crossover \u2014 Bowflex",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-bulgarian-split-squat-video-0",
+      "exerciseId": "ex-bulgarian-split-squat",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=bEv6CCg2BC8",
+      "title": "Squat technique \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-leg-press-video-0",
+      "exerciseId": "ex-leg-press",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=UFs6E3Ti1jg",
+      "title": "Squat mechanics \u2014 Alan Thrall",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-leg-curl-video-0",
+      "exerciseId": "ex-leg-curl",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=FUwsp0OVyVM",
+      "title": "Romanian deadlift \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-plank-video-0",
+      "exerciseId": "ex-plank",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=pSHjTRCQxIw",
+      "title": "Plank \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-good-morning-video-0",
+      "exerciseId": "ex-good-morning",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=FUwsp0OVyVM",
+      "title": "Romanian deadlift hinge \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-back-extension-video-0",
+      "exerciseId": "ex-back-extension",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=hCDzSR6bW10",
+      "title": "Deadlift checklist \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-push-press-video-0",
+      "exerciseId": "ex-push-press",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=f2kowl7Ngxw",
+      "title": "The Key to the Push Press \u2014 Alexander Bromley",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-lat-pulldown-video-0",
+      "exerciseId": "ex-lat-pulldown",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=hnSqbBk15tw",
+      "title": "Stop Messing Up Your Lat Pulldowns \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-dip-video-0",
+      "exerciseId": "ex-dip",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=yN6Q1UI_xkE",
+      "title": "How To Do Dips For A Bigger Chest and Shoulders \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-rear-delt-fly-video-0",
+      "exerciseId": "ex-rear-delt-fly",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=dKluhLck1Zs",
+      "title": "The ONLY 2 Exercises You Need for Rear Delts \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-face-pull-video-0",
+      "exerciseId": "ex-face-pull",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=8686PLZB_1Q",
+      "title": "STOP Doing Face Pulls Like This! \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-incline-dumbbell-curl-video-0",
+      "exerciseId": "ex-incline-dumbbell-curl",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=DCe8f6vMe9A",
+      "title": "Stop Screwing Up Incline Dumbbell Curls \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-preacher-curl-video-0",
+      "exerciseId": "ex-preacher-curl",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=7ixqAPO6JvU",
+      "title": "FIX Your Preacher Curls \u2014 Andrew Kwong (DeltaBolic)",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-skull-crusher-video-0",
+      "exerciseId": "ex-skull-crusher",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=OQ4TWXkZjTc",
+      "title": "THIS is a Proper Skullcrusher \u2014 Renaissance Periodization",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-hip-thrust-video-0",
+      "exerciseId": "ex-hip-thrust",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=xDmFkJxPzeM",
+      "title": "How To Build Great Glutes with Perfect Hip Thrust Technique \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-forward-lunge-video-0",
+      "exerciseId": "ex-forward-lunge",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=Pwsn3HR4L90",
+      "title": "Stop Doing Lunges Like This! \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-walking-lunge-video-0",
+      "exerciseId": "ex-walking-lunge",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=eFWCn5iEbTU",
+      "title": "Dumbbell Walking Lunge \u2014 Renaissance Periodization",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-leg-extension-video-0",
+      "exerciseId": "ex-leg-extension",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=ztNBgrGy6FQ",
+      "title": "A Better Way To Do Leg Extensions \u2014 Jeff Nippard",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-standing-calf-raise-video-0",
+      "exerciseId": "ex-standing-calf-raise",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=Xa18jxyeSnM",
+      "title": "8 Calf Raise Mistakes and How to Fix Them \u2014 Renaissance Periodization",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-seated-calf-raise-video-0",
+      "exerciseId": "ex-seated-calf-raise",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=ORY-ke6vcgk",
+      "title": "Seated Calf Raise Tutorial \u2014 Runna",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-farmers-carry-video-0",
+      "exerciseId": "ex-farmers-carry",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=NH7Xv-7NQNQ",
+      "title": "How To Perform Farmer Walks \u2014 Buff Dudes",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-kettlebell-swing-video-0",
+      "exerciseId": "ex-kettlebell-swing",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=aSYap2yhW8s",
+      "title": "The BEST Kettlebell Swing Tutorial \u2014 Squat University",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-turkish-get-up-video-0",
+      "exerciseId": "ex-turkish-get-up",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=jFK8FOiLa_M",
+      "title": "Master the Turkish Get-Up \u2014 Squat University",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-hanging-leg-raise-video-0",
+      "exerciseId": "ex-hanging-leg-raise",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=Pr1ieGZ5atk",
+      "title": "Hanging Leg Raise \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-cable-crunch-video-0",
+      "exerciseId": "ex-cable-crunch",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=6GMKPQVERzw",
+      "title": "Rope Crunch \u2014 Renaissance Periodization",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-ab-wheel-rollout-video-0",
+      "exerciseId": "ex-ab-wheel-rollout",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=rqiTPdK1c_I",
+      "title": "How to PROPERLY Use an Ab Wheel \u2014 Mind Pump TV",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-russian-twist-video-0",
+      "exerciseId": "ex-russian-twist",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=-BzNffL_6YE",
+      "title": "STOP Doing Russian Twists Like This! \u2014 ATHLEAN-X",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-pallof-press-video-0",
+      "exerciseId": "ex-pallof-press",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=5aZ0IhJS8O8",
+      "title": "How to perform the pallof press \u2014 Beyond Measure Fitness",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-band-pull-apart-video-0",
+      "exerciseId": "ex-band-pull-apart",
+      "kind": "video",
+      "url": "https://www.youtube.com/watch?v=SuvO4TBwSu4",
+      "title": "Band Pull-apart \u2014 Movement Physio",
+      "sortOrder": 0
+    },
+    {
+      "id": "as-ex-bench-press-article-1",
+      "exerciseId": "ex-bench-press",
+      "kind": "article",
+      "url": "https://www.strongerbyscience.com/how-to-bench/",
+      "title": "How to bench \u2014 Stronger by Science",
+      "sortOrder": 1
+    },
+    {
+      "id": "as-ex-conventional-deadlift-article-1",
+      "exerciseId": "ex-conventional-deadlift",
+      "kind": "article",
+      "url": "https://www.strongerbyscience.com/how-to-deadlift/",
+      "title": "How to deadlift \u2014 Stronger by Science",
+      "sortOrder": 1
+    },
+    {
+      "id": "as-ex-back-squat-article-1",
+      "exerciseId": "ex-back-squat",
+      "kind": "article",
+      "url": "https://www.strongerbyscience.com/how-to-squat/",
+      "title": "How to squat \u2014 Stronger by Science",
+      "sortOrder": 1
+    }
+  ]
+}
